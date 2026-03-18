@@ -91,26 +91,34 @@ export default function Teams() {
         </div> :
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTeams.map((team) =>
-        <Link key={team.id} to={`/TeamDetail?id=${team.id}`}>
-              
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          
-            </Link>
-        )}
+          {filteredTeams.map((team) => (
+            <div key={team.id} className="relative group">
+              <Link to={`/TeamDetail?id=${team.id}`}>
+                <div className="bg-card rounded-2xl border border-border p-5 hover:border-primary/30 transition-all cursor-pointer">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{team.name}</h3>
+                      <p className="text-sm text-primary mt-0.5">{team.sport_name}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <div className="flex items-center gap-3 mt-4 flex-wrap">
+                    {team.age_group && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{team.age_group}</span>
+                    )}
+                    <span className="text-xs text-muted-foreground">{playerCount(team.id)} players</span>
+                    {team.head_coach && <span className="text-xs text-muted-foreground">Coach: {team.head_coach}</span>}
+                  </div>
+                </div>
+              </Link>
+              <button
+                onClick={(e) => { e.preventDefault(); if (confirm(`Delete "${team.name}"?`)) deleteMutation.mutate(team.id); }}
+                className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
         </div>
       }
 
