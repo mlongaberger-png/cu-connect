@@ -33,7 +33,12 @@ export default function Teams() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Team.create(data),
-    onSuccess: () => {queryClient.invalidateQueries({ queryKey: ["teams"] });setShowForm(false);}
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["teams"] }); setShowForm(false); }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Team.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teams"] })
   });
 
   const handleSubmit = (e) => {
