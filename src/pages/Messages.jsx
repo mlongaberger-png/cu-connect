@@ -9,7 +9,10 @@ import MessagesSidebar from "@/components/messages/MessagesSidebar";
 import MobileChannelPicker from "@/components/messages/MobileChannelPicker";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
 
+import { useAdminGuard } from "@/hooks/useRoleGuard";
+
 export default function Messages() {
+  useAdminGuard();
   const [channel, setChannel] = useState("org");
   const [channelId, setChannelId] = useState("org");
   const [channelName, setChannelName] = useState("Organization");

@@ -9,8 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
+import { useAdminGuard } from "@/hooks/useRoleGuard";
 
 export default function TeamDetail() {
+  useAdminGuard();
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get("id");
   const [showForm, setShowForm] = useState(false);

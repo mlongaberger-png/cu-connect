@@ -13,6 +13,8 @@ import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 
+import { useAdminGuard } from "@/hooks/useRoleGuard";
+
 const eventTypes = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
 const typeColors = {
   practice: "bg-blue-500/20 text-blue-400 border-blue-500/30",
