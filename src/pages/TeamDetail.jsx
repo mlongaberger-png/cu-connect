@@ -25,7 +25,11 @@ export default function TeamDetail() {
   const handleInviteParent = async (player) => {
     if (!player.parent_email) return;
     setInviting(player.id);
-    await base44.functions.invoke("inviteParent", { email: player.parent_email });
+    await base44.functions.invoke("inviteParent", {
+      email: player.parent_email,
+      player_id: player.id,
+      player_name: `${player.first_name} ${player.last_name}`,
+    });
     setInvitedEmails(prev => ({ ...prev, [player.id]: true }));
     setInviting(null);
   };
