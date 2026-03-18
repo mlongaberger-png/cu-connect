@@ -135,6 +135,19 @@ export default function TeamDetail() {
                     <TableCell className="text-muted-foreground">{p.parent_name || "-"}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{p.parent_email || p.parent_phone || "-"}</TableCell>
                     <TableCell>
+                      {p.parent_email ? (
+                        invitedEmails[p.id] ? (
+                          <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle className="w-3.5 h-3.5" /> Invited</span>
+                        ) : (
+                          <Button variant="ghost" size="sm" onClick={() => handleInviteParent(p)} disabled={inviting === p.id} className="h-7 text-xs text-primary hover:text-primary/80 px-2">
+                            <Send className="w-3 h-3 mr-1" />{inviting === p.id ? "Sending..." : "Invite"}
+                          </Button>
+                        )
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No email</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
                         <Trash2 className="w-4 h-4" />
                       </Button>
