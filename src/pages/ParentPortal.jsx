@@ -15,7 +15,9 @@ const TABS = [
 
 export default function ParentPortal() {
   const [userEmail, setUserEmail] = useState(null);
+  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [playerLinked, setPlayerLinked] = useState(false);
 
   // Check for payment return
   useEffect(() => {
