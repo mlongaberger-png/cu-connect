@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle } from "lucide-react";
+import { useState as useLocalState } from "react";
 import { Link } from "react-router-dom";
 
 export default function TeamDetail() {
