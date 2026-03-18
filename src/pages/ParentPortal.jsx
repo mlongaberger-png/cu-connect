@@ -12,6 +12,7 @@ import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
+  { id: "schedule", label: "Schedule", icon: Calendar },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard },
 ];
