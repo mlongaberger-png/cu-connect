@@ -11,7 +11,6 @@ const navItems = [
 { path: "/Teams", label: "Teams", icon: Users },
 { path: "/Schedule", label: "Schedule", icon: Calendar },
 { path: "/Messages", label: "Messages", icon: MessageSquare },
-{ path: "/Announcements", label: "Announcements", icon: Megaphone },
 { path: "/Documents", label: "Documents", icon: FolderOpen },
 { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle }];
 
