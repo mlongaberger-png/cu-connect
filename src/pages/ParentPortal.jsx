@@ -5,6 +5,7 @@ import { Calendar, MapPin, Clock, Megaphone, Trophy, UserCircle, FileText, Credi
 import { format } from "date-fns";
 import PlayerDocuments from "@/components/parentportal/PlayerDocuments";
 import PlayerPayments from "@/components/parentportal/PlayerPayments";
+import LinkPlayerByEmail from "@/components/parentportal/LinkPlayerByEmail";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
