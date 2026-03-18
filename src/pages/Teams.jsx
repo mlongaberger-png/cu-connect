@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Users, ChevronRight, Filter } from "lucide-react";
+import { Plus, Users, ChevronRight, Filter, Trash2 } from "lucide-react";
 
 const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
 const seasonOptions = ["fall", "winter", "spring", "summer"];
