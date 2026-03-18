@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Megaphone, Pin, Trash2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
+import { useAdminGuard } from "@/hooks/useRoleGuard";
+
 const priorityStyles = {
   normal: "border-border",
   important: "border-primary/40 bg-primary/5",
@@ -18,6 +20,7 @@ const priorityStyles = {
 };
 
 export default function Announcements() {
+  useAdminGuard();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", content: "", priority: "normal", target: "org", target_id: "", is_pinned: false });
   const queryClient = useQueryClient();
