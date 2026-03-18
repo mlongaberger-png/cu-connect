@@ -44,6 +44,11 @@ export default function TeamDetail() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["players"] }); setShowForm(false); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Player.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["players"] }); setShowForm(false); setEditingPlayer(null); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Player.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["players"] }),
@@ -51,7 +56,17 @@ export default function TeamDetail() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createMutation.mutate({ ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" });
+    if (editingPlayer) {
+      updateMutation.mutate({ id: editingPlayer.id, data: { ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" } });
+    } else {
+      createMutation.mutate({ ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" });
+    }
+  };
+
+  const handleEdit = (player) => {
+    setEditingPlayer(player);
+    setForm({ first_name: player.first_name || "", last_name: player.last_name || "", jersey_number: player.jersey_number || "", position: player.position || "", parent_name: player.parent_name || "", parent_email: player.parent_email || "", parent_phone: player.parent_phone || "" });
+    setShowForm(true);
   };
 
   if (!team) {
