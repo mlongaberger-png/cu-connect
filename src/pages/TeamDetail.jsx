@@ -199,8 +199,8 @@ export default function TeamDetail() {
               <div><Label>Parent Phone</Label><Input value={form.parent_phone} onChange={e => setForm({...form, parent_phone: e.target.value})} className="bg-surface border-border" /></div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-border">Cancel</Button>
-              <Button type="submit" className="bg-primary text-primary-foreground">Add Player</Button>
+              <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingPlayer(null); }} className="border-border">Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground">{editingPlayer ? "Save Changes" : "Add Player"}</Button>
             </div>
           </form>
         </DialogContent>
