@@ -34,6 +34,10 @@ export default function Dashboard() {
     queryKey: ["reg-submissions-all"],
     queryFn: () => base44.entities.RegistrationSubmission.filter({ status: "pending" }),
   });
+  const { data: payments = [] } = useQuery({
+    queryKey: ["payments-dashboard"],
+    queryFn: () => base44.entities.Payment.list(),
+  });
 
   const upcomingEvents = events.filter(e => {
     if (!e.date) return false;
