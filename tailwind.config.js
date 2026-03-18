@@ -4,6 +4,9 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
+      fontFamily: {
+        inter: ['var(--font-inter)']
+      },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -12,6 +15,15 @@ module.exports = {
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+        gold: {
+          DEFAULT: 'hsl(var(--gold))',
+          light: 'hsl(var(--gold-light))',
+          dark: 'hsl(var(--gold-dark))'
+        },
+        surface: {
+          DEFAULT: 'hsl(var(--surface))',
+          hover: 'hsl(var(--surface-hover))'
+        },
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
@@ -63,20 +75,12 @@ module.exports = {
   		},
   		keyframes: {
   			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
+  				from: { height: '0' },
+  				to: { height: 'var(--radix-accordion-content-height)' }
   			},
   			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
+  				from: { height: 'var(--radix-accordion-content-height)' },
+  				to: { height: '0' }
   			}
   		},
   		animation: {
@@ -85,5 +89,13 @@ module.exports = {
   		}
   	}
   },
+  safelist: [
+    'bg-green-500/20', 'text-green-400', 'bg-blue-500/20', 'text-blue-400',
+    'bg-orange-500/20', 'text-orange-400', 'bg-red-500/20', 'text-red-400',
+    'bg-purple-500/20', 'text-purple-400', 'bg-yellow-500/20', 'text-yellow-400',
+    'bg-emerald-500/20', 'text-emerald-400', 'bg-cyan-500/20', 'text-cyan-400',
+    'border-green-500/30', 'border-blue-500/30', 'border-orange-500/30', 'border-red-500/30',
+    'border-purple-500/30', 'border-yellow-500/30',
+  ],
   plugins: [require("tailwindcss-animate")],
 }
