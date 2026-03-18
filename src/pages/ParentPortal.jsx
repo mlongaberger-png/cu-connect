@@ -28,8 +28,8 @@ export default function ParentPortal() {
   }, []);
 
   useEffect(() => {
-    base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {});
-  }, []);
+    base44.auth.me().then(u => { setUser(u); setUserEmail(u?.email); }).catch(() => {});
+  }, [playerLinked]);
 
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
