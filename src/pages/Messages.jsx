@@ -3,17 +3,30 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, MessageSquare, Hash } from "lucide-react";
 import { format } from "date-fns";
+import MessagesSidebar from "@/components/messages/MessagesSidebar";
+import MobileChannelPicker from "@/components/messages/MobileChannelPicker";
 
 export default function Messages() {
   const [channel, setChannel] = useState("org");
   const [channelId, setChannelId] = useState("org");
   const [channelName, setChannelName] = useState("Organization");
   const [newMessage, setNewMessage] = useState("");
+  const [userId, setUserId] = useState(null);
+  const [starredIds, setStarredIds] = useState([]);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(u => {
+      if (!u) return;
+      setUserId(u.id);
+      base44.entities.UserChatPreference.filter({ user_id: u.id, is_starred: true }).then(prefs => {
+        setStarredIds(prefs.map(p => p.chat_id));
+      });
+    }).catch(() => {});
+  }, []);
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", channelId],
@@ -64,70 +77,29 @@ export default function Messages() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Channel Sidebar */}
-      <div className="w-64 bg-card border-r border-border flex-shrink-0 overflow-y-auto hidden md:block">
-        <div className="p-4">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Channels</h3>
-          
-          <button
-            onClick={() => selectChannel("org", "org", "Organization")}
-            className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${channelId === "org" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-surface"}`}
-          >
-            <Hash className="w-4 h-4" /> Organization
-          </button>
-
-          {sports.length > 0 && (
-            <>
-              <h4 className="text-xs text-muted-foreground uppercase tracking-wider mt-4 mb-2">Sports</h4>
-              {sports.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => selectChannel("sport", s.id, s.name)}
-                  className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${channelId === s.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-surface"}`}
-                >
-                  <Hash className="w-4 h-4" /> {s.name}
-                </button>
-              ))}
-            </>
-          )}
-
-          {teams.length > 0 && (
-            <>
-              <h4 className="text-xs text-muted-foreground uppercase tracking-wider mt-4 mb-2">Teams</h4>
-              {teams.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => selectChannel("team", t.id, t.name)}
-                  className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${channelId === t.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-surface"}`}
-                >
-                  <Hash className="w-4 h-4" /> {t.name}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
+      {/* Sidebar — desktop only */}
+      <MessagesSidebar
+        channelId={channelId}
+        onSelectChannel={selectChannel}
+        sports={sports}
+        teams={teams}
+      />
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Channel Header */}
-        <div className="px-4 md:px-6 py-3 border-b border-border bg-card flex items-center gap-3">
+        <div className="px-4 md:px-6 py-3 border-b border-border bg-card flex items-center gap-3 flex-shrink-0">
+          {/* Mobile picker */}
           <div className="md:hidden">
-            <Select value={channelId} onValueChange={(v) => {
-              if (v === "org") selectChannel("org", "org", "Organization");
-              const sport = sports.find(s => s.id === v);
-              if (sport) selectChannel("sport", sport.id, sport.name);
-              const team = teams.find(t => t.id === v);
-              if (team) selectChannel("team", team.id, team.name);
-            }}>
-              <SelectTrigger className="w-44 bg-surface border-border"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                <SelectItem value="org">Organization</SelectItem>
-                {sports.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <MobileChannelPicker
+              sports={sports}
+              teams={teams}
+              channelId={channelId}
+              onSelectChannel={selectChannel}
+              starredIds={starredIds}
+            />
           </div>
+          {/* Desktop title */}
           <div className="hidden md:block">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
               <Hash className="w-4 h-4 text-primary" /> {channelName}
@@ -164,7 +136,7 @@ export default function Messages() {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSend} className="p-4 border-t border-border bg-card">
+        <form onSubmit={handleSend} className="p-4 border-t border-border bg-card flex-shrink-0">
           <div className="flex gap-2">
             <Input
               value={newMessage}
