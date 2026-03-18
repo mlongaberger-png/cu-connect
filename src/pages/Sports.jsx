@@ -85,9 +85,14 @@ export default function Sports() {
           <h1 className="text-2xl font-bold text-foreground">Sports</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your organization's sports programs</p>
         </div>
-        <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="w-4 h-4 mr-2" /> Add Sport
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowRegistrations(true)} className="border-border">
+            <ClipboardList className="w-4 h-4 mr-2" /> Registrations
+          </Button>
+          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="w-4 h-4 mr-2" /> Add Sport
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
