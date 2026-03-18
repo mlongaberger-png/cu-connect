@@ -212,6 +212,37 @@ export default function TeamDetail() {
       {/* Invoices */}
       <AdminInvoiceManager players={players} teamName={team?.name || ""} />
 
+      {/* Edit Team Dialog */}
+      <Dialog open={showTeamForm} onOpenChange={setShowTeamForm}>
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
+          <DialogHeader><DialogTitle>Edit Team</DialogTitle></DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updateTeamMutation.mutate({ id: teamId, data: teamForm }); }} className="space-y-4">
+            <div>
+              <Label>Team Name</Label>
+              <Input value={teamForm.name || ""} onChange={e => setTeamForm({...teamForm, name: e.target.value})} className="bg-surface border-border" required />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Age Group / Division</Label><Input value={teamForm.age_group || ""} onChange={e => setTeamForm({...teamForm, age_group: e.target.value})} className="bg-surface border-border" /></div>
+              <div><Label>Season</Label><Input value={teamForm.season || ""} onChange={e => setTeamForm({...teamForm, season: e.target.value})} className="bg-surface border-border" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Year</Label><Input value={teamForm.year || ""} onChange={e => setTeamForm({...teamForm, year: e.target.value})} className="bg-surface border-border" /></div>
+              <div><Label>Head Coach</Label><Input value={teamForm.head_coach || ""} onChange={e => setTeamForm({...teamForm, head_coach: e.target.value})} className="bg-surface border-border" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Coach Email</Label><Input type="email" value={teamForm.coach_email || ""} onChange={e => setTeamForm({...teamForm, coach_email: e.target.value})} className="bg-surface border-border" /></div>
+              <div><Label>Coach Phone</Label><Input value={teamForm.coach_phone || ""} onChange={e => setTeamForm({...teamForm, coach_phone: e.target.value})} className="bg-surface border-border" /></div>
+            </div>
+            <div><Label>Practice Location</Label><Input value={teamForm.practice_location || ""} onChange={e => setTeamForm({...teamForm, practice_location: e.target.value})} className="bg-surface border-border" /></div>
+            <div><Label>Practice Schedule</Label><Input value={teamForm.practice_schedule || ""} onChange={e => setTeamForm({...teamForm, practice_schedule: e.target.value})} className="bg-surface border-border" /></div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setShowTeamForm(false)} className="border-border">Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Add/Edit Player Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); } }}>
         <DialogContent className="bg-card border-border text-foreground">
