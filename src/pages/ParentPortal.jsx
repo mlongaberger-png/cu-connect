@@ -262,6 +262,7 @@ export default function ParentPortal() {
                     <span>{team?.name || "Unknown Team"}</span>
                   </div>
                   {kid.position && <p className="text-xs text-muted-foreground mt-1">Position: {kid.position}</p>}
+                  <InviteCoGuardian player={kid} currentUserEmail={userEmail} />
                 </div>
               );
             })}
