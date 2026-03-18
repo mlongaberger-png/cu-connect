@@ -10,6 +10,7 @@ import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 import { useLocation } from "react-router-dom";
+import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
