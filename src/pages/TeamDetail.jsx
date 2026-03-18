@@ -57,6 +57,27 @@ export default function TeamDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["players"] }),
   });
 
+  const updateTeamMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Team.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["teams"] }); setShowTeamForm(false); },
+  });
+
+  const handleEditTeam = () => {
+    setTeamForm({
+      name: team.name || "",
+      sport_name: team.sport_name || "",
+      age_group: team.age_group || "",
+      head_coach: team.head_coach || "",
+      coach_email: team.coach_email || "",
+      coach_phone: team.coach_phone || "",
+      season: team.season || "",
+      year: team.year || "",
+      practice_location: team.practice_location || "",
+      practice_schedule: team.practice_schedule || "",
+    });
+    setShowTeamForm(true);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (editingPlayer) {
