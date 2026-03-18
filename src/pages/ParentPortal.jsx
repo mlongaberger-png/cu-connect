@@ -45,6 +45,12 @@ export default function ParentPortal() {
     base44.auth.me().then(u => { setUser(u); setUserEmail(u?.email); }).catch(() => {});
   }, [playerLinked]);
 
+  const { data: myGuardianLinks = [] } = useQuery({
+    queryKey: ["my-guardian-links", userEmail],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
+    enabled: !!userEmail,
+  });
+
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
@@ -68,7 +74,11 @@ export default function ParentPortal() {
     enabled: !!userEmail,
   });
 
-  const myKids = userEmail ? players.filter(p => p.parent_email === userEmail) : [];
+  // Players linked via PlayerGuardian records (supports multiple guardians per player)
+  const myLinkedPlayerIds = new Set(myGuardianLinks.map(g => g.player_id));
+  const myKids = userEmail
+    ? players.filter(p => myLinkedPlayerIds.has(p.id) || p.parent_email === userEmail)
+    : [];
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
   const myEvents = events.filter(e => myTeamIds.includes(e.team_id) && e.date).sort((a, b) => new Date(a.date) - new Date(b.date));
