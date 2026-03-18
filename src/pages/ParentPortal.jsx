@@ -73,6 +73,48 @@ export default function ParentPortal() {
     a.target === "org" || myTeamIds.includes(a.target_id) || myTeams.some(t => t.sport_id === a.target_id)
   );
 
+  const myKidIds = new Set(myKids.map(k => k.id));
+  const myUnpaidInvoices = allPayments.filter(p => myKidIds.has(p.player_id) && p.status !== "paid");
+  const totalAllOwed = myUnpaidInvoices.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  const handlePayPlayer = async (player, unpaidInvoices) => {
+    const isIframe = window.self !== window.top;
+    if (isIframe) { alert("Payments can only be processed from the published app."); return; }
+    setLoadingPayFor(player.id);
+    const totalAmount = unpaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    const descriptions = unpaidInvoices.map(i => i.description).join(", ");
+    const res = await base44.functions.invoke("createCheckout", {
+      amount: totalAmount,
+      description: `${descriptions} – ${player.first_name} ${player.last_name} (${player.team_name})`,
+      player_id: player.id,
+      player_name: `${player.first_name} ${player.last_name}`,
+      team_name: player.team_name,
+    });
+    setLoadingPayFor(null);
+    if (res.data?.url) window.location.href = res.data.url;
+  };
+
+  const handlePayAll = async () => {
+    const isIframe = window.self !== window.top;
+    if (isIframe) { alert("Payments can only be processed from the published app."); return; }
+    setLoadingPayAll(true);
+    const descriptions = myKids.map(k => {
+      const kidInvoices = myUnpaidInvoices.filter(p => p.player_id === k.id);
+      if (!kidInvoices.length) return null;
+      return `${k.first_name} ${k.last_name}: ${kidInvoices.map(i => i.description).join(", ")}`;
+    }).filter(Boolean).join(" | ");
+    const firstUnpaidKid = myKids.find(k => myUnpaidInvoices.some(p => p.player_id === k.id));
+    const res = await base44.functions.invoke("createCheckout", {
+      amount: totalAllOwed,
+      description: descriptions || "All outstanding balances",
+      player_id: firstUnpaidKid?.id || "",
+      player_name: "Multiple Players",
+      team_name: myKids.map(k => k.team_name).filter(Boolean).join(", "),
+    });
+    setLoadingPayAll(false);
+    if (res.data?.url) window.location.href = res.data.url;
+  };
+
   const typeColors = {
     practice: "bg-blue-500/20 text-blue-400",
     game: "bg-green-500/20 text-green-400",
