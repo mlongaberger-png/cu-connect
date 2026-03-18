@@ -15,6 +15,8 @@ export default function TeamDetail() {
   const teamId = urlParams.get("id");
   const [showForm, setShowForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
+  const [showTeamForm, setShowTeamForm] = useState(false);
+  const [teamForm, setTeamForm] = useState({});
   const [invitedEmails, setInvitedEmails] = useState({});
   const [inviting, setInviting] = useState(null);
 
