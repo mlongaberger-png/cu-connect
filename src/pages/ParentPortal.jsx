@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Clock, Megaphone, Trophy, UserCircle, FileText, CreditCard, Download, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Clock, Megaphone, Trophy, UserCircle, FileText, CreditCard, Download, DollarSign, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import PlayerDocuments from "@/components/parentportal/PlayerDocuments";
 import { PlayerPaymentCard } from "@/components/parentportal/PlayerPayments";
@@ -9,6 +9,7 @@ import LinkPlayerByEmail from "@/components/parentportal/LinkPlayerByEmail";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
+import { useLocation } from "react-router-dom";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
