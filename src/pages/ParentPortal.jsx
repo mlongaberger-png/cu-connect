@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, MapPin, Clock, Megaphone, Trophy, UserCircle, FileText, CreditCard, Download } from "lucide-react";
 import { format } from "date-fns";
 import PlayerDocuments from "@/components/parentportal/PlayerDocuments";
-import PlayerPayments from "@/components/parentportal/PlayerPayments";
+import { PlayerPaymentCard } from "@/components/parentportal/PlayerPayments";
 import LinkPlayerByEmail from "@/components/parentportal/LinkPlayerByEmail";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
