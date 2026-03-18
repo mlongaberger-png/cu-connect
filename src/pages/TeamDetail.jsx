@@ -117,9 +117,14 @@ export default function TeamDetail() {
             {team.season && <span className="text-xs text-muted-foreground capitalize">{team.season} {team.year}</span>}
           </div>
         </div>
-        <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-          <Plus className="w-4 h-4 mr-2" /> Add Player
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleEditTeam} className="border-border">
+            <Settings className="w-4 h-4 mr-2" /> Edit Team
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
+            <Plus className="w-4 h-4 mr-2" /> Add Player
+          </Button>
+        </div>
       </div>
 
       {/* Coach Info */}
