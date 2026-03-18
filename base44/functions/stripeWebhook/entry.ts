@@ -19,10 +19,27 @@ Deno.serve(async (req) => {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      const payments = await base44.asServiceRole.entities.Payment.filter({ stripe_session_id: session.id });
-      if (payments.length > 0) {
-        await base44.asServiceRole.entities.Payment.update(payments[0].id, { status: 'paid' });
-        console.log(`Payment marked as paid: ${session.id}`);
+      const type = session.metadata?.type;
+
+      if (type === 'registration') {
+        // Handle registration payment
+        const submissionId = session.metadata?.submission_id;
+        if (submissionId) {
+          await base44.asServiceRole.entities.RegistrationSubmission.update(submissionId, { payment_status: 'paid' });
+          // Get submission to invite parent
+          const subs = await base44.asServiceRole.entities.RegistrationSubmission.filter({ id: submissionId });
+          if (subs.length > 0 && subs[0].parent_email) {
+            await base44.asServiceRole.functions.invoke('inviteParent', { email: subs[0].parent_email });
+          }
+          console.log(`Registration payment confirmed for submission: ${submissionId}`);
+        }
+      } else {
+        // Handle regular invoice payment
+        const payments = await base44.asServiceRole.entities.Payment.filter({ stripe_session_id: session.id });
+        if (payments.length > 0) {
+          await base44.asServiceRole.entities.Payment.update(payments[0].id, { status: 'paid' });
+          console.log(`Payment marked as paid: ${session.id}`);
+        }
       }
     }
 
