@@ -14,6 +14,16 @@ export default function TeamDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get("id");
   const [showForm, setShowForm] = useState(false);
+  const [invitedEmails, setInvitedEmails] = useState({});
+  const [inviting, setInviting] = useState(null);
+
+  const handleInviteParent = async (player) => {
+    if (!player.parent_email) return;
+    setInviting(player.id);
+    await base44.functions.invoke("inviteParent", { email: player.parent_email });
+    setInvitedEmails(prev => ({ ...prev, [player.id]: true }));
+    setInviting(null);
+  };
   const [form, setForm] = useState({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" });
   const queryClient = useQueryClient();
 
