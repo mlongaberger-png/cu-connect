@@ -2,21 +2,23 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare,
-  FolderOpen, UserCircle, X } from
-"lucide-react";
+  FolderOpen, UserCircle, X, LogOut, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
-const navItems = [
-{ path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard },
-{ path: "/Sports", label: "Sports", icon: Trophy },
-{ path: "/Teams", label: "Teams", icon: Users },
-{ path: "/Schedule", label: "Schedule", icon: Calendar },
-{ path: "/Messages", label: "Messages", icon: MessageSquare },
-{ path: "/Documents", label: "Documents", icon: FolderOpen },
-{ path: "/ParentPortal", label: "Parent Portal", icon: UserCircle }];
-
+const adminNavItems = [
+  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/Sports", label: "Sports", icon: Trophy },
+  { path: "/Teams", label: "Teams", icon: Users },
+  { path: "/Schedule", label: "Schedule", icon: Calendar },
+  { path: "/Messages", label: "Messages", icon: MessageSquare },
+  { path: "/Documents", label: "Documents", icon: FolderOpen },
+  { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle },
+];
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   return (
     <>
