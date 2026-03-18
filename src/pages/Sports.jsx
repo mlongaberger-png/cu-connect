@@ -118,14 +118,27 @@ export default function Sports() {
               </div>
               <h3 className="text-lg font-bold text-foreground">{sport.name}</h3>
               {sport.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{sport.description}</p>}
-              <div className="flex items-center gap-3 mt-4">
+              <div className="flex items-center gap-3 mt-4 flex-wrap">
                 <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary capitalize">
                   {(sport.season || "").replace("_", " ")}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {teamCount(sport.id)} team{teamCount(sport.id) !== 1 ? "s" : ""}
                 </span>
+                {openRegCount(sport.id) > 0 && (
+                  <span className="text-xs flex items-center gap-1 text-green-400">
+                    <ClipboardList className="w-3 h-3" />
+                    {openRegCount(sport.id)} open
+                  </span>
+                )}
               </div>
+              {openRegCount(sport.id) > 0 && (
+                <Link to={`/Register?sport=${sport.id}`}>
+                  <Button size="sm" variant="outline" className="mt-3 w-full border-primary/30 text-primary hover:bg-primary/10 text-xs">
+                    View Registrations
+                  </Button>
+                </Link>
+              )}
             </div>
           ))}
         </div>
