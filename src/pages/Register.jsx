@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, CheckCircle, AlertCircle, Loader2, ChevronRight, DollarSign } from "lucide-react";
 
-function RegistrationBrowser() {
+function RegistrationBrowser({ onSelect }) {
   const urlParams = new URLSearchParams(window.location.search);
   const sportParam = urlParams.get("sport") || "";
 
@@ -115,7 +115,7 @@ function RegistrationBrowser() {
                     </div>
                   </div>
                   <Button
-                    onClick={() => window.location.href = `/Register?reg=${reg.id}`}
+                    onClick={() => onSelect(reg.id)}
                     className="bg-primary text-primary-foreground shrink-0"
                     size="sm"
                   >
@@ -131,7 +131,7 @@ function RegistrationBrowser() {
   );
 }
 
-function RegistrationForm({ regId }) {
+function RegistrationForm({ regId, onBack }) {
   const [registration, setRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -251,7 +251,7 @@ function RegistrationForm({ regId }) {
           </div>
         )}
 
-        <Button variant="ghost" onClick={() => window.location.href = "/Register"} className="mb-4 text-muted-foreground hover:text-foreground text-sm -ml-2">
+        <Button variant="ghost" onClick={() => onBack ? onBack() : window.location.href = "/Register"} className="mb-4 text-muted-foreground hover:text-foreground text-sm -ml-2">
           ← Back to all registrations
         </Button>
 
