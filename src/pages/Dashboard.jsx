@@ -60,9 +60,9 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Sports" value={sports.length} icon={Trophy} />
-        <StatCard label="Teams" value={teams.length} icon={Users} />
-        <StatCard label="Athletes" value={players.length} icon={UserCircle} />
+        <StatCard label="Sports" value={sports.filter(s => s.is_active !== false).length} icon={Trophy} />
+        <StatCard label="Teams" value={teams.filter(t => t.is_active !== false).length} icon={Users} />
+        <StatCard label="Athletes" value={players.filter(p => p.is_active !== false).length} icon={UserCircle} />
         <StatCard label="Events" value={upcomingEvents.length} icon={Calendar} />
       </div>
 
