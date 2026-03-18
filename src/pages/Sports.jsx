@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Trophy, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import SportRegistrationManager from "@/components/sports/SportRegistrationManager";
+import { useAdminGuard } from "@/hooks/useRoleGuard";
 
 const seasons = ["fall", "winter", "spring", "summer", "year_round"];
 
 export default function Sports() {
+  useAdminGuard();
   const [showForm, setShowForm] = useState(false);
   const [showRegistrations, setShowRegistrations] = useState(false);
   const [editingSport, setEditingSport] = useState(null);
