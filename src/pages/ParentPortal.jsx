@@ -58,6 +58,12 @@ export default function ParentPortal() {
     queryFn: () => base44.entities.Announcement.list("-created_date"),
   });
 
+  const { data: allPayments = [] } = useQuery({
+    queryKey: ["payments-all", userEmail],
+    queryFn: () => base44.entities.Payment.list(),
+    enabled: !!userEmail,
+  });
+
   const myKids = userEmail ? players.filter(p => p.parent_email === userEmail) : [];
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
