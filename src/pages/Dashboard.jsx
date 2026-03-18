@@ -27,6 +27,10 @@ export default function Dashboard() {
     queryKey: ["announcements"],
     queryFn: () => base44.entities.Announcement.list("-created_date"),
   });
+  const { data: submissions = [] } = useQuery({
+    queryKey: ["reg-submissions-all"],
+    queryFn: () => base44.entities.RegistrationSubmission.filter({ status: "pending" }),
+  });
 
   const upcomingEvents = events.filter(e => {
     if (!e.date) return false;
@@ -64,6 +68,7 @@ export default function Dashboard() {
         <StatCard label="Teams" value={teams.filter(t => t.is_active !== false).length} icon={Users} />
         <StatCard label="Athletes" value={players.filter(p => p.is_active !== false).length} icon={UserCircle} />
         <StatCard label="Events" value={upcomingEvents.length} icon={Calendar} />
+        <StatCard label="Pending Registrations" value={submissions.length} icon={ClipboardList} />
       </div>
 
       {/* Content Grid */}
