@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
     // Invite the user to the platform
-    await base44.asServiceRole.users.inviteUser(email, 'user');
+    await base44.users.inviteUser(email, 'user');
 
     // If a player_id is provided, ensure a PlayerGuardian link exists
     if (player_id) {
