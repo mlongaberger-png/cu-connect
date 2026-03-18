@@ -52,6 +52,8 @@ const AuthenticatedApp = () => {
         <Route path="/Documents" element={<Documents />} />
         <Route path="/ParentPortal" element={<ParentPortal />} />
       </Route>
+      <Route path="/Register" element={<Register />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
