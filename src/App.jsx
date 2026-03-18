@@ -38,9 +38,13 @@ const AuthenticatedApp = () => {
     }
   }
 
+  // Role-based default redirect
+  const homeRoute = user?.role === "admin" ? "/Dashboard" : "/Portal";
+
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/Dashboard" replace />} />
+      <Route path="/" element={<Navigate to={homeRoute} replace />} />
+      {/* Admin layout routes */}
       <Route element={<AppLayout />}>
         <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/Sports" element={<Sports />} />
@@ -52,6 +56,8 @@ const AuthenticatedApp = () => {
         <Route path="/Documents" element={<Documents />} />
         <Route path="/ParentPortal" element={<ParentPortal />} />
       </Route>
+      {/* Parent portal — standalone, no admin sidebar */}
+      <Route path="/Portal" element={<ParentPortal />} />
       <Route path="/Register" element={<Register />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
