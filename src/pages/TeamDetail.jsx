@@ -122,6 +122,7 @@ export default function TeamDetail() {
                   <TableHead className="text-muted-foreground">Position</TableHead>
                   <TableHead className="text-muted-foreground">Parent</TableHead>
                   <TableHead className="text-muted-foreground">Contact</TableHead>
+                  <TableHead className="text-muted-foreground w-32">Portal Access</TableHead>
                   <TableHead className="text-muted-foreground w-12"></TableHead>
                 </TableRow>
               </TableHeader>
