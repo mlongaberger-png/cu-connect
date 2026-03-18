@@ -39,6 +39,10 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Payment.list(),
   });
 
+  const unpaidPayments = payments.filter(p => p.status !== "paid");
+  const totalOutstanding = unpaidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const recentPaid = payments.filter(p => p.status === "paid").slice(0, 5);
+
   const upcomingEvents = events.filter(e => {
     if (!e.date) return false;
     return new Date(e.date) >= new Date(new Date().toDateString());
