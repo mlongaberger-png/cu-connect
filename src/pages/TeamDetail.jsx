@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle } from "lucide-react";
-import { useState as useLocalState } from "react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function TeamDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get("id");
   const [showForm, setShowForm] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState(null);
   const [invitedEmails, setInvitedEmails] = useState({});
   const [inviting, setInviting] = useState(null);
 
