@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Trophy, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
+import SportRegistrationManager from "@/components/sports/SportRegistrationManager";
 
 const seasons = ["fall", "winter", "spring", "summer", "year_round"];
 
