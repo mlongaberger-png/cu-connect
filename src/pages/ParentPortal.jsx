@@ -66,15 +66,49 @@ export default function ParentPortal() {
   };
 
   if (myKids.length === 0) {
+    const isLoggedIn = !!userEmail;
     return (
-      <div className="p-4 md:p-6 max-w-4xl mx-auto">
-        <div className="text-center py-20 bg-card rounded-2xl border border-border">
-          <UserCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+      <div className="p-4 md:p-6 max-w-2xl mx-auto">
+        <div className="text-center py-10 bg-card rounded-2xl border border-border px-6">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <UserCircle className="w-9 h-9 text-primary" />
+          </div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Parent Portal</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            No players are linked to your account ({userEmail || "loading..."}).
-            Ask your organization admin to add your email as a parent contact for your child.
-          </p>
+
+          {!isLoggedIn ? (
+            <>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                Sign in or create a free account to access your child's schedule, documents, and payments.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                  className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                  className="px-6 py-3 rounded-xl border border-border text-foreground font-semibold text-sm hover:bg-surface transition-colors"
+                >
+                  Create Account
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground max-w-sm mx-auto">
+                No players are linked to <span className="text-primary">{userEmail}</span> yet.
+              </p>
+              <LinkPlayerByEmail
+                currentUserEmail={userEmail}
+                onLinked={() => setPlayerLinked(p => !p)}
+              />
+              <p className="text-xs text-muted-foreground mt-4">
+                If you can't find your player, contact your organization admin to verify your email on file.
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
