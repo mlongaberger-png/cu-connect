@@ -200,7 +200,7 @@ function RegistrationForm({ regId, onBack }) {
             ? "Your payment was successful. You'll receive an invitation to the parent portal after your registration is reviewed."
             : "Your registration has been submitted. You'll receive an invitation to the parent portal after it's reviewed."}
         </p>
-        <Button onClick={() => window.location.href = "/Register"} variant="outline" className="mt-6 border-border">
+        <Button onClick={() => onBack ? onBack() : window.location.href = "/Register"} variant="outline" className="mt-6 border-border">
           Back to Registrations
         </Button>
       </div>
