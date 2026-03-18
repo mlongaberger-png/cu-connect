@@ -1,20 +1,20 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, Trophy, Users, Calendar, MessageSquare, 
-  Megaphone, FolderOpen, UserCircle, X, Shield
-} from "lucide-react";
+import {
+  LayoutDashboard, Trophy, Users, Calendar, MessageSquare,
+  Megaphone, FolderOpen, UserCircle, X, Shield } from
+"lucide-react";
 
 const navItems = [
-  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/Sports", label: "Sports", icon: Trophy },
-  { path: "/Teams", label: "Teams", icon: Users },
-  { path: "/Schedule", label: "Schedule", icon: Calendar },
-  { path: "/Messages", label: "Messages", icon: MessageSquare },
-  { path: "/Announcements", label: "Announcements", icon: Megaphone },
-  { path: "/Documents", label: "Documents", icon: FolderOpen },
-  { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle },
-];
+{ path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard },
+{ path: "/Sports", label: "Sports", icon: Trophy },
+{ path: "/Teams", label: "Teams", icon: Users },
+{ path: "/Schedule", label: "Schedule", icon: Calendar },
+{ path: "/Messages", label: "Messages", icon: MessageSquare },
+{ path: "/Announcements", label: "Announcements", icon: Megaphone },
+{ path: "/Documents", label: "Documents", icon: FolderOpen },
+{ path: "/ParentPortal", label: "Parent Portal", icon: UserCircle }];
+
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
@@ -22,12 +22,12 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <>
       {/* Mobile overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {isOpen &&
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+        onClick={onClose} />
+
+      }
       
       <aside className={`
         fixed top-0 left-0 h-full w-64 bg-sidebar border-r border-sidebar-border z-50
@@ -40,11 +40,11 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-primary" />
+                
               </div>
               <div>
-                <h1 className="text-lg font-bold text-primary tracking-tight">SportSync</h1>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Management</p>
+                <h1 className="text-primary text-base font-bold tracking-tight">Cornerstone United</h1>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Athletics</p>
               </div>
             </div>
             <button onClick={onClose} className="lg:hidden text-muted-foreground hover:text-foreground">
@@ -65,19 +65,19 @@ export default function Sidebar({ isOpen, onClose }) {
                 onClick={onClose}
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
-                  ${isActive 
-                    ? 'bg-primary/15 text-primary shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
-                  }
-                `}
-              >
+                  ${isActive ?
+                'bg-primary/15 text-primary shadow-sm' :
+                'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}
+                `
+                }>
+                
                 <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
                 {item.label}
-                {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-                )}
-              </Link>
-            );
+                {isActive &&
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                }
+              </Link>);
+
           })}
         </nav>
 
@@ -89,6 +89,6 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
         </div>
       </aside>
-    </>
-  );
+    </>);
+
 }
