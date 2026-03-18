@@ -56,6 +56,7 @@ const AuthenticatedApp = () => {
         <Route path="/Announcements" element={<Announcements />} />
         <Route path="/Documents" element={<Documents />} />
         <Route path="/ParentPortal" element={<ParentPortal />} />
+        <Route path="/AthleticDirectors" element={<AthleticDirectors />} />
       </Route>
       {/* Parent portal — standalone, no admin sidebar */}
       <Route path="/Portal" element={<ParentPortal />} />
