@@ -6,6 +6,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import RecentAnnouncements from "@/components/dashboard/RecentAnnouncements";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
+import { DollarSign } from "lucide-react";
 
 export default function Dashboard() {
   useAdminGuard();
