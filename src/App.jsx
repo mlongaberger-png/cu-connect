@@ -17,6 +17,7 @@ import Announcements from '@/pages/Announcements';
 import Documents from '@/pages/Documents';
 import ParentPortal from '@/pages/ParentPortal';
 import Register from '@/pages/Register';
+import AthleticDirectors from '@/pages/AthleticDirectors';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
