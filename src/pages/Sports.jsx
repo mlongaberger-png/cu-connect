@@ -27,6 +27,10 @@ export default function Sports() {
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
   });
+  const { data: registrations = [] } = useQuery({
+    queryKey: ["registrations-all"],
+    queryFn: () => base44.entities.TeamRegistration.filter({ is_open: true }),
+  });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Sport.create(data),
