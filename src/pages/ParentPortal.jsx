@@ -22,6 +22,10 @@ export default function ParentPortal() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
+  const [calendarView, setCalendarView] = useState("month");
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showExport, setShowExport] = useState(false);
+  const [filterTeam, setFilterTeam] = useState("all");
 
   // Check for payment return
   useEffect(() => {
