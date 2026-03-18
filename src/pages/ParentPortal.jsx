@@ -177,6 +177,33 @@ export default function ParentPortal() {
   }
 
   return (
+    <div className={isStandalone ? "min-h-screen bg-background" : ""}>
+      {/* Standalone top bar for /Portal route */}
+      {isStandalone && (
+        <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 md:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-primary">Cornerstone United</span>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Parent Portal</p>
+            </div>
+          </div>
+          {user && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground hidden sm:block">{user.full_name || user.email}</span>
+              <button
+                onClick={() => base44.auth.logout(window.location.href)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <LogOut className="w-4 h-4" /> Sign out
+              </button>
+            </div>
+          )}
+        </header>
+      )}
+
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
