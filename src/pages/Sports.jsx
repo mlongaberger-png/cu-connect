@@ -15,6 +15,7 @@ const seasons = ["fall", "winter", "spring", "summer", "year_round"];
 
 export default function Sports() {
   const [showForm, setShowForm] = useState(false);
+  const [showRegistrations, setShowRegistrations] = useState(false);
   const [editingSport, setEditingSport] = useState(null);
   const [form, setForm] = useState({ name: "", icon: "🎀", season: "year_round", description: "" });
   const queryClient = useQueryClient();

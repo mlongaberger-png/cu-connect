@@ -209,9 +209,6 @@ export default function TeamDetail() {
         )}
       </div>
 
-      {/* Registrations */}
-      <RegistrationManager team={team} />
-
       {/* Invoices */}
       <AdminInvoiceManager players={players} teamName={team?.name || ""} />
 
