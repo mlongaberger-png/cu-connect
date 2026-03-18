@@ -1,16 +1,18 @@
 import React from "react";
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function TopBar({ onMenuToggle, title }) {
+  const { user } = useAuth();
+
   return (
     <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="flex items-center justify-between px-4 md:px-6 h-16">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onMenuToggle}
             className="lg:hidden text-muted-foreground hover:text-foreground"
           >
@@ -20,16 +22,17 @@ export default function TopBar({ onMenuToggle, title }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center relative">
-            <Search className="w-4 h-4 absolute left-3 text-muted-foreground" />
-            <Input 
-              placeholder="Search..." 
-              className="pl-9 w-64 bg-surface border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
-            />
-          </div>
+          {user && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border">
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-primary">{(user.full_name || user.email || "A")[0].toUpperCase()}</span>
+              </div>
+              <span className="text-sm text-foreground">{user.full_name || user.email}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary capitalize">{user.role || "admin"}</span>
+            </div>
+          )}
           <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
             <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
           </Button>
         </div>
       </div>
