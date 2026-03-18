@@ -19,6 +19,8 @@ const TABS = [
 ];
 
 export default function ParentPortal() {
+  const location = useLocation();
+  const isStandalone = location.pathname === "/Portal"; // true when accessed without admin sidebar
   const [userEmail, setUserEmail] = useState(null);
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
