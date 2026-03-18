@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
+import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
 
 export default function TeamDetail() {
   const urlParams = new URLSearchParams(window.location.search);
