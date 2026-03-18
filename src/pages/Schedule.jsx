@@ -7,8 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download } from "lucide-react";
 import { format } from "date-fns";
+import CalendarView from "@/components/schedule/CalendarView";
+import EventDetailPanel from "@/components/schedule/EventDetailPanel";
+import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 
 const eventTypes = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
 const typeColors = {
@@ -24,6 +27,10 @@ export default function Schedule() {
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [filterTeam, setFilterTeam] = useState("all");
+  const [viewMode, setViewMode] = useState("list"); // "list" | "calendar"
+  const [calendarView, setCalendarView] = useState("month");
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showExport, setShowExport] = useState(false);
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   const queryClient = useQueryClient();
 
@@ -58,81 +65,133 @@ export default function Schedule() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-1">{events.length} events scheduled</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-          <Plus className="w-4 h-4 mr-2" /> Add Event
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowExport(true)}>
+            <Download className="w-4 h-4 mr-2" /> Export
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
+            <Plus className="w-4 h-4 mr-2" /> Add Event
+          </Button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-36 bg-surface border-border"><SelectValue /></SelectTrigger>
+      {/* View Toggle + Filters */}
+      <div className="flex gap-3 flex-wrap items-center justify-between">
+        {/* List / Calendar toggle */}
+        <div className="flex gap-1 bg-surface rounded-lg p-1">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <List className="w-4 h-4" /> List
+          </button>
+          <button
+            onClick={() => setViewMode("calendar")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === "calendar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Calendar className="w-4 h-4" /> Calendar
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-36 bg-surface border-border"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">All Types</SelectItem>
+                {eventTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Select value={filterTeam} onValueChange={setFilterTeam}>
+            <SelectTrigger className="w-44 bg-surface border-border"><SelectValue placeholder="All Teams" /></SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="all">All Types</SelectItem>
-              {eventTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+              <SelectItem value="all">All Teams</SelectItem>
+              {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <Select value={filterTeam} onValueChange={setFilterTeam}>
-          <SelectTrigger className="w-44 bg-surface border-border"><SelectValue placeholder="All Teams" /></SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            <SelectItem value="all">All Teams</SelectItem>
-            {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* Events list */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="h-24 bg-card rounded-2xl animate-pulse border border-border" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-card rounded-2xl border border-border">
-          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground">No events found</h3>
-          <p className="text-muted-foreground">Create an event to get started</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((event) => (
-            <div key={event.id} className={`bg-card rounded-2xl border border-border p-5 hover:border-primary/20 transition-all ${event.is_cancelled ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center min-w-[52px] bg-surface rounded-xl p-2">
-                    <span className="text-xs text-muted-foreground">{event.date ? format(new Date(event.date), "MMM") : ""}</span>
-                    <span className="text-2xl font-bold text-foreground">{event.date ? format(new Date(event.date), "dd") : "--"}</span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium border capitalize ${typeColors[event.type] || ""}`}>
-                        {event.type}
-                      </span>
-                      {event.is_cancelled && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">Cancelled</span>}
+      {/* Calendar View */}
+      {viewMode === "calendar" && (
+        <CalendarView
+          events={filtered}
+          calendarView={calendarView}
+          setCalendarView={setCalendarView}
+          onEventClick={setSelectedEvent}
+        />
+      )}
+
+      {/* List View */}
+      {viewMode === "list" && (
+        isLoading ? (
+          <div className="space-y-3">
+            {[1,2,3].map(i => <div key={i} className="h-24 bg-card rounded-2xl animate-pulse border border-border" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 bg-card rounded-2xl border border-border">
+            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground">No events found</h3>
+            <p className="text-muted-foreground">Create an event to get started</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((event) => (
+              <div
+                key={event.id}
+                className={`bg-card rounded-2xl border border-border p-5 hover:border-primary/20 transition-all cursor-pointer ${event.is_cancelled ? "opacity-60" : ""}`}
+                onClick={() => setSelectedEvent(event)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex gap-4">
+                    <div className="flex flex-col items-center min-w-[52px] bg-surface rounded-xl p-2">
+                      <span className="text-xs text-muted-foreground">{event.date ? format(new Date(event.date), "MMM") : ""}</span>
+                      <span className="text-2xl font-bold text-foreground">{event.date ? format(new Date(event.date), "dd") : "--"}</span>
                     </div>
-                    <h3 className="text-base font-semibold text-foreground">{event.title}</h3>
-                    <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-muted-foreground">
-                      {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {event.start_time}{event.end_time ? ` - ${event.end_time}` : ""}</span>}
-                      {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {event.location}</span>}
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium border capitalize ${typeColors[event.type] || ""}`}>{event.type}</span>
+                        {event.is_cancelled && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">Cancelled</span>}
+                      </div>
+                      <h3 className="text-base font-semibold text-foreground">{event.title}</h3>
+                      <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-muted-foreground">
+                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {event.start_time}{event.end_time ? ` - ${event.end_time}` : ""}</span>}
+                        {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {event.location}</span>}
+                      </div>
+                      {event.team_name && <p className="text-xs text-primary mt-1">{event.team_name} {event.sport_name ? `• ${event.sport_name}` : ""}</p>}
+                      {event.opponent && <p className="text-xs text-muted-foreground mt-1">vs {event.opponent}</p>}
                     </div>
-                    {event.team_name && <p className="text-xs text-primary mt-1">{event.team_name} {event.sport_name ? `• ${event.sport_name}` : ""}</p>}
-                    {event.opponent && <p className="text-xs text-muted-foreground mt-1">vs {event.opponent}</p>}
                   </div>
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(event.id); }} className="text-muted-foreground hover:text-red-400 h-8 w-8">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(event.id)} className="text-muted-foreground hover:text-red-400 h-8 w-8">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Event Detail Panel */}
+      {selectedEvent && <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+
+      {/* Export Panel */}
+      {showExport && (
+        <CalendarExportPanel
+          events={filtered}
+          teams={teams}
+          myTeamIds={null}
+          onClose={() => setShowExport(false)}
+        />
       )}
 
       {/* Add Event Dialog */}
