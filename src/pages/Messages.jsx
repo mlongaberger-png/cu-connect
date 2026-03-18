@@ -101,11 +101,18 @@ export default function Messages() {
             />
           </div>
           {/* Desktop title */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-2 flex-1">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
               <Hash className="w-4 h-4 text-primary" /> {channelName}
             </h3>
           </div>
+          <AnnouncementsPanel
+            channel={channel}
+            channelId={channelId}
+            channelName={channelName}
+            sports={sports}
+            teams={teams}
+          />
         </div>
 
         {/* Messages */}
