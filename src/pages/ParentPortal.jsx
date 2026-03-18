@@ -131,25 +131,8 @@ export default function ParentPortal() {
     const isLoggedIn = !!userEmail;
     return (
       <div className={isStandalone ? "min-h-screen bg-background" : ""}>
-      {isStandalone && (
-        <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 md:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-primary">Cornerstone United</span>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Parent Portal</p>
-            </div>
-          </div>
-          {user && (
-            <button onClick={() => base44.auth.logout(window.location.href)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-              <LogOut className="w-4 h-4" /> Sign out
-            </button>
-          )}
-        </header>
-      )}
-      <div className="p-4 md:p-6 max-w-2xl mx-auto">
+        {isStandalone && standaloneHeader}
+        <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <div className="text-center py-10 bg-card rounded-2xl border border-border px-6">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <UserCircle className="w-9 h-9 text-primary" />
