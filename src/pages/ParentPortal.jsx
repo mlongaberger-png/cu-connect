@@ -11,12 +11,14 @@ import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 import { useLocation } from "react-router-dom";
 import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
+import ContactAD from "@/components/parentportal/ContactAD";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
   { id: "schedule", label: "Schedule", icon: Calendar },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard },
+  { id: "messages", label: "Messages", icon: MessageSquare },
 ];
 
 export default function ParentPortal() {
