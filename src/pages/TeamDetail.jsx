@@ -180,10 +180,10 @@ export default function TeamDetail() {
         )}
       </div>
 
-      {/* Add Player Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      {/* Add/Edit Player Dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); } }}>
         <DialogContent className="bg-card border-border text-foreground">
-          <DialogHeader><DialogTitle>Add Player</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingPlayer ? "Edit Player" : "Add Player"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div><Label>First Name</Label><Input value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} className="bg-surface border-border" required /></div>
