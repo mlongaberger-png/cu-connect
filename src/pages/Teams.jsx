@@ -143,13 +143,8 @@ export default function Teams() {
                 </Select>
               </div>
               <div>
-                <Label>Age Group</Label>
-                <Select value={form.age_group} onValueChange={(v) => setForm({ ...form, age_group: v })}>
-                  <SelectTrigger className="bg-surface border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    {ageGroups.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label>Age Group / Division</Label>
+                <Input value={form.age_group} onChange={(e) => setForm({ ...form, age_group: e.target.value })} placeholder="e.g. 10U, Junior Varsity..." className="bg-surface border-border" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
