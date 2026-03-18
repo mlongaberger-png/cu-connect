@@ -13,6 +13,7 @@ const adminNavItems = [
   { path: "/Messages", label: "Messages", icon: MessageSquare },
   { path: "/Documents", label: "Documents", icon: FolderOpen },
   { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle },
+  { path: "/AthleticDirectors", label: "Athletic Directors", icon: ShieldCheck },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
