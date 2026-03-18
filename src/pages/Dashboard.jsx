@@ -5,8 +5,10 @@ import { Trophy, Users, Calendar, UserCircle, TrendingUp, Shield, ClipboardList 
 import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import RecentAnnouncements from "@/components/dashboard/RecentAnnouncements";
+import { useAdminGuard } from "@/hooks/useRoleGuard";
 
 export default function Dashboard() {
+  useAdminGuard();
   const { data: sports = [] } = useQuery({
     queryKey: ["sports"],
     queryFn: () => base44.entities.Sport.list(),
