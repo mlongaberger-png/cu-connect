@@ -151,6 +151,8 @@ export default function Sports() {
         </div>
       )}
 
+      <SportRegistrationManager open={showRegistrations} onClose={() => setShowRegistrations(false)} />
+
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
