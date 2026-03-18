@@ -181,6 +181,9 @@ export default function TeamDetail() {
         )}
       </div>
 
+      {/* Invoices */}
+      <AdminInvoiceManager players={players} teamName={team?.name || ""} />
+
       {/* Add/Edit Player Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); } }}>
         <DialogContent className="bg-card border-border text-foreground">
