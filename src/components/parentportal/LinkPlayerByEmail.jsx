@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, CheckCircle, UserCircle, AlertCircle, Trophy } from "lucide-react";
+import { Search, CheckCircle, AlertCircle, Trophy } from "lucide-react";
 
 export default function LinkPlayerByEmail({ currentUserEmail, onLinked }) {
   const [searchEmail, setSearchEmail] = useState("");
@@ -19,6 +19,7 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked }) {
     setNotFound(false);
     setFound(null);
 
+    // Find players registered with that email
     const players = await base44.entities.Player.filter({ parent_email: searchEmail.trim().toLowerCase() });
     setSearching(false);
 
@@ -32,10 +33,25 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked }) {
   const handleLink = async () => {
     if (!found) return;
     setLinking(true);
-    // Update all found players to use the current logged-in email
+
     for (const player of found) {
-      await base44.entities.Player.update(player.id, { parent_email: currentUserEmail });
+      // Check if guardian link already exists
+      const existing = await base44.entities.PlayerGuardian.filter({
+        player_id: player.id,
+        user_email: currentUserEmail,
+      });
+
+      if (existing.length === 0) {
+        await base44.entities.PlayerGuardian.create({
+          player_id: player.id,
+          player_name: `${player.first_name} ${player.last_name}`,
+          user_email: currentUserEmail,
+          relationship: "Guardian",
+          invited_by: "self",
+        });
+      }
     }
+
     setLinking(false);
     setLinked(true);
     setTimeout(() => onLinked(), 1500);
