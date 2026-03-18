@@ -26,6 +26,7 @@ const typeColors = {
 };
 
 export default function Schedule() {
+  useAdminGuard();
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [filterTeam, setFilterTeam] = useState("all");
