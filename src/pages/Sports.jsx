@@ -71,6 +71,10 @@ export default function Sports() {
   };
 
   const teamCount = (sportId) => teams.filter(t => t.sport_id === sportId).length;
+  const openRegCount = (sportId) => {
+    const sportTeamIds = teams.filter(t => t.sport_id === sportId).map(t => t.id);
+    return registrations.filter(r => sportTeamIds.includes(r.team_id)).length;
+  };
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
