@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield, CheckCircle, AlertCircle, Loader2, ChevronRight, DollarSign, Users } from "lucide-react";
 
 function RegistrationBrowser() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sportParam = urlParams.get("sport") || "";
+
   const [sports, setSports] = useState([]);
   const [teams, setTeams] = useState([]);
   const [registrations, setRegistrations] = useState([]);
-  const [selectedSport, setSelectedSport] = useState("");
+  const [selectedSport, setSelectedSport] = useState(sportParam);
   const [selectedTeam, setSelectedTeam] = useState("");
   const [loading, setLoading] = useState(true);
 
