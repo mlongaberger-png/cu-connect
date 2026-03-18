@@ -16,6 +16,7 @@ import Messages from '@/pages/Messages';
 import Announcements from '@/pages/Announcements';
 import Documents from '@/pages/Documents';
 import ParentPortal from '@/pages/ParentPortal';
+import Register from '@/pages/Register';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
