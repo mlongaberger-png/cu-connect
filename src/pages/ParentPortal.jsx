@@ -26,6 +26,8 @@ export default function ParentPortal() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showExport, setShowExport] = useState(false);
   const [filterTeam, setFilterTeam] = useState("all");
+  const [loadingPayFor, setLoadingPayFor] = useState(null);
+  const [loadingPayAll, setLoadingPayAll] = useState(false);
 
   // Check for payment return
   useEffect(() => {
