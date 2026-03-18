@@ -7,6 +7,7 @@ import { Send, MessageSquare, Hash } from "lucide-react";
 import { format } from "date-fns";
 import MessagesSidebar from "@/components/messages/MessagesSidebar";
 import MobileChannelPicker from "@/components/messages/MobileChannelPicker";
+import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
 
 export default function Messages() {
   const [channel, setChannel] = useState("org");
