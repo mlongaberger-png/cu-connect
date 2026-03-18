@@ -41,6 +41,12 @@ export default function ParentPortal() {
     }
   }, []);
 
+  const { refetch: refetchGuardianLinks } = useQuery({
+    queryKey: ["my-guardian-links", userEmail],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
+    enabled: !!userEmail,
+  });
+
   useEffect(() => {
     base44.auth.me().then(u => { setUser(u); setUserEmail(u?.email); }).catch(() => {});
   }, [playerLinked]);
