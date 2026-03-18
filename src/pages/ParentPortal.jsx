@@ -340,8 +340,46 @@ export default function ParentPortal() {
       {/* Payments Tab */}
       {activeTab === "payments" && (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Pay registration fees, uniforms, and other charges for your players.</p>
-          {myKids.map(kid => <PlayerPayments key={kid.id} player={kid} />)}
+          {/* Summary Bar */}
+          {totalAllOwed > 0 && (
+            <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-2xl p-4 flex-wrap gap-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Outstanding Balance</p>
+                <p className="text-2xl font-bold text-primary">${(totalAllOwed / 100).toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Across all {myKids.length} player{myKids.length !== 1 ? "s" : ""}</p>
+              </div>
+              <button
+                onClick={handlePayAll}
+                disabled={loadingPayAll}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                <DollarSign className="w-4 h-4" />
+                {loadingPayAll ? "Redirecting..." : "Pay All Balances"}
+              </button>
+            </div>
+          )}
+
+          {totalAllOwed === 0 && allPayments.length > 0 && (
+            <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-2xl p-4">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                <DollarSign className="w-4 h-4 text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">You're all caught up!</p>
+                <p className="text-xs text-muted-foreground">No outstanding balances.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Per-player cards */}
+          {myKids.map(kid => (
+            <PlayerPaymentCard
+              key={kid.id}
+              player={kid}
+              onPay={handlePayPlayer}
+              loadingFor={loadingPayFor}
+            />
+          ))}
         </div>
       )}
     </div>
