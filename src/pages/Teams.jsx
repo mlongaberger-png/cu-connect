@@ -9,10 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Plus, Users, ChevronRight, Filter, Trash2 } from "lucide-react";
 
+import { useAdminGuard } from "@/hooks/useRoleGuard";
+
 const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
 const seasonOptions = ["fall", "winter", "spring", "summer"];
 
 export default function Teams() {
+  useAdminGuard();
   const [showForm, setShowForm] = useState(false);
   const [filterSport, setFilterSport] = useState("all");
   const [form, setForm] = useState({ name: "", sport_id: "", sport_name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: "2026" });
