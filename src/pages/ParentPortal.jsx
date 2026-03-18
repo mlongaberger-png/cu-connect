@@ -231,6 +231,53 @@ export default function ParentPortal() {
         </div>
       )}
 
+      {/* Schedule Tab */}
+      {activeTab === "schedule" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h3 className="font-semibold text-foreground">Your Team Schedule</h3>
+              <p className="text-sm text-muted-foreground">Showing only events for your child's team(s)</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {myTeamIds.length > 1 && (
+                <select
+                  value={filterTeam}
+                  onChange={e => setFilterTeam(e.target.value)}
+                  className="text-sm bg-surface border border-border rounded-lg px-3 py-1.5 text-foreground"
+                >
+                  <option value="all">All My Teams</option>
+                  {myTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              )}
+              <button
+                onClick={() => setShowExport(true)}
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-border bg-surface text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Download className="w-4 h-4" /> Export
+              </button>
+            </div>
+          </div>
+
+          <CalendarView
+            events={(filterTeam === "all" ? myEvents : myEvents.filter(e => e.team_id === filterTeam))}
+            calendarView={calendarView}
+            setCalendarView={setCalendarView}
+            onEventClick={setSelectedEvent}
+          />
+
+          {selectedEvent && <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+          {showExport && (
+            <CalendarExportPanel
+              events={filterTeam === "all" ? myEvents : myEvents.filter(e => e.team_id === filterTeam)}
+              teams={myTeams}
+              myTeamIds={myTeamIds}
+              onClose={() => setShowExport(false)}
+            />
+          )}
+        </div>
+      )}
+
       {/* Documents Tab */}
       {activeTab === "documents" && (
         <div className="space-y-4">
