@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare,
-  Megaphone, FolderOpen, UserCircle, X, Shield } from
+  FolderOpen, UserCircle, X } from
 "lucide-react";
 
 const navItems = [
