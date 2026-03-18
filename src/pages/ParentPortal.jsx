@@ -59,7 +59,8 @@ export default function ParentPortal() {
   const myKids = userEmail ? players.filter(p => p.parent_email === userEmail) : [];
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
-  const myEvents = events.filter(e => myTeamIds.includes(e.team_id) && e.date && new Date(e.date) >= new Date(new Date().toDateString())).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const myEvents = events.filter(e => myTeamIds.includes(e.team_id) && e.date).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const myUpcomingEvents = myEvents.filter(e => new Date(e.date) >= new Date(new Date().toDateString()));
   const myAnnouncements = announcements.filter(a =>
     a.target === "org" || myTeamIds.includes(a.target_id) || myTeams.some(t => t.sport_id === a.target_id)
   );
