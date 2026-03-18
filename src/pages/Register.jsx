@@ -301,7 +301,8 @@ function RegistrationForm({ regId }) {
 export default function Register() {
   const urlParams = new URLSearchParams(window.location.search);
   const regId = urlParams.get("reg");
+  const [selectedRegId, setSelectedRegId] = useState(regId || null);
 
-  if (regId) return <RegistrationForm regId={regId} />;
-  return <RegistrationBrowser />;
+  if (selectedRegId) return <RegistrationForm regId={selectedRegId} onBack={() => setSelectedRegId(null)} />;
+  return <RegistrationBrowser onSelect={(id) => setSelectedRegId(id)} />;
 }
