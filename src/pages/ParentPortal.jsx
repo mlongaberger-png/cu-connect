@@ -224,12 +224,12 @@ export default function ParentPortal() {
         </header>
       )}
 
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Parent Portal</h1>
-        <p className="text-sm text-muted-foreground mt-1">Welcome back! Manage your kids' teams, documents, and payments.</p>
-      </div>
+      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Parent Portal</h1>
+          <p className="text-sm text-muted-foreground mt-1">Welcome back! Manage your kids' teams, documents, and payments.</p>
+        </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-surface rounded-xl p-1 w-fit">
