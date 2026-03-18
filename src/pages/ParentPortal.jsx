@@ -381,6 +381,11 @@ export default function ParentPortal() {
         </div>
       )}
 
+      {/* Messages Tab */}
+      {activeTab === "messages" && (
+        <ContactAD />
+      )}
+
       {/* Payments Tab */}
       {activeTab === "payments" && (
         <div className="space-y-4">
