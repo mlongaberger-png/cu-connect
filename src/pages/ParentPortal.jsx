@@ -181,11 +181,11 @@ export default function ParentPortal() {
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" /> Upcoming Events
             </h3>
-            {myEvents.length === 0 ? (
+            {myUpcomingEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No upcoming events</p>
             ) : (
               <div className="space-y-3">
-                {myEvents.slice(0, 8).map(event => (
+                {myUpcomingEvents.slice(0, 8).map(event => (
                   <div key={event.id} className="flex items-start gap-4 p-3 rounded-xl bg-surface">
                     <div className="flex flex-col items-center min-w-[48px]">
                       <span className="text-xs text-muted-foreground">{format(new Date(event.date), "MMM")}</span>
