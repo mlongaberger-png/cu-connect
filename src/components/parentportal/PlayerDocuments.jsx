@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload, FileText, Trash2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
 
 const DOC_TYPES = [
   { value: "birth_certificate", label: "Birth Certificate" },
