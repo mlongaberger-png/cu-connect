@@ -11,7 +11,7 @@ import LinkPlayerByEmail from "@/components/parentportal/LinkPlayerByEmail";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
 import ContactAD from "@/components/parentportal/ContactAD";
 
@@ -221,6 +221,7 @@ export default function ParentPortal() {
     <div className={isStandalone ? "min-h-screen bg-background" : ""}>
       {isStandalone && standaloneHeader}
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Parent Portal</h1>
