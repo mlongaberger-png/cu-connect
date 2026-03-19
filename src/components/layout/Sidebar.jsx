@@ -6,6 +6,7 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
+  // Staff nav
   { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director"] },
   { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
   { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
@@ -16,6 +17,13 @@ const allNavItems = [
   { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
   { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
   { path: "/AthleticDirectors", label: "Admin", icon: ShieldCheck, roles: ["admin"] },
+  // Parent nav — maps to tabs inside /Portal
+  { path: "/Portal", label: "My Dashboard", icon: LayoutDashboard, roles: ["parent"] },
+  { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent"] },
+  { path: "/Portal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent"] },
+  { path: "/Portal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent"] },
+  { path: "/Portal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent"] },
+  { path: "/Portal?tab=messages", label: "Messages", icon: MessageSquare, roles: ["parent"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
