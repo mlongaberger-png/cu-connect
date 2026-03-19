@@ -11,6 +11,7 @@ const allNavItems = [
   { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director", "coach"] },
+  { path: "/Volunteers", label: "Volunteers", icon: Users, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
   { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
   { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
