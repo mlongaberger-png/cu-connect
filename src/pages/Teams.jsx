@@ -73,9 +73,11 @@ export default function Teams() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" /> Add Team
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" /> Add Team
+            </Button>
+          )}
         </div>
       </div>
 
