@@ -105,6 +105,7 @@ export default function StaffInvitePanel() {
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="athletic_director">Athletic Director</SelectItem>
               <SelectItem value="coach">Coach</SelectItem>
+              <SelectItem value="parent">Parent</SelectItem>
             </SelectContent>
           </Select>
         </div>
