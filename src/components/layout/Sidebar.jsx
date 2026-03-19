@@ -5,22 +5,23 @@ import {
   FolderOpen, UserCircle, X, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
-const adminNavItems = [
-  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/Sports", label: "Sports", icon: Trophy },
-  { path: "/Teams", label: "Teams", icon: Users },
-  { path: "/Schedule", label: "Schedule", icon: Calendar },
-  { path: "/Messages", label: "Messages", icon: MessageSquare },
-  { path: "/Documents", label: "Documents", icon: FolderOpen },
-  { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle },
-  { path: "/AthleticDirectors", label: "Athletic Directors", icon: ShieldCheck },
+const allNavItems = [
+  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director"] },
+  { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
+  { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
+  { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
+  { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director"] },
+  { path: "/Announcements", label: "Announcements", icon: MessageSquare, roles: ["admin", "athletic_director"] },
+  { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
+  { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
+  { path: "/AthleticDirectors", label: "Athletic Directors", icon: ShieldCheck, roles: ["admin"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const isStaff = user?.role === "admin" || user?.role === "coach";
+  const role = user?.role || "";
+  const navItems = allNavItems.filter(item => item.roles.includes(role));
 
   return (
     <>
@@ -62,7 +63,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {adminNavItems.map((item) => {
+          {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
