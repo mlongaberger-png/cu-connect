@@ -1,6 +1,7 @@
 import React from "react";
-import { Menu, Bell } from "lucide-react";
+import { Menu, Bell, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function TopBar({ onMenuToggle, title }) {
@@ -31,8 +32,11 @@ export default function TopBar({ onMenuToggle, title }) {
               <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary capitalize">{user.role || "admin"}</span>
             </div>
           )}
-          <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-            <Bell className="w-5 h-5" />
+          <Button variant="ghost" size="icon" asChild className="relative text-muted-foreground hover:text-foreground">
+            <Link to="/HelpCenter"><HelpCircle className="w-5 h-5" /></Link>
+          </Button>
+          <Button variant="ghost" size="icon" asChild className="relative text-muted-foreground hover:text-foreground">
+            <Link to="/NotificationSettings"><Bell className="w-5 h-5" /></Link>
           </Button>
         </div>
       </div>
