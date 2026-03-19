@@ -378,6 +378,7 @@ export default function ParentPortal() {
       {/* Documents Tab */}
       {activeTab === "documents" && (
         <div className="space-y-4">
+          <ParentSignatureRequests myKids={myKids} userEmail={userEmail} userName={user?.full_name} />
           <p className="text-sm text-muted-foreground">Upload required documents for each player (birth certificates, physicals, insurance cards, etc.)</p>
           {myKids.map(kid => <PlayerDocuments key={kid.id} player={kid} />)}
         </div>
