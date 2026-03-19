@@ -56,7 +56,9 @@ export default function ParentAccountsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <InviteParentPanel />
+
       <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
         <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
         <span><strong>Password resets</strong> must be initiated by the parent via "Forgot Password" on the login page. You can update their display name and role here.</span>
