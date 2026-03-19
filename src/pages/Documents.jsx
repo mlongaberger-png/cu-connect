@@ -6,16 +6,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FolderOpen, Trash2, Download, FileText, Filter } from "lucide-react";
+import { Upload, FolderOpen, Trash2, Download, FileText, Filter, PenLine } from "lucide-react";
 import { format } from "date-fns";
 
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
+import { useAuth } from "@/lib/AuthContext";
+import SendSignatureRequestDialog from "@/components/documents/SendSignatureRequestDialog";
+import SignatureRequestsPanel from "@/components/documents/SignatureRequestsPanel";
 
 const categories = ["roster", "schedule", "policy", "medical", "financial", "other"];
 
+const TABS = [
+  { id: "files", label: "Files" },
+  { id: "signatures", label: "E-Signatures" },
+];
+
 export default function Documents() {
   useAdminOrADGuard();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("files");
   const [showUpload, setShowUpload] = useState(false);
+  const [showSendSig, setShowSendSig] = useState(false);
   const [filterCat, setFilterCat] = useState("all");
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ name: "", category: "other", target: "org", target_id: "" });
