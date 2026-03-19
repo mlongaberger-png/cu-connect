@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
           player_id,
           player_name: player_name || "",
           user_email: email,
-          relationship: "Guardian",
+          relationship: relationship || "Guardian",
           invited_by: "admin",
         });
       }
