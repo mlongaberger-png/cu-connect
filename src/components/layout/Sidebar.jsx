@@ -103,9 +103,9 @@ export default function Sidebar({ isOpen, onClose }) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-sidebar-border space-y-2">
+        <div className="p-4 border-t border-sidebar-border space-y-1">
           {user && (
-            <div className="px-4 py-3 rounded-xl bg-surface flex items-center gap-2">
+            <div className="px-4 py-3 rounded-xl bg-surface flex items-center gap-2 mb-2">
               <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-foreground truncate">{user.full_name || user.email}</p>
@@ -113,6 +113,12 @@ export default function Sidebar({ isOpen, onClose }) {
               </div>
             </div>
           )}
+          <Link to="/NotificationSettings" onClick={onClose} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all">
+            <Bell className="w-4 h-4" /> Notifications
+          </Link>
+          <Link to="/HelpCenter" onClick={onClose} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all">
+            <HelpCircle className="w-4 h-4" /> Help & FAQ
+          </Link>
           <button
             onClick={() => logout()}
             className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all"
