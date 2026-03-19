@@ -78,8 +78,8 @@ export default function StaffInvitePanel() {
           <UserPlus className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h2 className="font-semibold text-foreground">Invite Staff</h2>
-          <p className="text-xs text-muted-foreground">Send an invitation link to admins, ADs, or coaches</p>
+          <h2 className="font-semibold text-foreground">Invite Users</h2>
+          <p className="text-xs text-muted-foreground">Send an invitation link to admins, ADs, coaches, or parents</p>
         </div>
       </div>
 
