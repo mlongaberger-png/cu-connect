@@ -50,3 +50,13 @@ export function useIsStaff() {
   const { user } = useAuth();
   return ["admin", "athletic_director", "coach"].includes(user?.role);
 }
+
+export function useIsParent() {
+  const { user } = useAuth();
+  return user?.role === "parent";
+}
+
+export function useRole() {
+  const { user } = useAuth();
+  return user?.role || null;
+}
