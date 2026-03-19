@@ -31,6 +31,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const role = user?.role || "";
   const navItems = allNavItems.filter(item => item.roles.includes(role));
+  const currentPath = location.pathname + location.search;
 
   return (
     <>
