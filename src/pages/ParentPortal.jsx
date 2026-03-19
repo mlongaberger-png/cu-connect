@@ -400,6 +400,8 @@ export default function ParentPortal() {
         />
       )}
 
+      {/* Help Tab — accessible via link in header */}
+
       {/* Payments Tab */}
       {activeTab === "payments" && (
         <div className="space-y-4">
@@ -446,6 +448,22 @@ export default function ParentPortal() {
         </div>
       )}
       </div>
+
+      {/* Footer */}
+      {isStandalone && (
+        <footer className="mt-8 pb-6 text-center space-y-2">
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <Link to="/LegalPages" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <span>·</span>
+            <Link to="/LegalPages" className="hover:text-foreground transition-colors">Terms of Service</Link>
+            <span>·</span>
+            <Link to="/LegalPages" className="hover:text-foreground transition-colors">Payment Terms</Link>
+            <span>·</span>
+            <Link to="/HelpCenter" className="hover:text-foreground transition-colors">Help Center</Link>
+          </div>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Cornerstone United Athletics</p>
+        </footer>
+      )}
     </div>
   );
 }
