@@ -19,6 +19,12 @@ import ParentPortal from '@/pages/ParentPortal';
 import Register from '@/pages/Register';
 import AthleticDirectors from '@/pages/AthleticDirectors';
 import Volunteers from '@/pages/Volunteers';
+import AuditLog from '@/pages/AuditLog';
+import NotificationSettings from '@/pages/NotificationSettings';
+import HelpCenter from '@/pages/HelpCenter';
+import SeasonManager from '@/pages/SeasonManager';
+import DataExport from '@/pages/DataExport';
+import LegalPages from '@/pages/LegalPages';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -72,6 +78,12 @@ const AuthenticatedApp = () => {
         <Route path="/ParentPortal" element={<ParentPortal />} />
         <Route path="/AthleticDirectors" element={<AthleticDirectors />} />
         <Route path="/Volunteers" element={<Volunteers />} />
+        <Route path="/AuditLog" element={<AuditLog />} />
+        <Route path="/NotificationSettings" element={<NotificationSettings />} />
+        <Route path="/HelpCenter" element={<HelpCenter />} />
+        <Route path="/SeasonManager" element={<SeasonManager />} />
+        <Route path="/DataExport" element={<DataExport />} />
+        <Route path="/LegalPages" element={<LegalPages />} />
       </Route>
       {/* Parent portal — standalone, no admin sidebar */}
       <Route path="/Portal" element={<ParentPortal />} />
