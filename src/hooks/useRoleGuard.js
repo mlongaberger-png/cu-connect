@@ -2,52 +2,51 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 
-/**
- * Redirects non-admin users away from admin-only pages.
- */
+/** Admin only */
 export function useAdminGuard() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
-
   useEffect(() => {
     if (!isLoadingAuth && user && user.role !== "admin") {
       navigate("/Portal", { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
-
-  const isAdmin = user?.role === "admin";
-  return { isAdmin, user };
+  return { isAdmin: user?.role === "admin", user };
 }
 
-/**
- * Redirects users who are not admin or coach away from staff pages.
- */
-export function useStaffGuard() {
+/** Admin or Athletic Director */
+export function useAdminOrADGuard() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
-
   useEffect(() => {
-    if (!isLoadingAuth && user && user.role !== "admin" && user.role !== "coach") {
+    if (!isLoadingAuth && user && user.role !== "admin" && user.role !== "athletic_director") {
       navigate("/Portal", { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
-
-  const isStaff = user?.role === "admin" || user?.role === "coach";
-  return { isStaff, isAdmin: user?.role === "admin", user };
+  return { isAdmin: user?.role === "admin", isAD: user?.role === "athletic_director", user };
 }
 
-/**
- * Returns true if the current user is an admin.
- */
+/** Admin, Athletic Director, or Coach (schedule access) */
+export function useScheduleGuard() {
+  const { user, isLoadingAuth } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!isLoadingAuth && user && !["admin", "athletic_director", "coach"].includes(user.role)) {
+      navigate("/Portal", { replace: true });
+    }
+  }, [user, isLoadingAuth, navigate]);
+  const isAdmin = user?.role === "admin";
+  const isAD = user?.role === "athletic_director";
+  const isCoach = user?.role === "coach";
+  return { isAdmin, isAD, isCoach, user };
+}
+
 export function useIsAdmin() {
   const { user } = useAuth();
   return user?.role === "admin";
 }
 
-/**
- * Returns true if the current user is admin or coach.
- */
 export function useIsStaff() {
   const { user } = useAuth();
-  return user?.role === "admin" || user?.role === "coach";
+  return ["admin", "athletic_director", "coach"].includes(user?.role);
 }
