@@ -388,7 +388,7 @@ export default function ParentPortal() {
 
       {/* Messages Tab */}
       {activeTab === "messages" && (
-        <ContactAD />
+        <ContactAD sportIds={myTeams.map(t => t.sport_id).filter(Boolean)} />
       )}
 
       {/* Volunteers Tab */}

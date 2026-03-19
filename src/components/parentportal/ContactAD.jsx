@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Mail, MessageSquare, ShieldCheck, Phone } from "lucide-react";
 
-export default function ContactAD() {
+export default function ContactAD({ sportIds = [] }) {
   const { data: ads = [], isLoading } = useQuery({
     queryKey: ["athletic-directors"],
     queryFn: () => base44.entities.AthleticDirector.list(),
@@ -12,6 +12,11 @@ export default function ContactAD() {
   if (isLoading) {
     return <div className="text-sm text-muted-foreground p-6">Loading contacts...</div>;
   }
+
+  // Show only ADs linked to the parent's sports, or ADs with no sport (org-wide)
+  const filteredAds = sportIds.length > 0
+    ? ads.filter(ad => !ad.sport_id || sportIds.includes(ad.sport_id))
+    : ads;
 
   return (
     <div className="space-y-4">
@@ -22,7 +27,7 @@ export default function ContactAD() {
         </p>
       </div>
 
-      {ads.length === 0 ? (
+      {filteredAds.length === 0 ? (
         <div className="bg-card rounded-2xl border border-border p-6 text-center">
           <p className="text-sm text-muted-foreground">No contacts available at this time.</p>
         </div>
