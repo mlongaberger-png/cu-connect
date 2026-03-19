@@ -16,7 +16,7 @@ import { Search, UserCircle, Mail, Phone, Edit2, Users, AlertCircle } from "luci
 import { useToast } from "@/components/ui/use-toast";
 
 export default function ParentManagement() {
-  useRoleGuard(["admin"]);
+  useAdminGuard();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
