@@ -74,7 +74,9 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = item.path.includes("?")
+              ? currentPath === item.path || currentPath.startsWith(item.path)
+              : location.pathname === item.path && !location.search;
             const Icon = item.icon;
             return (
               <Link
