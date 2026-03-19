@@ -117,10 +117,10 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
                   )}
                   <div className="flex gap-2">
                     {[
-                      { status: "attending", icon: CheckCircle2, label: "Going", color: "green" },
-                      { status: "not_attending", icon: XCircle, label: "Not Going", color: "red" },
-                      { status: "maybe", icon: HelpCircle, label: "Maybe", color: "yellow" },
-                    ].map(({ status, icon: Icon, label, color }) => {
+                      { status: "attending", icon: CheckCircle2, label: "Going", selectedClass: "bg-green-500/20 border-green-500/50 text-green-400" },
+                      { status: "not_attending", icon: XCircle, label: "Not Going", selectedClass: "bg-red-500/20 border-red-500/50 text-red-400" },
+                      { status: "maybe", icon: HelpCircle, label: "Maybe", selectedClass: "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" },
+                    ].map(({ status, icon: Icon, label, selectedClass }) => {
                       const isSelected = current?.status === status;
                       return (
                         <button
@@ -129,7 +129,7 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
                           onClick={() => upsertMutation.mutate({ player, status })}
                           className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all
                             ${isSelected
-                              ? `bg-${color}-500/20 border-${color}-500/50 text-${color}-400`
+                              ? selectedClass
                               : "bg-surface border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
                             }`}
                         >
