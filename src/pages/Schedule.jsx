@@ -69,9 +69,13 @@ export default function Schedule() {
     createMutation.mutate({ ...form, team_name: team?.name || "", sport_name: team?.sport_name || "" });
   };
 
-  let filtered = events;
+  // Coaches only see events for their teams; ADs and admins see all
+  const myTeamIds = myTeams.map(t => t.id);
+  let filtered = (isCoach && myTeamIds.length > 0) ? events.filter(e => myTeamIds.includes(e.team_id)) : events;
   if (filterType !== "all") filtered = filtered.filter(e => e.type === filterType);
   if (filterTeam !== "all") filtered = filtered.filter(e => e.team_id === filterTeam);
+
+  const canEditEvent = (event) => isAdmin || isAD || (isCoach && myTeamIds.includes(event.team_id));
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
