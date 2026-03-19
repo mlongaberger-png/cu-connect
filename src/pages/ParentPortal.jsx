@@ -5,6 +5,7 @@ import { Calendar, MapPin, Clock, Megaphone, Trophy, UserCircle, FileText, Credi
 import ParentVolunteerView from "@/components/volunteers/ParentVolunteerView";
 import { format } from "date-fns";
 import PlayerDocuments from "@/components/parentportal/PlayerDocuments";
+import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
 import { PlayerPaymentCard } from "@/components/parentportal/PlayerPayments";
 import LinkPlayerByEmail from "@/components/parentportal/LinkPlayerByEmail";
 import CalendarView from "@/components/schedule/CalendarView";
