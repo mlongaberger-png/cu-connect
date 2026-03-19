@@ -48,6 +48,11 @@ export default function Schedule() {
     queryFn: () => base44.entities.Team.list(),
   });
 
+  // Coaches are scoped to teams where their email matches coach_email
+  const myTeams = isCoach
+    ? teams.filter(t => t.coach_email && t.coach_email.toLowerCase() === (user?.email || "").toLowerCase())
+    : teams;
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Event.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setShowForm(false); },
