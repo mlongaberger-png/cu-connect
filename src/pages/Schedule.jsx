@@ -13,7 +13,8 @@ import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 
-import { useAdminGuard } from "@/hooks/useRoleGuard";
+import { useScheduleGuard } from "@/hooks/useRoleGuard";
+import { useAuth } from "@/lib/AuthContext";
 
 const eventTypes = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
 const typeColors = {
@@ -26,7 +27,8 @@ const typeColors = {
 };
 
 export default function Schedule() {
-  useAdminGuard();
+  const { isAdmin, isAD, isCoach } = useScheduleGuard();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [filterTeam, setFilterTeam] = useState("all");
