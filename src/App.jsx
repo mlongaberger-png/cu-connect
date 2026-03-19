@@ -25,6 +25,7 @@ import HelpCenter from '@/pages/HelpCenter';
 import SeasonManager from '@/pages/SeasonManager';
 import DataExport from '@/pages/DataExport';
 import LegalPages from '@/pages/LegalPages';
+import ParentManagement from '@/pages/ParentManagement';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/SeasonManager" element={<SeasonManager />} />
         <Route path="/DataExport" element={<DataExport />} />
         <Route path="/LegalPages" element={<LegalPages />} />
+        <Route path="/ParentManagement" element={<ParentManagement />} />
       </Route>
       {/* Parent portal — standalone, no admin sidebar */}
       <Route path="/Portal" element={<ParentPortal />} />
