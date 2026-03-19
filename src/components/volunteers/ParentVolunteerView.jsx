@@ -129,14 +129,40 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
     if (assignment) cancelMutation.mutate(assignment.id);
   };
 
+  const handleExportAll = () => {
+    const entries = myAssignments.map(a => ({
+      assignment: a,
+      opp: opportunities.find(o => o.id === a.opportunity_id),
+    })).filter(e => e.opp?.date);
+    if (!entries.length) return;
+    downloadICS(buildVolunteerICS(entries), "my-volunteer-shifts.ics");
+  };
+
+  const handleExportOne = (assignment) => {
+    const opp = opportunities.find(o => o.id === assignment.opportunity_id);
+    if (!opp?.date) return;
+    downloadICS(buildVolunteerICS([{ assignment, opp }]), `volunteer-${opp.role_name || "shift"}.ics`);
+  };
+
   return (
     <div className="space-y-6">
       {/* My commitments */}
       {myAssignments.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-green-400" /> My Volunteer Commitments
-          </h3>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-400" /> My Volunteer Commitments
+            </h3>
+            <button
+              onClick={handleExportAll}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary border border-border rounded-lg px-3 py-1.5 transition-colors bg-surface"
+            >
+              <Download className="w-3.5 h-3.5" /> Export All to Calendar
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Your volunteer shifts are private — they appear only on your personal calendar and are not visible to coaches, other parents, or shared team calendars.
+          </p>
           <div className="space-y-2">
             {myAssignments.map(a => {
               const opp = opportunities.find(o => o.id === a.opportunity_id);
@@ -150,6 +176,15 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
                     </p>
                   </div>
                   <StatusChip status={a.status} />
+                  {opp?.date && (
+                    <button
+                      onClick={() => handleExportOne(a)}
+                      title="Add to my calendar"
+                      className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {a.status === "signed_up" && opp && canCancel(opp) && (
                     <button
                       onClick={() => handleCancel(opp)}
