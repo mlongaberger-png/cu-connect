@@ -15,7 +15,7 @@ import { useAdminGuard } from "@/hooks/useRoleGuard";
 const seasons = ["fall", "winter", "spring", "summer", "year_round"];
 
 export default function Sports() {
-  useAdminGuard();
+  useAdminGuard(); // admin only
   const [showForm, setShowForm] = useState(false);
   const [showRegistrations, setShowRegistrations] = useState(false);
   const [editingSport, setEditingSport] = useState(null);

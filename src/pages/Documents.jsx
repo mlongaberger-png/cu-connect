@@ -9,12 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Upload, FolderOpen, Trash2, Download, FileText, Filter } from "lucide-react";
 import { format } from "date-fns";
 
-import { useAdminGuard } from "@/hooks/useRoleGuard";
+import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
 
 const categories = ["roster", "schedule", "policy", "medical", "financial", "other"];
 
 export default function Documents() {
-  useAdminGuard();
+  useAdminOrADGuard();
   const [showUpload, setShowUpload] = useState(false);
   const [filterCat, setFilterCat] = useState("all");
   const [uploading, setUploading] = useState(false);
