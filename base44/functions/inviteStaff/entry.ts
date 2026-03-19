@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
     if (!role) return Response.json({ error: 'Role required' }, { status: 400 });
 
-    const validRoles = ['admin', 'athletic_director', 'coach'];
+    const validRoles = ['admin', 'athletic_director', 'coach', 'parent'];
     if (!validRoles.includes(role)) {
       return Response.json({ error: 'Invalid role' }, { status: 400 });
     }
