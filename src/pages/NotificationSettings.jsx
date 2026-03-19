@@ -86,7 +86,7 @@ export default function NotificationSettings() {
               <p className="text-xs text-muted-foreground">{desc}</p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
-              {prefs[`${key}_enabled`] && (
+                  {prefs[`${key}_enabled`] && (
                 <Select
                   value={prefs[`${key}_method`]}
                   onValueChange={v => update(`${key}_method`, v)}
