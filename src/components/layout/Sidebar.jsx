@@ -22,7 +22,7 @@ const allNavItems = [
   { path: "/SeasonManager", label: "Seasons", icon: CalendarRange, roles: ["admin"] },
   { path: "/DataExport", label: "Import / Export", icon: Download, roles: ["admin"] },
   { path: "/LegalPages", label: "Legal Pages", icon: Scale, roles: ["admin"] },
-  { path: "/ParentManagement", label: "Parent Accounts", icon: UserCircle, roles: ["admin"] },
+
   // Parent nav — maps to tabs inside /Portal
   { path: "/Portal", label: "My Dashboard", icon: LayoutDashboard, roles: ["parent"] },
   { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent"] },
