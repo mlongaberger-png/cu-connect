@@ -20,6 +20,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isStaff = user?.role === "admin" || user?.role === "coach";
 
   return (
     <>
