@@ -159,6 +159,10 @@ export default function Documents() {
         </div>
       )}
 
+      </div>}
+
+      <SendSignatureRequestDialog open={showSendSig} onOpenChange={setShowSendSig} user={user} />
+
       <Dialog open={showUpload} onOpenChange={setShowUpload}>
         <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader><DialogTitle>Upload Document</DialogTitle></DialogHeader>
