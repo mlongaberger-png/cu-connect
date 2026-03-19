@@ -116,12 +116,14 @@ export default function Teams() {
                   </div>
                 </div>
               </Link>
-              <button
-                onClick={(e) => { e.preventDefault(); if (confirm(`Delete "${team.name}"?`)) deleteMutation.mutate(team.id); }}
-                className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={(e) => { e.preventDefault(); if (confirm(`Delete "${team.name}"?`)) deleteMutation.mutate(team.id); }}
+                  className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
