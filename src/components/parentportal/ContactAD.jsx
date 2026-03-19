@@ -33,7 +33,7 @@ export default function ContactAD({ sportIds = [] }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {ads.map(ad => (
+          {filteredAds.map(ad => (
             <div key={ad.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
