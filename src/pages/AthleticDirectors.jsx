@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, ShieldCheck, Mail, MessageSquare, Phone } from "lucide-react";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
+import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
 
 const empty = { name: "", email: "", google_chat_url: "", sport_id: "", sport_name: "", phone: "", title: "Athletic Director" };
 
@@ -65,13 +66,15 @@ export default function AthleticDirectors() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Athletic Directors</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage contacts shown to parents in the portal</p>
+          <h1 className="text-2xl font-bold text-foreground">Admin</h1>
+          <p className="text-sm text-muted-foreground mt-1">Invite staff and manage athletic director contacts</p>
         </div>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="w-4 h-4" /> Add AD
         </Button>
       </div>
+
+      <StaffInvitePanel />
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
 
