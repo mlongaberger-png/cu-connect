@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import OfflineIndicator from "./OfflineIndicator";
 
 const pageTitles = {
   "/Dashboard": "Dashboard",
@@ -37,6 +38,7 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <OfflineIndicator />
     </div>
   );
 }
