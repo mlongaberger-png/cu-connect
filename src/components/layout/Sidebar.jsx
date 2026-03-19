@@ -14,7 +14,7 @@ const allNavItems = [
   { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
   { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
   { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/AthleticDirectors", label: "Athletic Directors", icon: ShieldCheck, roles: ["admin"] },
+  { path: "/AthleticDirectors", label: "Admin", icon: ShieldCheck, roles: ["admin"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
