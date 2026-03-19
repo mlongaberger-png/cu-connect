@@ -104,7 +104,7 @@ export default function Sidebar({ isOpen, onClose }) {
               <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-foreground truncate">{user.full_name || user.email}</p>
-                <p className="text-[10px] text-primary uppercase tracking-wide capitalize">{user.role || "admin"}</p>
+                <p className="text-[10px] text-primary uppercase tracking-wide capitalize">{user.role?.replace("_", " ") || "user"}</p>
               </div>
             </div>
           )}
