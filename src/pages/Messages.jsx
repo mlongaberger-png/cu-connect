@@ -3,29 +3,37 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, Hash } from "lucide-react";
+import { Send, MessageSquare, Hash, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import MessagesSidebar from "@/components/messages/MessagesSidebar";
 import MobileChannelPicker from "@/components/messages/MobileChannelPicker";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
-
-import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
+import AttendanceCard from "@/components/attendance/AttendanceCard";
+import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Messages() {
-  useAdminOrADGuard();
+  const { user } = useAuth();
+  const role = user?.role;
+  const isStaff = ["admin", "athletic_director", "coach"].includes(role);
+
+  // Redirect non-staff non-parents away (parents see ParentPortal for messages)
+  // Staff only route
   const [channel, setChannel] = useState("org");
   const [channelId, setChannelId] = useState("org");
   const [channelName, setChannelName] = useState("Organization");
   const [newMessage, setNewMessage] = useState("");
-  const [userId, setUserId] = useState(null);
   const [starredIds, setStarredIds] = useState([]);
+  const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
+
+  // Current channel team (if it's a team channel)
+  const isTeamChannel = channel === "team";
 
   useEffect(() => {
     base44.auth.me().then(u => {
       if (!u) return;
-      setUserId(u.id);
       base44.entities.UserChatPreference.filter({ user_id: u.id, is_starred: true }).then(prefs => {
         setStarredIds(prefs.map(p => p.chat_id));
       });
@@ -46,6 +54,28 @@ export default function Messages() {
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
   });
+  const { data: allPlayers = [] } = useQuery({
+    queryKey: ["players"],
+    queryFn: () => base44.entities.Player.list(),
+  });
+
+  // Attendance requests for current channel
+  const { data: attendanceRequests = [] } = useQuery({
+    queryKey: ["attendance-requests", channelId],
+    queryFn: () => base44.entities.AttendanceRequest.filter({ channel_id: channelId }, "-created_date", 10),
+    enabled: isTeamChannel,
+    refetchInterval: 10000,
+  });
+
+  // For coaches: determine which teams they coach
+  const myCoachTeams = role === "coach"
+    ? teams.filter(t => t.coach_email && t.coach_email.toLowerCase() === (user?.email || "").toLowerCase())
+    : teams;
+
+  const canPostAttendance = isStaff && isTeamChannel && (
+    role === "admin" || role === "athletic_director" ||
+    (role === "coach" && myCoachTeams.some(t => t.id === channelId))
+  );
 
   const sendMutation = useMutation({
     mutationFn: (data) => base44.entities.Message.create(data),
@@ -67,7 +97,8 @@ export default function Messages() {
       channel,
       channel_id: channelId,
       channel_name: channelName,
-      sender_name: "Admin",
+      sender_name: user?.full_name || "Staff",
+      sender_email: user?.email || "",
     });
   };
 
@@ -77,7 +108,10 @@ export default function Messages() {
     setChannelName(name);
   };
 
+  // Merge and sort messages + attendance requests chronologically
   const sortedMessages = [...messages].reverse();
+
+  const currentTeam = teams.find(t => t.id === channelId);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
@@ -93,7 +127,6 @@ export default function Messages() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Channel Header */}
         <div className="px-4 md:px-6 py-3 border-b border-border bg-card flex items-center gap-3 flex-shrink-0">
-          {/* Mobile picker */}
           <div className="md:hidden">
             <MobileChannelPicker
               sports={sports}
@@ -103,30 +136,61 @@ export default function Messages() {
               starredIds={starredIds}
             />
           </div>
-          {/* Desktop title */}
           <div className="hidden md:flex items-center gap-2 flex-1">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
               <Hash className="w-4 h-4 text-primary" /> {channelName}
             </h3>
           </div>
-          <AnnouncementsPanel
-            channel={channel}
-            channelId={channelId}
-            channelName={channelName}
-            sports={sports}
-            teams={teams}
-          />
+          <div className="flex items-center gap-2">
+            {canPostAttendance && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAttendanceDialog(true)}
+                className="border-border text-muted-foreground hover:text-foreground gap-1.5 text-xs"
+              >
+                <ClipboardList className="w-3.5 h-3.5" /> Attendance
+              </Button>
+            )}
+            <AnnouncementsPanel
+              channel={channel}
+              channelId={channelId}
+              channelName={channelName}
+              sports={sports}
+              teams={teams}
+            />
+          </div>
         </div>
 
-        {/* Messages */}
+        {/* Messages + Attendance Cards */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-          {sortedMessages.length === 0 && (
+          {/* Pinned attendance requests at top of team channel */}
+          {isTeamChannel && attendanceRequests.length > 0 && (
+            <div className="space-y-3 pb-2 border-b border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <ClipboardList className="w-3.5 h-3.5 text-primary" /> Attendance
+              </p>
+              {attendanceRequests.map(req => (
+                <AttendanceCard
+                  key={req.id}
+                  request={req}
+                  isStaff={isStaff}
+                  currentUser={user}
+                  myPlayers={[]} // staff don't RSVP
+                  allPlayers={allPlayers}
+                />
+              ))}
+            </div>
+          )}
+
+          {sortedMessages.length === 0 && attendanceRequests.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <MessageSquare className="w-12 h-12 text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No messages yet in #{channelName}</p>
               <p className="text-xs text-muted-foreground mt-1">Send the first message</p>
             </div>
           )}
+
           {sortedMessages.map((msg) => (
             <div key={msg.id} className="flex gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -161,6 +225,18 @@ export default function Messages() {
           </div>
         </form>
       </div>
+
+      {/* Create Attendance Dialog */}
+      {showAttendanceDialog && (
+        <CreateAttendanceDialog
+          open={showAttendanceDialog}
+          onOpenChange={setShowAttendanceDialog}
+          channelId={channelId}
+          teamId={channelId}
+          teamName={currentTeam?.name || channelName}
+          user={user}
+        />
+      )}
     </div>
   );
 }
