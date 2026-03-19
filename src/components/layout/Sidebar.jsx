@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
-  FolderOpen, UserCircle, X, LogOut, ShieldCheck } from "lucide-react";
+  FolderOpen, UserCircle, X, LogOut, ShieldCheck, HandHelping } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
