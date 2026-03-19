@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Trophy, Users, Calendar, MessageSquare,
+  LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -11,7 +11,7 @@ const allNavItems = [
   { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director"] },
-  { path: "/Announcements", label: "Announcements", icon: MessageSquare, roles: ["admin", "athletic_director"] },
+  { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
   { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
   { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
   { path: "/AthleticDirectors", label: "Athletic Directors", icon: ShieldCheck, roles: ["admin"] },
