@@ -70,7 +70,7 @@ export default function AthleticDirectors() {
           <p className="text-sm text-muted-foreground mt-1">Invite staff and manage athletic director contacts</p>
         </div>
         <Button onClick={openCreate} className="gap-2">
-          <Plus className="w-4 h-4" /> Add AD
+          <Plus className="w-4 h-4" /> Add Admin
         </Button>
       </div>
 
@@ -83,7 +83,7 @@ export default function AthleticDirectors() {
           <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">No athletic directors added yet.</p>
           <Button onClick={openCreate} variant="outline" className="mt-4 gap-2">
-            <Plus className="w-4 h-4" /> Add First AD
+            <Plus className="w-4 h-4" /> Add First Admin
           </Button>
         </div>
       )}
@@ -124,7 +124,7 @@ export default function AthleticDirectors() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Athletic Director" : "Add Athletic Director"}</DialogTitle>
+            <DialogTitle>{editing ? "Edit Admin Contact" : "Add Admin Contact"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
@@ -161,7 +161,7 @@ export default function AthleticDirectors() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={closeDialog}>Cancel</Button>
-              <Button type="submit">{editing ? "Save Changes" : "Add AD"}</Button>
+              <Button type="submit">{editing ? "Save Changes" : "Add Admin"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
