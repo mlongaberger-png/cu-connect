@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, UserCircle, Mail, Edit2, Users, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import InviteParentPanel from "@/components/admin/InviteParentPanel";
 
 export default function ParentAccountsTab() {
   const queryClient = useQueryClient();
