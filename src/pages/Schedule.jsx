@@ -129,7 +129,7 @@ export default function Schedule() {
             <SelectTrigger className="w-44 bg-surface border-border"><SelectValue placeholder="All Teams" /></SelectTrigger>
             <SelectContent className="bg-popover border-border">
               <SelectItem value="all">All Teams</SelectItem>
-              {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              {myTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -185,9 +185,11 @@ export default function Schedule() {
                       {event.opponent && <p className="text-xs text-muted-foreground mt-1">vs {event.opponent}</p>}
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(event.id); }} className="text-muted-foreground hover:text-red-400 h-8 w-8">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {canEditEvent(event) && (
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(event.id); }} className="text-muted-foreground hover:text-red-400 h-8 w-8">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -229,7 +231,7 @@ export default function Schedule() {
                 <Select value={form.team_id} onValueChange={v => setForm({...form, team_id: v})}>
                   <SelectTrigger className="bg-surface border-border"><SelectValue placeholder="Select team" /></SelectTrigger>
                   <SelectContent className="bg-popover border-border">
-                    {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    {myTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
