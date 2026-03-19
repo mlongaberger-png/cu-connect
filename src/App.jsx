@@ -46,7 +46,15 @@ const AuthenticatedApp = () => {
     ? "/Dashboard"
     : role === "coach"
     ? "/Schedule"
-    : "/Portal";
+    : "/Portal"; // parents and unknown roles go to Portal
+
+  // Routes that parents must not access
+  const staffOnlyPaths = ["/Dashboard", "/Sports", "/Teams", "/Schedule", "/Messages", "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"];
+  const isParent = role === "parent";
+  const currentPath = window.location.pathname;
+  if (isParent && staffOnlyPaths.some(p => currentPath.startsWith(p))) {
+    return <Navigate to="/Portal" replace />;
+  }
 
   return (
     <Routes>
