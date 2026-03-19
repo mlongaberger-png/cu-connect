@@ -2,7 +2,8 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
-  FolderOpen, UserCircle, X, LogOut, ShieldCheck } from "lucide-react";
+  FolderOpen, UserCircle, X, LogOut, ShieldCheck, Shield, Bell,
+  HelpCircle, CalendarRange, Download, Scale } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
@@ -17,6 +18,10 @@ const allNavItems = [
   { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
   { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
   { path: "/AthleticDirectors", label: "Admin", icon: ShieldCheck, roles: ["admin"] },
+  { path: "/AuditLog", label: "Audit Trail", icon: Shield, roles: ["admin"] },
+  { path: "/SeasonManager", label: "Seasons", icon: CalendarRange, roles: ["admin"] },
+  { path: "/DataExport", label: "Import / Export", icon: Download, roles: ["admin"] },
+  { path: "/LegalPages", label: "Legal Pages", icon: Scale, roles: ["admin"] },
   // Parent nav — maps to tabs inside /Portal
   { path: "/Portal", label: "My Dashboard", icon: LayoutDashboard, roles: ["parent"] },
   { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent"] },
