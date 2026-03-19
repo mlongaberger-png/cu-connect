@@ -107,59 +107,61 @@ export default function Documents() {
         <SignatureRequestsPanel user={user} />
       )}
 
-      {activeTab === "files" && <div className="flex items-center gap-2">
-        <Filter className="w-4 h-4 text-muted-foreground" />
-        <Select value={filterCat} onValueChange={setFilterCat}>
-          <SelectTrigger className="w-40 bg-surface border-border"><SelectValue /></SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      {activeTab === "files" && (
+        <>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={filterCat} onValueChange={setFilterCat}>
+              <SelectTrigger className="w-40 bg-surface border-border"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="h-16 bg-card rounded-2xl animate-pulse border border-border" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-card rounded-2xl border border-border">
-          <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground">No documents</h3>
-          <p className="text-muted-foreground">Upload your first document</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((doc) => (
-            <div key={doc.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4 hover:border-primary/20 transition-all group">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <FileText className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                  <span className="capitalize">{doc.category}</span>
-                  {doc.file_size && <span>• {doc.file_size}</span>}
-                  {doc.target_name && <span>• {doc.target_name}</span>}
-                  {doc.created_date && <span>• {format(new Date(doc.created_date), "MMM d")}</span>}
-                </div>
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </a>
-                <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(doc.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1,2,3].map(i => <div key={i} className="h-16 bg-card rounded-2xl animate-pulse border border-border" />)}
             </div>
-          ))}
-        </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-20 bg-card rounded-2xl border border-border">
+              <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground">No documents</h3>
+              <p className="text-muted-foreground">Upload your first document</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map((doc) => (
+                <div key={doc.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4 hover:border-primary/20 transition-all group">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                      <span className="capitalize">{doc.category}</span>
+                      {doc.file_size && <span>• {doc.file_size}</span>}
+                      {doc.target_name && <span>• {doc.target_name}</span>}
+                      {doc.created_date && <span>• {format(new Date(doc.created_date), "MMM d")}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </a>
+                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(doc.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
-
-      </div>}
 
       <SendSignatureRequestDialog open={showSendSig} onOpenChange={setShowSendSig} user={user} />
 
