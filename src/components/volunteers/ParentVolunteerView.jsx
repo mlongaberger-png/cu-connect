@@ -2,8 +2,67 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Users, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Users, CheckCircle2, Clock, Download, Calendar } from "lucide-react";
 import { format, isBefore, parseISO } from "date-fns";
+
+// Build an ICS file string for one or more volunteer assignments
+function buildVolunteerICS(entries) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const toICSDate = (dateStr, timeStr) => {
+    const d = new Date(dateStr);
+    if (timeStr) {
+      const [h, m] = timeStr.split(":").map(Number);
+      d.setHours(h, m, 0, 0);
+      return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+    }
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+  };
+
+  const events = entries.map(({ assignment, opp }) => {
+    const uid = `volunteer-${assignment.id}@cornerstone`;
+    const title = `Volunteer – ${opp?.role_name || "Shift"} (${opp?.team_name || ""})`;
+    const dtstart = opp?.date ? toICSDate(opp.date, opp.start_time) : null;
+    const dtend = opp?.date ? toICSDate(opp.date, opp.end_time || opp.start_time) : null;
+    if (!dtstart) return "";
+    const desc = [
+      `Role: ${opp?.role_name || ""}`,
+      opp?.event_name ? `Event: ${opp.event_name}` : "",
+      opp?.notes ? `Notes: ${opp.notes}` : "",
+    ].filter(Boolean).join("\\n");
+
+    return [
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${toICSDate(new Date().toISOString().split("T")[0])}`,
+      `DTSTART:${dtstart}`,
+      `DTEND:${dtend}`,
+      `SUMMARY:${title}`,
+      desc ? `DESCRIPTION:${desc}` : "",
+      opp?.location ? `LOCATION:${opp.location}` : "",
+      "END:VEVENT",
+    ].filter(Boolean).join("\r\n");
+  }).filter(Boolean);
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Cornerstone//Volunteer Calendar//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...events,
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+function downloadICS(content, filename) {
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function ParentVolunteerView({ myKids, userEmail, userName }) {
   const queryClient = useQueryClient();
