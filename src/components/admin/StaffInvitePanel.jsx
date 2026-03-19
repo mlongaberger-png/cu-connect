@@ -11,6 +11,7 @@ const ROLE_LABELS = {
   admin: "Admin",
   athletic_director: "Athletic Director",
   coach: "Coach",
+  parent: "Parent",
 };
 
 export default function StaffInvitePanel() {
