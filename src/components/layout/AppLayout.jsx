@@ -12,6 +12,14 @@ const pageTitles = {
   "/Announcements": "Announcements",
   "/Documents": "Documents",
   "/ParentPortal": "Parent Portal",
+  "/AthleticDirectors": "Admin",
+  "/Volunteers": "Volunteers",
+  "/AuditLog": "Audit Trail",
+  "/NotificationSettings": "Notification Settings",
+  "/HelpCenter": "Help Center",
+  "/SeasonManager": "Season Manager",
+  "/DataExport": "Import & Export",
+  "/LegalPages": "Legal Pages",
 };
 
 export default function AppLayout() {
