@@ -40,8 +40,12 @@ const AuthenticatedApp = () => {
   }
 
   // Role-based default redirect
-  const staffRoles = ["admin", "athletic_director", "coach"];
-  const homeRoute = staffRoles.includes(user?.role) ? "/Dashboard" : "/Portal";
+  const role = user?.role;
+  const homeRoute = role === "admin" || role === "athletic_director"
+    ? "/Dashboard"
+    : role === "coach"
+    ? "/Schedule"
+    : "/Portal";
 
   return (
     <Routes>
