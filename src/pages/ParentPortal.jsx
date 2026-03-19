@@ -388,6 +388,15 @@ export default function ParentPortal() {
         <ContactAD />
       )}
 
+      {/* Volunteers Tab */}
+      {activeTab === "volunteers" && (
+        <ParentVolunteerView
+          myKids={myKids}
+          userEmail={userEmail}
+          userName={user?.full_name}
+        />
+      )}
+
       {/* Payments Tab */}
       {activeTab === "payments" && (
         <div className="space-y-4">
