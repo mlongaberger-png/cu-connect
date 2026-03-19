@@ -83,12 +83,31 @@ export default function Documents() {
           <h1 className="text-2xl font-bold text-foreground">Documents</h1>
           <p className="text-sm text-muted-foreground mt-1">{documents.length} files uploaded</p>
         </div>
-        <Button onClick={() => setShowUpload(true)} className="bg-primary text-primary-foreground">
-          <Upload className="w-4 h-4 mr-2" /> Upload Document
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowSendSig(true)} className="border-border gap-2">
+            <PenLine className="w-4 h-4" /> Send for Signature
+          </Button>
+          <Button onClick={() => setShowUpload(true)} className="bg-primary text-primary-foreground">
+            <Upload className="w-4 h-4 mr-2" /> Upload Document
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Tabs */}
+      <div className="flex gap-1 bg-surface rounded-xl p-1 w-fit">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "signatures" && (
+        <SignatureRequestsPanel user={user} />
+      )}
+
+      {activeTab === "files" && <div className="flex items-center gap-2">
         <Filter className="w-4 h-4 text-muted-foreground" />
         <Select value={filterCat} onValueChange={setFilterCat}>
           <SelectTrigger className="w-40 bg-surface border-border"><SelectValue /></SelectTrigger>
