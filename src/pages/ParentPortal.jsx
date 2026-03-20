@@ -96,6 +96,14 @@ export default function ParentPortal() {
   const myUnpaidInvoices = allPayments.filter(p => myKidIds.has(p.player_id) && p.status !== "paid");
   const totalAllOwed = myUnpaidInvoices.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+  const { data: myAccessRequests = [] } = useQuery({
+    queryKey: ["my-access-requests", userEmail],
+    queryFn: () => base44.entities.AccessRequest.filter({ parent_email: userEmail }),
+    enabled: !!userEmail && myKids.length === 0,
+  });
+  const pendingRequest = myAccessRequests.find(r => r.status === "pending");
+  const approvedRequest = myAccessRequests.find(r => r.status === "approved");
+
   const handlePayPlayer = async (player, unpaidInvoices) => {
     const isIframe = window.self !== window.top;
     if (isIframe) { alert("Payments can only be processed from the published app."); return; }
