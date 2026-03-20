@@ -183,17 +183,50 @@ export default function ParentPortal() {
                 </button>
               </div>
             </>
+          ) : pendingRequest ? (
+            <div className="space-y-4 max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
+                <span className="text-2xl">⏳</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">You're almost there!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Thanks for signing up! Your account is being reviewed and connected to your child's team. You'll receive an email once access is ready.
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Questions? Contact your organization admin.
+              </p>
+            </div>
+          ) : approvedRequest ? (
+            <div className="space-y-4 max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+                <span className="text-2xl">✅</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">Your account is ready!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Welcome to Cornerstone! We're finishing connecting you to your child's team. Try refreshing the page, or contact your admin if this persists.
+                </p>
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
           ) : (
             <>
-              <p className="text-muted-foreground max-w-sm mx-auto">
-                No players are linked to <span className="text-primary">{userEmail}</span> yet.
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
+                We're finishing your setup. If your admin has sent you an invite, check your email. Otherwise, search for your child below.
               </p>
               <LinkPlayerByEmail
                 currentUserEmail={userEmail}
                 onLinked={() => setPlayerLinked(p => !p)}
               />
               <p className="text-xs text-muted-foreground mt-4">
-                If you can't find your player, contact your organization admin to verify your email on file.
+                Not finding your child? Contact your organization admin to verify the email on file.
               </p>
             </>
           )}
