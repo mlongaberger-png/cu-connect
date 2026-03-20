@@ -14,6 +14,7 @@ import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 import { useLocation, Link } from "react-router-dom";
 import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
 import ContactAD from "@/components/parentportal/ContactAD";
+import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -26,9 +27,10 @@ const TABS = [
 
 export default function ParentPortal() {
   const location = useLocation();
-  const isStandalone = location.pathname === "/Portal"; // true when accessed without admin sidebar
-  const [userEmail, setUserEmail] = useState(null);
-  const [user, setUser] = useState(null);
+  const isStandalone = location.pathname === "/Portal";
+  const { user, isLoadingAuth } = useAuth();
+  const userEmail = user?.email;
+
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
   const [calendarView, setCalendarView] = useState("month");
@@ -46,12 +48,8 @@ export default function ParentPortal() {
     }
   }, []);
 
-  useEffect(() => {
-    base44.auth.me().then(u => { setUser(u); setUserEmail(u?.email); }).catch(() => {});
-  }, [playerLinked]);
-
   const { data: myGuardianLinks = [] } = useQuery({
-    queryKey: ["my-guardian-links", userEmail],
+    queryKey: ["my-guardian-links", userEmail, playerLinked],
     queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
     enabled: !!userEmail,
   });
@@ -151,8 +149,39 @@ export default function ParentPortal() {
     other: "bg-cyan-500/20 text-cyan-400",
   };
 
+  // Loading spinner
+  if (isLoadingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const standaloneHeader = (
+    <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 md:px-6 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+          <Trophy className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <span className="text-sm font-bold text-primary">Cornerstone United</span>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Parent Portal</p>
+        </div>
+      </div>
+      {user && (
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground hidden sm:block">{user.full_name || user.email}</span>
+          <button onClick={() => base44.auth.logout(window.location.href)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
+        </div>
+      )}
+    </header>
+  );
+
   if (myKids.length === 0) {
-    const isLoggedIn = !!userEmail;
+    const isLoggedIn = !!user;
     return (
       <div className={isStandalone ? "min-h-screen bg-background" : ""}>
         {isStandalone && standaloneHeader}
@@ -235,28 +264,6 @@ export default function ParentPortal() {
       </div>
     );
   }
-
-  const standaloneHeader = (
-    <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 md:px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-          <Trophy className="w-4 h-4 text-primary" />
-        </div>
-        <div>
-          <span className="text-sm font-bold text-primary">Cornerstone United</span>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Parent Portal</p>
-        </div>
-      </div>
-      {user && (
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground hidden sm:block">{user.full_name || user.email}</span>
-          <button onClick={() => base44.auth.logout(window.location.href)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <LogOut className="w-4 h-4" /> Sign out
-          </button>
-        </div>
-      )}
-    </header>
-  );
 
   return (
     <div className={isStandalone ? "min-h-screen bg-background" : ""}>
@@ -440,8 +447,6 @@ export default function ParentPortal() {
           userName={user?.full_name}
         />
       )}
-
-      {/* Help Tab — accessible via link in header */}
 
       {/* Payments Tab */}
       {activeTab === "payments" && (
