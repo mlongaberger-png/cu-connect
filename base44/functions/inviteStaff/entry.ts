@@ -15,15 +15,28 @@ Deno.serve(async (req) => {
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
     if (!role) return Response.json({ error: 'Role required' }, { status: 400 });
 
-    const validRoles = ['admin', 'athletic_director', 'coach', 'parent'];
-    if (!validRoles.includes(role)) {
+    const validAppRoles = ['admin', 'athletic_director', 'coach', 'parent'];
+    if (!validAppRoles.includes(role)) {
       return Response.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    // Invite the user with the specified role
-    await base44.users.inviteUser(email, role);
+    // Workspace only accepts 'admin' or 'user' — map app roles accordingly
+    const workspaceRole = role === 'admin' ? 'admin' : 'user';
+    await base44.users.inviteUser(email, workspaceRole);
 
-    console.log(`Invited ${email} as ${role}${team_name ? ` for team ${team_name}` : ''}`);
+    // Set the app-level role on the User record after invite
+    // The user record is created on first login; attempt to update if it already exists
+    try {
+      const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
+      if (existingUsers.length > 0) {
+        await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role });
+      }
+    } catch (roleErr) {
+      // Non-fatal: user may not exist yet (pre-login), role will be set on first login or next invite
+      console.warn('Could not pre-set app role (user may not exist yet):', roleErr.message);
+    }
+
+    console.log(`Invited ${email} as workspace:${workspaceRole} / app:${role}${team_name ? ` for team ${team_name}` : ''}`);
     return Response.json({ success: true });
   } catch (error) {
     console.error('Invite staff error:', error.message);

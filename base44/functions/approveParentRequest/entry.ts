@@ -33,8 +33,18 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
-      // Invite the user to the workspace as role=parent
-      await base44.users.inviteUser(accessReq.parent_email, 'parent');
+      // Workspace only accepts 'admin' or 'user' — invite as 'user', app role is set separately
+      await base44.users.inviteUser(accessReq.parent_email, 'user');
+
+      // Set the app-level role to 'parent' if user record already exists
+      try {
+        const existingUsers = await base44.asServiceRole.entities.User.filter({ email: accessReq.parent_email });
+        if (existingUsers.length > 0) {
+          await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
+        }
+      } catch (roleErr) {
+        console.warn('Could not pre-set parent role:', roleErr.message);
+      }
 
       // Link to players if provided
       if (player_ids && player_ids.length > 0) {
