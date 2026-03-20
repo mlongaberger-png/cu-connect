@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Send, CheckCircle2, Plus, X } from "lucide-react";
+import { UserPlus, Send, CheckCircle2 } from "lucide-react";
+import AthleteLinker from "@/components/admin/AthleteLinker";
 
 const RELATIONSHIPS = ["Guardian", "Mother", "Father", "Stepparent", "Other"];
 
