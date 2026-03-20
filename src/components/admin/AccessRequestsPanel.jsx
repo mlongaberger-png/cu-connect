@@ -1,0 +1,203 @@
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { CheckCircle2, XCircle, Clock, User, Mail, Phone, Users, Trophy, FileText } from "lucide-react";
+import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+
+export default function AccessRequestsPanel() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [reviewingReq, setReviewingReq] = useState(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [filter, setFilter] = useState("pending");
+
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: ["access-requests"],
+    queryFn: () => base44.entities.AccessRequest.list("-created_date"),
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ["players"],
+    queryFn: () => base44.entities.Player.list(),
+  });
+
+  const filtered = filter === "all" ? requests : requests.filter(r => r.status === filter);
+  const pendingCount = requests.filter(r => r.status === "pending").length;
+
+  const openReview = (req) => {
+    setReviewingReq(req);
+    setSelectedPlayerIds([]);
+  };
+
+  const togglePlayer = (pid) => {
+    setSelectedPlayerIds(prev =>
+      prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]
+    );
+  };
+
+  const handleAction = async (action) => {
+    setSubmitting(true);
+    const res = await base44.functions.invoke("approveParentRequest", {
+      request_id: reviewingReq.id,
+      action,
+      player_ids: action === "approve" ? selectedPlayerIds : [],
+    });
+    setSubmitting(false);
+
+    if (res.data?.success) {
+      toast({ title: action === "approve" ? "Parent approved & notified!" : "Request rejected." });
+      queryClient.invalidateQueries({ queryKey: ["access-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setReviewingReq(null);
+    } else {
+      toast({ title: "Error", description: res.data?.error || "Something went wrong.", variant: "destructive" });
+    }
+  };
+
+  const statusBadge = (status) => {
+    if (status === "pending") return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pending</Badge>;
+    if (status === "approved") return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Approved</Badge>;
+    return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Rejected</Badge>;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-foreground">Signup Requests</h3>
+          {pendingCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-semibold">{pendingCount} pending</span>
+          )}
+        </div>
+        <div className="flex gap-1 bg-surface rounded-lg p-1">
+          {["pending", "approved", "rejected", "all"].map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all capitalize ${
+                filter === f ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-surface animate-pulse" />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-10 bg-surface rounded-2xl border border-border">
+          <Clock className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-40" />
+          <p className="text-sm text-muted-foreground">No {filter === "all" ? "" : filter} requests.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map(req => (
+            <div
+              key={req.id}
+              className="flex items-center gap-3 p-4 rounded-xl bg-surface border border-border hover:border-primary/30 transition-colors cursor-pointer"
+              onClick={() => req.status === "pending" && openReview(req)}
+            >
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-primary font-semibold text-sm">{(req.parent_name || "?")[0].toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm text-foreground">{req.parent_name}</span>
+                  {statusBadge(req.status)}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                  <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{req.parent_email}</span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{req.child_names}</span>
+                  {req.sport_interest && <span className="flex items-center gap-1"><Trophy className="w-3 h-3" />{req.sport_interest}</span>}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {req.created_date ? format(new Date(req.created_date), "MMM d, yyyy") : ""}
+                  {req.reviewed_by && ` · Reviewed by ${req.reviewed_by}`}
+                </p>
+              </div>
+              {req.status === "pending" && (
+                <div className="flex gap-2 shrink-0">
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3" onClick={e => { e.stopPropagation(); openReview(req); }}>
+                    Review
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Review Dialog */}
+      <Dialog open={!!reviewingReq} onOpenChange={() => setReviewingReq(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review Access Request</DialogTitle>
+          </DialogHeader>
+          {reviewingReq && (
+            <div className="space-y-4 py-1">
+              {/* Parent Info */}
+              <div className="bg-surface rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex items-center gap-2"><User className="w-4 h-4 text-primary" /><span className="font-medium">{reviewingReq.parent_name}</span></div>
+                <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /><span>{reviewingReq.parent_email}</span></div>
+                {reviewingReq.parent_phone && <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-primary" /><span>{reviewingReq.parent_phone}</span></div>}
+                <div className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /><span>Children: <span className="font-medium">{reviewingReq.child_names}</span></span></div>
+                {reviewingReq.sport_interest && <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-primary" /><span>{reviewingReq.sport_interest}</span></div>}
+                {reviewingReq.notes && <div className="flex items-start gap-2"><FileText className="w-4 h-4 text-primary mt-0.5" /><span className="text-muted-foreground">{reviewingReq.notes}</span></div>}
+              </div>
+
+              {/* Link to Players */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Link to existing player(s) <span className="text-muted-foreground font-normal">(optional)</span></p>
+                <p className="text-xs text-muted-foreground">Select which player(s) this parent should see in their portal.</p>
+                <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                  {players.map(p => (
+                    <label key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-surface border border-border hover:border-primary/30 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedPlayerIds.includes(p.id)}
+                        onChange={() => togglePlayer(p.id)}
+                        className="accent-primary"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
+                        <p className="text-xs text-muted-foreground">{p.team_name} {p.sport_name ? `· ${p.sport_name}` : ""}</p>
+                      </div>
+                    </label>
+                  ))}
+                  {players.length === 0 && <p className="text-xs text-muted-foreground p-2">No players in the system yet. You can link them later from the team roster.</p>}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setReviewingReq(null)} disabled={submitting} className="order-last sm:order-first">
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleAction("reject")}
+              disabled={submitting}
+              className="border-red-500/30 text-red-400 hover:bg-red-500/10 gap-1"
+            >
+              <XCircle className="w-4 h-4" /> Reject
+            </Button>
+            <Button
+              onClick={() => handleAction("approve")}
+              disabled={submitting}
+              className="bg-green-600 hover:bg-green-700 text-white gap-1"
+            >
+              <CheckCircle2 className="w-4 h-4" /> {submitting ? "Processing…" : "Approve & Invite"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
