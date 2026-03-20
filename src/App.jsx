@@ -118,7 +118,7 @@ const AuthenticatedApp = () => {
       <Route path="/Portal" element={<ParentPortal />} />
       <Route path="/Register" element={<Register />} />
       <Route path="/ParentSignup" element={<ParentSignup />} />
-      <Route path="*" element={<PageNotFound />} />
+      <Route path="*" element={<Navigate to={homeRoute} replace />} />
     </Routes>
   );
 };
