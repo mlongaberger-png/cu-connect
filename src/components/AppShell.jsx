@@ -99,11 +99,6 @@ export default function AppShell() {
     );
   }
 
-  // Parents must not access staff-only paths
-  if (role === "parent" && STAFF_ONLY_PATHS.some(p => currentPath.startsWith(p))) {
-    return <Navigate to="/Portal" replace />;
-  }
-
   return (
     <Routes>
       <Route path="/" element={<Navigate to={homeRoute} replace />} />
