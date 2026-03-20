@@ -91,6 +91,8 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to={homeRoute} replace />} />
+      <Route path="/welcome" element={<Navigate to={homeRoute} replace />} />
+      <Route path="/pending-access" element={<PendingAccess />} />
       {/* Admin layout routes */}
       <Route element={<AppLayout />}>
         <Route path="/Dashboard" element={<Dashboard />} />
