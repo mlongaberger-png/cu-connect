@@ -12,9 +12,7 @@ Deno.serve(async (req) => {
 
     // Set the app-level role to 'parent' if user record already exists
     try {
-      const existingUsers = await base44.asServiceRole.entities.PlayerGuardian.filter
-        ? await base44.asServiceRole.entities.User.filter({ email })
-        : [];
+      const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
       if (existingUsers.length > 0) {
         await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
       }
