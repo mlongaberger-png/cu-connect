@@ -91,6 +91,7 @@ const AuthenticatedApp = () => {
       {/* Parent portal — standalone, no admin sidebar */}
       <Route path="/Portal" element={<ParentPortal />} />
       <Route path="/Register" element={<Register />} />
+      <Route path="/ParentSignup" element={<ParentSignup />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

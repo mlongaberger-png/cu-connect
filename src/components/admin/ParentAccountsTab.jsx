@@ -58,6 +58,7 @@ export default function ParentAccountsTab() {
 
   return (
     <div className="space-y-6">
+      <AccessRequestsPanel />
       <InviteParentPanel />
 
       <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
