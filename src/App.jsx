@@ -25,6 +25,7 @@ import HelpCenter from '@/pages/HelpCenter';
 import SeasonManager from '@/pages/SeasonManager';
 import DataExport from '@/pages/DataExport';
 import LegalPages from '@/pages/LegalPages';
+import ParentSignup from '@/pages/ParentSignup';
 
 
 const AuthenticatedApp = () => {

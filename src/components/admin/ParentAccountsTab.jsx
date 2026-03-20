@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, UserCircle, Mail, Edit2, Users, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
+import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
 
 export default function ParentAccountsTab() {
   const queryClient = useQueryClient();
