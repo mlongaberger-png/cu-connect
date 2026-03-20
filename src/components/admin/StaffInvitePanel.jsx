@@ -79,7 +79,7 @@ export default function StaffInvitePanel() {
         </div>
         <div>
           <h2 className="font-semibold text-foreground">Invite Users</h2>
-          <p className="text-xs text-muted-foreground">Send an invitation link to admins, ADs, coaches, or parents</p>
+          <p className="text-xs text-muted-foreground">Send an invitation link to admins, athletic directors, or coaches</p>
         </div>
       </div>
 
@@ -105,7 +105,6 @@ export default function StaffInvitePanel() {
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="athletic_director">Athletic Director</SelectItem>
               <SelectItem value="coach">Coach</SelectItem>
-              <SelectItem value="parent">Parent</SelectItem>
             </SelectContent>
           </Select>
         </div>
