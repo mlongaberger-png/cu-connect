@@ -7,8 +7,20 @@ Deno.serve(async (req) => {
 
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
-    // Invite the user to the platform
+    // Workspace only accepts 'admin' or 'user'
     await base44.users.inviteUser(email, 'user');
+
+    // Set the app-level role to 'parent' if user record already exists
+    try {
+      const existingUsers = await base44.asServiceRole.entities.PlayerGuardian.filter
+        ? await base44.asServiceRole.entities.User.filter({ email })
+        : [];
+      if (existingUsers.length > 0) {
+        await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
+      }
+    } catch (roleErr) {
+      console.warn('Could not pre-set parent role:', roleErr.message);
+    }
 
     // If a player_id is provided, ensure a PlayerGuardian link exists
     if (player_id) {

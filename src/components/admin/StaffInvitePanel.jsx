@@ -7,11 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Send, CheckCircle2 } from "lucide-react";
 
+// Staff invite only — parents use the InviteParentPanel or AccessRequests flow
 const ROLE_LABELS = {
   admin: "Admin",
   athletic_director: "Athletic Director",
   coach: "Coach",
-  parent: "Parent",
 };
 
 export default function StaffInvitePanel() {
