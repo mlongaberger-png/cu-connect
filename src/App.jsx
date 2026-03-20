@@ -26,10 +26,15 @@ import SeasonManager from '@/pages/SeasonManager';
 import DataExport from '@/pages/DataExport';
 import LegalPages from '@/pages/LegalPages';
 import ParentSignup from '@/pages/ParentSignup';
+import Welcome from '@/pages/Welcome';
+import PendingAccess from '@/pages/PendingAccess';
 
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, user, isAuthenticated } = useAuth();
+
+  const currentPath = window.location.pathname;
+  const publicPaths = ["/welcome", "/ParentSignup", "/Register"];
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -39,13 +44,33 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
+  // Allow public pages through with no auth
+  if (publicPaths.some(p => currentPath.startsWith(p))) {
+    return (
+      <Routes>
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/ParentSignup" element={<ParentSignup />} />
+        <Route path="/Register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
+    );
+  }
+
+  // Unauthenticated users → Welcome
+  if (!isAuthenticated || authError?.type === 'auth_required') {
+    return (
+      <Routes>
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/ParentSignup" element={<ParentSignup />} />
+        <Route path="/Register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
+    );
+  }
+
+  // Registered users get the full app — show friendly error for unregistered
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
   // Role-based default redirect
@@ -54,12 +79,11 @@ const AuthenticatedApp = () => {
     ? "/Dashboard"
     : role === "coach"
     ? "/Schedule"
-    : "/Portal"; // parents and unknown roles go to Portal
+    : "/Portal";
 
-  // Routes that parents must not access
+  // Staff-only paths — redirect parents away
   const staffOnlyPaths = ["/Dashboard", "/Sports", "/Teams", "/Schedule", "/Messages", "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"];
   const isParent = role === "parent";
-  const currentPath = window.location.pathname;
   if (isParent && staffOnlyPaths.some(p => currentPath.startsWith(p))) {
     return <Navigate to="/Portal" replace />;
   }
