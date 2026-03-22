@@ -17,7 +17,8 @@ import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
 import ContactAD from "@/components/parentportal/ContactAD";
 import { useAuth } from "@/lib/AuthContext";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
-import OrgPerformanceFeed from "@/components/dashboard/OrgPerformanceFeed";
+import PerformanceHero from "@/components/dashboard/PerformanceHero";
+import RosterPDFButton from "@/components/roster/RosterPDFButton";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
