@@ -186,6 +186,14 @@ export default function Schedule() {
                     <div>
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium border capitalize ${typeColors[event.type] || ""}`}>{event.type}</span>
+                        {event.tournament_round && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">{event.tournament_round}</span>}
+                        {event.result && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold border capitalize ${event.result === "win" ? "bg-green-500/20 text-green-400 border-green-500/30" : event.result === "loss" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"}`}>
+                            {event.result === "win" ? "✓ W" : event.result === "loss" ? "✗ L" : "~ D"}
+                            {event.our_score != null && event.our_score !== "" ? ` ${event.our_score}–${event.opponent_score ?? "?"}` : ""}
+                          </span>
+                        )}
+                        {event.is_championship_win && <span className="text-xs">🏆</span>}
                         {event.is_cancelled && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">Cancelled</span>}
                       </div>
                       <h3 className="text-base font-semibold text-foreground">{event.title}</h3>
@@ -269,7 +277,18 @@ export default function Schedule() {
               <div><Label>End</Label><Input type="time" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} className="bg-surface border-border" /></div>
             </div>
             <div><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="bg-surface border-border" /></div>
-            {form.type === "game" && <div><Label>Opponent</Label><Input value={form.opponent} onChange={e => setForm({...form, opponent: e.target.value})} className="bg-surface border-border" /></div>}
+            {(form.type === "game" || form.type === "tournament") && <div><Label>Opponent</Label><Input value={form.opponent} onChange={e => setForm({...form, opponent: e.target.value})} className="bg-surface border-border" /></div>}
+            {form.type === "tournament" && (
+              <div>
+                <Label>Tournament Round</Label>
+                <Select value={form.tournament_round || ""} onValueChange={v => setForm({...form, tournament_round: v})}>
+                  <SelectTrigger className="bg-surface border-border"><SelectValue placeholder="Select round…" /></SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {["Pool Play","Round of 16","Quarterfinals","Semifinals","Finals","Championship"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="bg-surface border-border" /></div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-border">Cancel</Button>
