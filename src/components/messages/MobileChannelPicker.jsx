@@ -46,13 +46,15 @@ export default function MobileChannelPicker({ sports, teams, channelId, onSelect
         </div>
 
         <div className="p-3 space-y-1">
-          {/* Org */}
-          <button
-            onClick={() => select("org", "org", "Organization")}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm ${channelId === "org" ? "bg-primary/15 text-primary font-medium" : "text-foreground hover:bg-surface"}`}
-          >
-            <Hash className="w-4 h-4" /> Organization
-          </button>
+          {/* Org — only for staff */}
+          {!filterTeamIds && (
+            <button
+              onClick={() => select("org", "org", "Organization")}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm ${channelId === "org" ? "bg-primary/15 text-primary font-medium" : "text-foreground hover:bg-surface"}`}
+            >
+              <Hash className="w-4 h-4" /> Organization
+            </button>
+          )}
 
           {/* Starred */}
           {starredItems.length > 0 && (
