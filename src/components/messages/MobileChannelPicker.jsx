@@ -1,14 +1,19 @@
 import React, { useState } from "react";
 import { Star, ChevronDown, ChevronRight, Hash, X, Building2 } from "lucide-react";
 
-export default function MobileChannelPicker({ sports, teams, channelId, onSelectChannel, starredIds = [] }) {
+export default function MobileChannelPicker({ sports, teams, channelId, onSelectChannel, starredIds = [], filterTeamIds = null }) {
   const [expandedSports, setExpandedSports] = useState({});
   const [open, setOpen] = useState(false);
 
+  const visibleTeams = filterTeamIds ? teams.filter(t => filterTeamIds.includes(t.id)) : teams;
+  const visibleSports = filterTeamIds
+    ? sports.filter(s => visibleTeams.some(t => t.sport_id === s.id))
+    : sports;
+
   const allChannels = [
-    { id: "org", name: "Organization", type: "org" },
-    ...sports.map(s => ({ id: s.id, name: s.name, type: "sport", icon: s.icon })),
-    ...teams.map(t => ({ id: t.id, name: t.name, type: "team" })),
+    ...(filterTeamIds ? [] : [{ id: "org", name: "Organization", type: "org" }]),
+    ...visibleSports.map(s => ({ id: s.id, name: s.name, type: "sport", icon: s.icon })),
+    ...visibleTeams.map(t => ({ id: t.id, name: t.name, type: "team" })),
   ];
   const currentChannel = allChannels.find(c => c.id === channelId);
 
