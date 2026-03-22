@@ -73,11 +73,11 @@ export default function MobileChannelPicker({ sports, teams, channelId, onSelect
           )}
 
           {/* Sports + Teams */}
-          {sports.length > 0 && (
+          {visibleSports.length > 0 && (
             <div className="pt-2">
               <p className="text-xs text-muted-foreground uppercase tracking-wider px-3 mb-1">Channels</p>
-              {sports.map(sport => {
-                const sportTeams = teams.filter(t => t.sport_id === sport.id);
+              {visibleSports.map(sport => {
+                const sportTeams = visibleTeams.filter(t => t.sport_id === sport.id);
                 const expanded = expandedSports[sport.id] ?? false;
                 return (
                   <div key={sport.id}>
