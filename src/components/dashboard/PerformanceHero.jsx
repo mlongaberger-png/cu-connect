@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, useInView, useAnimation } from "framer-motion";
-import { Trophy, TrendingUp, Shield, Zap, Star } from "lucide-react";
+import { Trophy, TrendingUp, Zap, Star, Flame } from "lucide-react";
 import { formatDate } from "@/utils/dateTime";
 
 // ─── Animated win % bar ──────────────────────────────────────────────────────
@@ -44,6 +44,7 @@ function Ticker({ items }) {
               {e.result === "win" ? "✓ W" : e.result === "loss" ? "✗ L" : "~ D"}
             </span>
             {e.is_championship_win && <span className="text-sm">🏆</span>}
+            {e.sport_icon && <span className="text-sm">{e.sport_icon}</span>}
             <span className="text-xs text-white/80 font-medium">{e.team_name}</span>
             {e.opponent && <span className="text-xs text-white/40">vs {e.opponent}</span>}
             {e.our_score != null && e.our_score !== "" && (
@@ -77,23 +78,43 @@ function AnimatedNumber({ value }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function PerformanceHero({ events = [], teams = [], sports = [], players = [], extraStats = {} }) {
+export default function PerformanceHero({ events = [], teams = [], sports = [], players = [] }) {
   const resultEvents = events.filter(e =>
     (e.type === "game" || e.type === "tournament") && e.result
   ).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const championships = resultEvents.filter(e => e.is_championship_win);
-  const orgWins   = resultEvents.filter(e => e.result === "win").length;
-  const orgLosses = resultEvents.filter(e => e.result === "loss").length;
-  const orgDraws  = resultEvents.filter(e => e.result === "draw").length;
-  const orgTotal  = orgWins + orgLosses + orgDraws;
-  const orgWinPct = orgTotal > 0 ? Math.round((orgWins / orgTotal) * 100) : 0;
 
-  // Team records
+  // Build per-sport breakdown using the teams passed in (already family-filtered)
+  const sportMap = {};
+  sports.forEach(s => { sportMap[s.id] = s; });
+
+  // Enrich result events with sport info from teams
+  const teamSportMap = {};
+  teams.forEach(t => { teamSportMap[t.id] = t.sport_id; });
+
+  const enriched = resultEvents.map(e => ({
+    ...e,
+    sport_id: teamSportMap[e.team_id] || null,
+    sport_icon: sportMap[teamSportMap[e.team_id]]?.icon || null,
+    sport_name: sportMap[teamSportMap[e.team_id]]?.name || null,
+  }));
+
+  const totalWins = enriched.filter(e => e.result === "win").length;
+  const totalLosses = enriched.filter(e => e.result === "loss").length;
+  const totalDraws = enriched.filter(e => e.result === "draw").length;
+  const totalGames = totalWins + totalLosses + totalDraws;
+  const winPct = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+
+  // Per-team records
   const teamRecords = {};
-  resultEvents.forEach(e => {
+  enriched.forEach(e => {
     if (!e.team_id) return;
-    if (!teamRecords[e.team_id]) teamRecords[e.team_id] = { wins: 0, losses: 0, draws: 0, name: e.team_name || "Unknown", championships: 0 };
+    if (!teamRecords[e.team_id]) teamRecords[e.team_id] = {
+      wins: 0, losses: 0, draws: 0, championships: 0,
+      name: e.team_name || "Unknown",
+      sport_name: e.sport_name, sport_icon: e.sport_icon,
+    };
     if (e.result === "win") teamRecords[e.team_id].wins++;
     else if (e.result === "loss") teamRecords[e.team_id].losses++;
     else if (e.result === "draw") teamRecords[e.team_id].draws++;
@@ -102,15 +123,23 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
 
   const teamList = Object.entries(teamRecords)
     .map(([id, r]) => ({ id, ...r }))
-    .sort((a, b) => (b.wins - b.losses) - (a.wins - a.losses))
-    .slice(0, 5);
+    .sort((a, b) => (b.wins - b.losses) - (a.wins - a.losses));
 
-  const recentResults = resultEvents.slice(0, 5);
+  const recentResults = enriched.slice(0, 5);
 
-  // ── No results yet: show org overview ─────────────────────────────────────
+  // ── Personalized family header text ──────────────────────────────────────
+  const playerNames = players.map(p => p.first_name);
+  const familyLabel = playerNames.length === 1
+    ? `${playerNames[0]}'s Season`
+    : playerNames.length === 2
+    ? `${playerNames[0]} & ${playerNames[1]}'s Season`
+    : "Your Family's Season";
+
+  const sportLabels = [...new Set(teams.map(t => sportMap[t.sport_id]?.name).filter(Boolean))];
+  const sportIcons  = [...new Set(teams.map(t => sportMap[t.sport_id]?.icon).filter(Boolean))];
+
+  // ── No results yet ─────────────────────────────────────────────────────────
   if (resultEvents.length === 0) {
-    const activeTeams = teams.filter(t => t.is_active !== false).length;
-    const activePlayers = players.filter(p => p.is_active !== false).length;
     const upcomingCount = events.filter(e => e.date && new Date(e.date + "T00:00:00") >= new Date()).length;
     return (
       <motion.div
@@ -124,17 +153,25 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <Shield className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Organization Hub</h1>
+              {sportIcons.length > 0
+                ? <span className="text-3xl">{sportIcons.join(" ")}</span>
+                : <Flame className="w-8 h-8 text-primary" />
+              }
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">{familyLabel}</h2>
+                {sportLabels.length > 0 && (
+                  <p className="text-sm text-muted-foreground">{sportLabels.join(" · ")}</p>
+                )}
+              </div>
             </div>
-            <p className="text-muted-foreground max-w-xl text-sm">
-              Manage your entire sports organization from one place. Results will appear here as games are played.
+            <p className="text-muted-foreground max-w-xl text-sm mt-1">
+              Season results will light up here once games are played. Go {playerNames[0] || "team"}!
             </p>
           </div>
           <div className="flex gap-6">
             {[
-              { label: "Teams", value: activeTeams },
-              { label: "Athletes", value: activePlayers },
+              { label: "Teams", value: teams.length },
+              { label: "Athletes", value: players.length },
               { label: "Upcoming", value: upcomingCount },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
@@ -148,7 +185,7 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
     );
   }
 
-  // ── Has results: full animated performance hero ────────────────────────────
+  // ── Has results: full personalized performance hero ────────────────────────
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -166,48 +203,56 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
       {/* Header row */}
       <div className="relative px-6 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
-          <span className="text-sm font-bold text-foreground uppercase tracking-wider">Organization Performance</span>
+          {sportIcons.length > 0
+            ? <span className="text-lg leading-none">{sportIcons.join(" ")}</span>
+            : <Flame className="w-5 h-5 text-primary" />
+          }
+          <div>
+            <span className="text-sm font-bold text-foreground">{familyLabel}</span>
+            {sportLabels.length > 0 && (
+              <span className="text-xs text-white/40 ml-2">{sportLabels.join(" · ")}</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-xs text-white/50">
-          <span>{orgTotal} games played</span>
+        <div className="text-xs text-white/40">
+          {totalGames} game{totalGames !== 1 ? "s" : ""} played
         </div>
       </div>
 
       {/* Ticker */}
-      <Ticker items={recentResults} />
+      <Ticker items={enriched.slice(0, 10)} />
 
       {/* Main content grid */}
       <div className="relative grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10">
 
-        {/* ── Org Record ── */}
+        {/* ── Combined Record ── */}
         <div className="p-5 md:p-6 flex flex-col justify-center">
           <p className="text-xs text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-primary" /> Season Record
           </p>
           <div className="flex items-end gap-3 mb-3">
             <div className="text-center">
-              <p className="text-4xl md:text-5xl font-black text-green-400 leading-none"><AnimatedNumber value={orgWins} /></p>
+              <p className="text-4xl md:text-5xl font-black text-green-400 leading-none"><AnimatedNumber value={totalWins} /></p>
               <p className="text-xs text-white/40 mt-1">Wins</p>
             </div>
             <p className="text-3xl text-white/20 font-thin mb-2">-</p>
             <div className="text-center">
-              <p className="text-4xl md:text-5xl font-black text-red-400 leading-none"><AnimatedNumber value={orgLosses} /></p>
+              <p className="text-4xl md:text-5xl font-black text-red-400 leading-none"><AnimatedNumber value={totalLosses} /></p>
               <p className="text-xs text-white/40 mt-1">Losses</p>
             </div>
-            {orgDraws > 0 && <>
+            {totalDraws > 0 && <>
               <p className="text-3xl text-white/20 font-thin mb-2">-</p>
               <div className="text-center">
-                <p className="text-4xl md:text-5xl font-black text-yellow-400 leading-none"><AnimatedNumber value={orgDraws} /></p>
+                <p className="text-4xl md:text-5xl font-black text-yellow-400 leading-none"><AnimatedNumber value={totalDraws} /></p>
                 <p className="text-xs text-white/40 mt-1">Draws</p>
               </div>
             </>}
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-white/40 mb-1">
-              <span>Win rate</span><span className="text-primary font-bold">{orgWinPct}%</span>
+              <span>Win rate</span><span className="text-primary font-bold">{winPct}%</span>
             </div>
-            <AnimatedBar pct={orgWinPct} color="bg-gradient-to-r from-green-500 to-green-400" />
+            <AnimatedBar pct={winPct} color="bg-gradient-to-r from-green-500 to-green-400" />
           </div>
           {championships.length > 0 && (
             <motion.div
@@ -222,7 +267,7 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
           )}
         </div>
 
-        {/* ── Team Standings ── */}
+        {/* ── Team Highlights ── */}
         <div className="p-5 md:p-6">
           <p className="text-xs text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-primary" /> Team Highlights
@@ -242,7 +287,7 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
                     transition={{ delay: 0.3 + idx * 0.1 }}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-white/30 w-4">{idx + 1}</span>
+                      {team.sport_icon && <span className="text-sm">{team.sport_icon}</span>}
                       <span className="text-xs font-semibold text-white/80 truncate flex-1">{team.name}</span>
                       {team.championships > 0 && <span className="text-xs">🏆</span>}
                       <span className="text-xs text-white/40">{team.wins}W-{team.losses}L</span>
@@ -282,6 +327,7 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-white/80 truncate">
+                    {e.sport_icon && <span className="mr-1">{e.sport_icon}</span>}
                     {e.team_name}
                     {e.is_championship_win && " 🏆"}
                   </p>

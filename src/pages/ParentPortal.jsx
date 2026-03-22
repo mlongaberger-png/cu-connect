@@ -366,8 +366,8 @@ export default function ParentPortal() {
             )}
           </div>
 
-          {/* Org Performance Hero */}
-          <PerformanceHero events={events} teams={myTeams} players={myKids} />
+          {/* Family Performance Hero */}
+          <PerformanceHero events={myEvents} teams={myTeams} sports={teams.reduce((acc, t) => acc, [])} players={myKids} />
 
           {/* Announcements */}
           <div className="bg-card rounded-2xl border border-border p-6">
