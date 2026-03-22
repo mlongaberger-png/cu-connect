@@ -277,6 +277,8 @@ export default function ParentPortal() {
           <p className="text-sm text-muted-foreground mt-1">Welcome back! Manage your kids' teams, documents, and payments.</p>
         </div>
 
+        <PushNotificationBanner />
+
       {/* Tabs */}
       <div className="flex gap-1 bg-surface rounded-xl p-1 w-fit">
         {TABS.map(tab => {
