@@ -74,6 +74,10 @@ export default function ParentPortal() {
     queryKey: ["announcements"],
     queryFn: () => base44.entities.Announcement.list("-created_date"),
   });
+  const { data: sports = [] } = useQuery({
+    queryKey: ["sports"],
+    queryFn: () => base44.entities.Sport.list(),
+  });
 
   const { data: allPayments = [] } = useQuery({
     queryKey: ["payments-all", userEmail],
@@ -367,7 +371,7 @@ export default function ParentPortal() {
           </div>
 
           {/* Family Performance Hero */}
-          <PerformanceHero events={myEvents} teams={myTeams} sports={teams.reduce((acc, t) => acc, [])} players={myKids} />
+          <PerformanceHero events={myEvents} teams={myTeams} sports={sports.filter(s => myTeams.some(t => t.sport_id === s.id))} players={myKids} />
 
           {/* Announcements */}
           <div className="bg-card rounded-2xl border border-border p-6">
