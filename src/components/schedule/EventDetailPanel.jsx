@@ -31,9 +31,13 @@ const resultConfig = {
 
 export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, canEdit }) {
   const { abbr } = useOrgTimezone();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...event });
   const [saving, setSaving] = useState(false);
+  const [creatingRsvp, setCreatingRsvp] = useState(false);
+  const [rsvpCreated, setRsvpCreated] = useState(false);
 
   if (!event) return null;
 
