@@ -88,6 +88,40 @@ export default function ParentPortal() {
     enabled: !!userEmail,
   });
 
+  // RSVP requests for family's teams
+  const { data: allAttendanceRequests = [] } = useQuery({
+    queryKey: ["attendance-requests-parent", myTeamIds.join(",")],
+    queryFn: () => base44.entities.AttendanceRequest.list("-created_date"),
+    enabled: myTeamIds.length > 0,
+  });
+  const myAttendanceRequests = allAttendanceRequests.filter(r => myTeamIds.includes(r.team_id));
+
+  // RSVP responses already submitted by this user
+  const { data: myRsvpResponses = [] } = useQuery({
+    queryKey: ["my-rsvp-responses", userEmail],
+    queryFn: () => base44.entities.AttendanceResponse.filter({ responder_email: userEmail }),
+    enabled: !!userEmail,
+  });
+
+  // Pending signature requests
+  const { data: mySignatureRequests = [] } = useQuery({
+    queryKey: ["my-sig-requests", userEmail],
+    queryFn: async () => {
+      const kidIds = myKids.map(k => k.id);
+      if (!kidIds.length) return [];
+      const all = await base44.entities.SignatureRequest.list("-created_date");
+      return all.filter(s => kidIds.includes(s.player_id) && s.status === "pending");
+    },
+    enabled: myKids.length > 0,
+  });
+
+  // Volunteer assignments
+  const { data: myVolunteerAssignments = [] } = useQuery({
+    queryKey: ["my-vol-assignments", userEmail],
+    queryFn: () => base44.entities.VolunteerAssignment.filter({ volunteer_email: userEmail }),
+    enabled: !!userEmail,
+  });
+
   // Players linked via PlayerGuardian records (supports multiple guardians per player)
   const myLinkedPlayerIds = new Set(myGuardianLinks.map(g => g.player_id));
   const myKids = userEmail
