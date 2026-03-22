@@ -125,13 +125,27 @@ export default function TeamDetail() {
             {team.season && <span className="text-xs text-muted-foreground capitalize">{team.season} {team.year}</span>}
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleEditTeam} className="border-border">
-            <Settings className="w-4 h-4 mr-2" /> Edit Team
-          </Button>
-          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-            <Plus className="w-4 h-4 mr-2" /> Add Player
-          </Button>
+        <div className="flex gap-2 flex-wrap">
+          <RosterPDFButton team={team} players={players} label="Download Roster PDF" />
+          {canManage && (
+            <Button
+              variant="outline"
+              onClick={() => updateTeamMutation.mutate({ id: teamId, data: { roster_published: !team.roster_published } })}
+              className={`border-border gap-1.5 ${team.roster_published ? "text-green-400 border-green-500/30" : "text-muted-foreground"}`}
+            >
+              {team.roster_published ? <><Eye className="w-4 h-4" /> Roster Published</> : <><EyeOff className="w-4 h-4" /> Publish Roster</>}
+            </Button>
+          )}
+          {canManage && (
+            <Button variant="outline" onClick={handleEditTeam} className="border-border">
+              <Settings className="w-4 h-4 mr-2" /> Edit Team
+            </Button>
+          )}
+          {canManage && (
+            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" /> Add Player
+            </Button>
+          )}
         </div>
       </div>
 
