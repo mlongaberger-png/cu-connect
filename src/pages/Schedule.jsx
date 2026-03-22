@@ -210,7 +210,15 @@ export default function Schedule() {
       )}
 
       {/* Event Detail Panel */}
-      {selectedEvent && <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && (
+        <EventDetailPanel
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          canEdit={canEditEvent(selectedEvent)}
+          onUpdate={(id, data) => updateMutation.mutateAsync({ id, data })}
+          onDelete={(id) => deleteMutation.mutate(id)}
+        />
+      )}
 
       {/* Export Panel */}
       {showExport && (
