@@ -5,6 +5,7 @@ import { Trophy, Users, Calendar, UserCircle, TrendingUp, Shield, ClipboardList 
 import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import RecentAnnouncements from "@/components/dashboard/RecentAnnouncements";
+import OrgPerformanceFeed from "@/components/dashboard/OrgPerformanceFeed";
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
 import { DollarSign } from "lucide-react";
 
@@ -88,6 +89,9 @@ export default function Dashboard() {
         <UpcomingEvents events={upcomingEvents} />
         <RecentAnnouncements announcements={announcements} />
       </div>
+
+      {/* Org Performance */}
+      <OrgPerformanceFeed events={events} teams={teams} />
     </div>
   );
 }
