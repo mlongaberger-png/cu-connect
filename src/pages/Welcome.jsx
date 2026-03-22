@@ -11,8 +11,8 @@ export default function Welcome() {
       {/* Header */}
       <header className="px-6 py-4 flex items-center justify-between border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-primary" />
+          <div className="w-9 h-9 rounded-lg overflow-hidden">
+            <img src={CU_LOGO} alt="CU Logo" className="w-full h-full object-cover" />
           </div>
           <span className="font-bold text-foreground text-lg">Cornerstone United</span>
         </div>
@@ -26,8 +26,8 @@ export default function Welcome() {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center max-w-2xl mx-auto w-full">
-        <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-6">
-          <Trophy className="w-10 h-10 text-primary" />
+        <div className="w-24 h-24 rounded-2xl overflow-hidden mx-auto mb-6">
+          <img src={CU_LOGO} alt="Cornerstone United Logo" className="w-full h-full object-cover" />
         </div>
 
         <h1 className="text-4xl font-extrabold text-foreground mb-3">
