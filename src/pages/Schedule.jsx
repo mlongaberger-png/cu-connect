@@ -180,8 +180,8 @@ export default function Schedule() {
                 <div className="flex items-start justify-between">
                   <div className="flex gap-4">
                     <div className="flex flex-col items-center min-w-[52px] bg-surface rounded-xl p-2">
-                      <span className="text-xs text-muted-foreground">{event.date ? format(new Date(event.date), "MMM") : ""}</span>
-                      <span className="text-2xl font-bold text-foreground">{event.date ? format(new Date(event.date), "dd") : "--"}</span>
+                      <span className="text-xs text-muted-foreground">{event.date ? formatDate(event.date, "MMM") : ""}</span>
+                      <span className="text-2xl font-bold text-foreground">{event.date ? formatDate(event.date, "dd") : "--"}</span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -190,7 +190,7 @@ export default function Schedule() {
                       </div>
                       <h3 className="text-base font-semibold text-foreground">{event.title}</h3>
                       <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-muted-foreground">
-                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {event.start_time}{event.end_time ? ` - ${event.end_time}` : ""}</span>}
+                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {formatTime12h(event.start_time)}{event.end_time ? ` - ${formatTime12h(event.end_time)}` : ""}</span>}
                         {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {event.location}</span>}
                       </div>
                       {event.team_name && <p className="text-xs text-primary mt-1">{event.team_name} {event.sport_name ? `• ${event.sport_name}` : ""}</p>}
