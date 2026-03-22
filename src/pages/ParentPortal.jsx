@@ -15,6 +15,7 @@ import { useLocation, Link } from "react-router-dom";
 import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
 import ContactAD from "@/components/parentportal/ContactAD";
 import { useAuth } from "@/lib/AuthContext";
+import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
