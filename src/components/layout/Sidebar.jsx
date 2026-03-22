@@ -23,13 +23,14 @@ const allNavItems = [
   { path: "/DataExport", label: "Import / Export", icon: Download, roles: ["admin"] },
   { path: "/LegalPages", label: "Legal Pages", icon: Scale, roles: ["admin"] },
 
-  // Parent nav — maps to tabs inside /Portal
-  { path: "/Portal", label: "My Dashboard", icon: LayoutDashboard, roles: ["parent"] },
-  { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent"] },
-  { path: "/Portal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent"] },
-  { path: "/Portal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent"] },
-  { path: "/Portal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent"] },
-  { path: "/Portal?tab=messages", label: "Messages", icon: MessageSquare, roles: ["parent"] },
+  // Parent nav
+  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["parent", "user"] },
+  { path: "/Portal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
+  { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent", "user"] },
+  { path: "/Portal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent", "user"] },
+  { path: "/Portal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent", "user"] },
+  { path: "/Portal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent", "user"] },
+  { path: "/Portal?tab=messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
