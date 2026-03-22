@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
-import { useAdminGuard } from "@/hooks/useRoleGuard";
+import RosterPDFButton from "@/components/roster/RosterPDFButton";
+import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
 
 export default function TeamDetail() {
-  useAdminGuard();
+  const { isAdmin, isAD } = useAdminOrADGuard();
+  const canManage = isAdmin || isAD;
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get("id");
   const [showForm, setShowForm] = useState(false);
