@@ -319,15 +319,39 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             </div>
           </div>
         ) : (
-          <div className="pt-2 border-t border-border space-y-2">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Add to Calendar</p>
-            <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="outline" className="border-border text-sm" onClick={handleExportICS}>
-                <Download className="w-3.5 h-3.5 mr-1" /> Download (.ics)
-              </Button>
-              <Button size="sm" variant="outline" className="border-border text-sm" onClick={handleAddToGoogleCalendar}>
-                <Calendar className="w-3.5 h-3.5 mr-1" /> Google Calendar
-              </Button>
+          <div className="pt-2 border-t border-border space-y-3">
+            {/* RSVP creation (staff only, team events only) */}
+            {canEdit && event.team_id && (
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Parent RSVP</p>
+                {rsvpCreated ? (
+                  <div className="flex items-center gap-2 text-green-400 text-sm">
+                    <CheckCircle2 className="w-4 h-4" /> RSVP request sent to parents
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-primary/30 text-primary hover:bg-primary/10 text-sm gap-1.5"
+                    onClick={handleCreateRsvp}
+                    disabled={creatingRsvp}
+                  >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    {creatingRsvp ? "Creating..." : "Request RSVP from Parents"}
+                  </Button>
+                )}
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Add to Calendar</p>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" className="border-border text-sm" onClick={handleExportICS}>
+                  <Download className="w-3.5 h-3.5 mr-1" /> Download (.ics)
+                </Button>
+                <Button size="sm" variant="outline" className="border-border text-sm" onClick={handleAddToGoogleCalendar}>
+                  <Calendar className="w-3.5 h-3.5 mr-1" /> Google Calendar
+                </Button>
+              </div>
             </div>
           </div>
         )}
