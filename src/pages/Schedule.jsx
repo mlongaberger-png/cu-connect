@@ -32,6 +32,7 @@ const typeColors = {
 export default function Schedule() {
   const { isAdmin, isAD, isCoach } = useScheduleGuard();
   const { user } = useAuth();
+  const { abbr } = useOrgTimezone();
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [filterTeam, setFilterTeam] = useState("all");
