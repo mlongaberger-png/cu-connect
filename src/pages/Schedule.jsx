@@ -37,6 +37,7 @@ export default function Schedule() {
   const [calendarView, setCalendarView] = useState("month");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showExport, setShowExport] = useState(false);
+  const [showPdfImport, setShowPdfImport] = useState(false);
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   const queryClient = useQueryClient();
 
