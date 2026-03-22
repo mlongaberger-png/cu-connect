@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Hash, Star, ChevronDown, ChevronRight, Building2 } from "lucide-react";
 
-export default function MessagesSidebar({ channelId, onSelectChannel, sports, teams }) {
+export default function MessagesSidebar({ channelId, onSelectChannel, sports, teams, filterTeamIds = null }) {
   const [expandedSports, setExpandedSports] = useState({});
   const [starredChats, setStarredChats] = useState({}); // chatId -> preferenceId
   const [userId, setUserId] = useState(null);
@@ -39,10 +39,11 @@ export default function MessagesSidebar({ channelId, onSelectChannel, sports, te
 
   // Build starred list for display
   const starredIds = Object.keys(starredChats);
+  const visibleTeams = filterTeamIds ? teams.filter(t => filterTeamIds.includes(t.id)) : teams;
   const allChannels = [
     { id: "org", name: "Organization", type: "org" },
     ...sports.map(s => ({ id: s.id, name: s.name, type: "sport", icon: s.icon })),
-    ...teams.map(t => ({ id: t.id, name: t.name, type: "team" })),
+    ...visibleTeams.map(t => ({ id: t.id, name: t.name, type: "team" })),
   ];
   const starredItems = allChannels.filter(c => starredIds.includes(c.id));
 
@@ -89,7 +90,7 @@ export default function MessagesSidebar({ channelId, onSelectChannel, sports, te
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-1">Channels</p>
             {sports.map(sport => {
-              const sportTeams = teams.filter(t => t.sport_id === sport.id);
+              const sportTeams = visibleTeams.filter(t => t.sport_id === sport.id);
               const expanded = expandedSports[sport.id] ?? false;
               return (
                 <div key={sport.id}>
@@ -125,7 +126,7 @@ export default function MessagesSidebar({ channelId, onSelectChannel, sports, te
             })}
 
             {/* Teams not under any sport */}
-            {teams.filter(t => !t.sport_id).map(t => channelBtn(t.id, t.name, "team"))}
+            {visibleTeams.filter(t => !t.sport_id).map(t => channelBtn(t.id, t.name, "team"))}
           </div>
         )}
       </div>
