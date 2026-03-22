@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, addDays as addD, subDays, startOfDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, subDays } from "date-fns";
+import { parseLocalDate } from "@/utils/dateTime";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,7 +26,7 @@ export default function CalendarView({ events, calendarView, setCalendarView, on
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const eventsOnDay = (day) =>
-    events.filter(e => e.date && isSameDay(new Date(e.date), day));
+    events.filter(e => e.date && isSameDay(parseLocalDate(e.date), day));
 
   // ---- Month View ----
   const renderMonth = () => {
