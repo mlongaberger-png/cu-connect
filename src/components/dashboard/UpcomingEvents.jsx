@@ -1,6 +1,7 @@
 import React from "react";
 import { Calendar, MapPin, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { formatDate, formatTime12h } from "@/utils/dateTime";
+import { useOrgTimezone } from "@/lib/useOrgTimezone";
 
 const typeColors = {
   practice: "bg-blue-500/20 text-blue-400",
@@ -12,6 +13,8 @@ const typeColors = {
 };
 
 export default function UpcomingEvents({ events }) {
+  const { abbr } = useOrgTimezone();
+
   if (!events || events.length === 0) {
     return (
       <div className="bg-card rounded-2xl border border-border p-6">
@@ -26,16 +29,16 @@ export default function UpcomingEvents({ events }) {
       <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Events</h3>
       <div className="space-y-3">
         {events.slice(0, 5).map((event) => (
-          <div 
-            key={event.id} 
+          <div
+            key={event.id}
             className="flex items-start gap-4 p-3 rounded-xl bg-surface hover:bg-surface-hover transition-colors"
           >
             <div className="flex flex-col items-center min-w-[48px]">
               <span className="text-xs text-muted-foreground">
-                {event.date ? format(new Date(event.date), "MMM") : ""}
+                {event.date ? formatDate(event.date, "MMM") : ""}
               </span>
               <span className="text-xl font-bold text-foreground">
-                {event.date ? format(new Date(event.date), "dd") : "--"}
+                {event.date ? formatDate(event.date, "dd") : "--"}
               </span>
             </div>
             <div className="flex-1 min-w-0">
@@ -51,7 +54,9 @@ export default function UpcomingEvents({ events }) {
               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                 {event.start_time && (
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {event.start_time}
+                    <Clock className="w-3 h-3" />
+                    {formatTime12h(event.start_time)}
+                    {abbr && <span className="text-muted-foreground/60 ml-0.5">{abbr}</span>}
                   </span>
                 )}
                 {event.location && (
