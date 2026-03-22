@@ -25,12 +25,12 @@ const allNavItems = [
 
   // Parent nav
   { path: "/Portal", label: "Portal", icon: LayoutDashboard, roles: ["parent", "user"] },
-  { path: "/Portal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
-  { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent", "user"] },
-  { path: "/Portal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent", "user"] },
-  { path: "/Portal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent", "user"] },
-  { path: "/Portal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent", "user"] },
-  { path: "/Portal?tab=messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
+  { path: "/ParentPortal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
+  { path: "/ParentPortal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent", "user"] },
+  { path: "/ParentPortal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent", "user"] },
+  { path: "/ParentPortal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent", "user"] },
+  { path: "/ParentPortal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent", "user"] },
+  { path: "/ParentPortal?tab=messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {

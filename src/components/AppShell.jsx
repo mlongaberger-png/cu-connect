@@ -123,7 +123,7 @@ export default function AppShell() {
       </Route>
 
       {/* Parent portal — standalone (no sidebar header clash) */}
-      <Route path="/Portal" element={<ParentPortal />} />
+      <Route path="/ParentPortal" element={<ParentPortal />} />
       <Route path="/Register" element={<Register />} />
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
