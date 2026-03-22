@@ -70,6 +70,26 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   const hasScore = event.our_score != null && event.our_score !== "";
   const isViewCompetition = (event.type === "game" || event.type === "tournament");
 
+  const handleCreateRsvp = async () => {
+    setCreatingRsvp(true);
+    const label = `${event.title}${event.start_time ? ` – ${formatTime12h(event.start_time)}` : ""}`;
+    await base44.entities.AttendanceRequest.create({
+      team_id: event.team_id,
+      team_name: event.team_name,
+      event_id: event.id,
+      label,
+      event_type: (event.type === "game" || event.type === "tournament" || event.type === "meeting") ? event.type : "other",
+      event_date: event.date,
+      event_time: event.start_time || "",
+      created_by_name: user?.full_name || "Staff",
+      created_by_email: user?.email || "",
+      channel_id: event.team_id,
+    });
+    queryClient.invalidateQueries({ queryKey: ["attendance-requests"] });
+    setCreatingRsvp(false);
+    setRsvpCreated(true);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60" onClick={editing ? undefined : onClose}>
       <div
