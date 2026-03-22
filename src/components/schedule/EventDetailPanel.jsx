@@ -27,6 +27,7 @@ const resultConfig = {
 };
 
 export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, canEdit }) {
+  const { abbr } = useOrgTimezone();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...event });
   const [saving, setSaving] = useState(false);
