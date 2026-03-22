@@ -91,7 +91,22 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      let currentUser = await base44.auth.me();
+
+      // If the user has the default "user" role, try to auto-upgrade to "parent"
+      // (happens when a parent accepts an invite — Base44 sets "user" by default)
+      if (currentUser?.role === 'user') {
+        try {
+          const res = await base44.functions.invoke('autoUpgradeParentRole', {});
+          if (res?.data?.upgraded) {
+            // Re-fetch to get the updated role
+            currentUser = await base44.auth.me();
+          }
+        } catch (upgradeErr) {
+          console.warn('Role upgrade check failed:', upgradeErr.message);
+        }
+      }
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
