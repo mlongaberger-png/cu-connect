@@ -1,7 +1,9 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Users, Calendar, FileText } from "lucide-react";
+import { Users, Calendar, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/2ff00e9bd_file_0000000089d071f8be26c9f306ac7ce1.png";
 
 export default function Welcome() {
   return (
