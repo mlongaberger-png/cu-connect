@@ -134,13 +134,13 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
               {event.date && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="w-4 h-4 text-primary" />
-                  <span>{format(new Date(event.date), "EEEE, MMMM d, yyyy")}</span>
+                  <span>{formatDate(event.date, "EEEE, MMMM d, yyyy")}</span>
                 </div>
               )}
               {event.start_time && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="w-4 h-4 text-primary" />
-                  <span>{event.start_time}{event.end_time ? ` – ${event.end_time}` : ""}</span>
+                  <span>{formatTime12h(event.start_time)}{event.end_time ? ` – ${formatTime12h(event.end_time)}` : ""}</span>
                 </div>
               )}
               {event.location && (
