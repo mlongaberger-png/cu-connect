@@ -17,6 +17,7 @@ import InviteCoGuardian from "@/components/parentportal/InviteCoGuardian";
 import ContactAD from "@/components/parentportal/ContactAD";
 import { useAuth } from "@/lib/AuthContext";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
+import OrgPerformanceFeed from "@/components/dashboard/OrgPerformanceFeed";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -357,6 +358,9 @@ export default function ParentPortal() {
               </div>
             )}
           </div>
+
+          {/* Org Performance Feed */}
+          <OrgPerformanceFeed events={events} teams={teams} />
 
           {/* Announcements */}
           <div className="bg-card rounded-2xl border border-border p-6">
