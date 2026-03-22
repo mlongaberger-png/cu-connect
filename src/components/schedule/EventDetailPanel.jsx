@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
-import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check } from "lucide-react";
+import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateICSContent, downloadICS } from "@/utils/calendarExport";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 const EVENT_TYPES = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
 const TOURNAMENT_ROUNDS = ["Pool Play", "Round of 16", "Quarterfinals", "Semifinals", "Finals", "Championship"];
