@@ -83,8 +83,8 @@ export default function AppShell() {
 
   const role = user?.role;
 
-  // All authenticated users land on Dashboard
-  const homeRoute = role ? "/Dashboard" : null;
+  // All authenticated users land on Dashboard; unknown/pending role → PendingAccess
+  const homeRoute = role && role !== "pending" ? "/Dashboard" : null;
 
   // Unknown / missing role → PendingAccess
   if (!homeRoute) {
