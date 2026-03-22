@@ -225,7 +225,7 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
         {/* ── Team Standings ── */}
         <div className="p-5 md:p-6">
           <p className="text-xs text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-primary" /> Team Standings
+            <TrendingUp className="w-3.5 h-3.5 text-primary" /> Team Highlights
           </p>
           {teamList.length === 0 ? (
             <p className="text-xs text-white/30 italic">No team results yet</p>

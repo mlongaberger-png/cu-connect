@@ -30,7 +30,7 @@ const allNavItems = [
   { path: "/ParentPortal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent", "user"] },
   { path: "/ParentPortal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent", "user"] },
   { path: "/ParentPortal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent", "user"] },
-  { path: "/ParentPortal?tab=messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
+  { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
