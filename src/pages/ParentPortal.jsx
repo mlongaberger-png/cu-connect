@@ -105,6 +105,39 @@ export default function ParentPortal() {
   const myUnpaidInvoices = allPayments.filter(p => myKidIds.has(p.player_id) && p.status !== "paid");
   const totalAllOwed = myUnpaidInvoices.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+  // RSVP requests for family's teams
+  const { data: allAttendanceRequests = [] } = useQuery({
+    queryKey: ["attendance-requests-parent", myTeamIds.join(",")],
+    queryFn: () => base44.entities.AttendanceRequest.list("-created_date"),
+    enabled: myTeamIds.length > 0,
+  });
+  const myAttendanceRequests = allAttendanceRequests.filter(r => myTeamIds.includes(r.team_id));
+
+  // RSVP responses already submitted by this user
+  const { data: myRsvpResponses = [] } = useQuery({
+    queryKey: ["my-rsvp-responses", userEmail],
+    queryFn: () => base44.entities.AttendanceResponse.filter({ responder_email: userEmail }),
+    enabled: !!userEmail,
+  });
+
+  // Pending signature requests
+  const { data: mySignatureRequests = [] } = useQuery({
+    queryKey: ["my-sig-requests", userEmail],
+    queryFn: async () => {
+      if (!myKidIds.size) return [];
+      const all = await base44.entities.SignatureRequest.list("-created_date");
+      return all.filter(s => myKidIds.has(s.player_id) && s.status === "pending");
+    },
+    enabled: myKidIds.size > 0,
+  });
+
+  // Volunteer assignments
+  const { data: myVolunteerAssignments = [] } = useQuery({
+    queryKey: ["my-vol-assignments", userEmail],
+    queryFn: () => base44.entities.VolunteerAssignment.filter({ volunteer_email: userEmail }),
+    enabled: !!userEmail,
+  });
+
   const { data: myAccessRequests = [] } = useQuery({
     queryKey: ["my-access-requests", userEmail],
     queryFn: () => base44.entities.AccessRequest.filter({ parent_email: userEmail }),
