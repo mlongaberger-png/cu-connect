@@ -306,6 +306,7 @@ export default function ParentPortal() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {myKids.map(kid => {
               const team = teams.find(t => t.id === kid.team_id);
+              const kidTeamPlayers = players.filter(p => p.team_id === kid.team_id && p.is_active !== false);
               return (
                 <div key={kid.id} className="bg-card rounded-2xl border border-border p-5">
                   <div className="flex items-center gap-3 mb-3">
@@ -322,6 +323,11 @@ export default function ParentPortal() {
                     <span>{team?.name || "Unknown Team"}</span>
                   </div>
                   {kid.position && <p className="text-xs text-muted-foreground mt-1">Position: {kid.position}</p>}
+                  {team?.roster_published && (
+                    <div className="mt-3">
+                      <RosterPDFButton team={team} players={kidTeamPlayers} label="Team Roster PDF" />
+                    </div>
+                  )}
                   <InviteCoGuardian player={kid} currentUserEmail={userEmail} />
                 </div>
               );
