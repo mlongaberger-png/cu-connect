@@ -62,7 +62,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl overflow-hidden">
                 <img
-                  src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/2ff00e9bd_file_0000000089d071f8be26c9f306ac7ce1.png"
+                  src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/dd2c3848a_1774211136956.png"
                   alt="Cornerstone United Logo"
                   className="w-full h-full object-cover"
                 />
