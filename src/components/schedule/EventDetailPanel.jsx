@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { format } from "date-fns";
+import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

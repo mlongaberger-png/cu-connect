@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp } from "lucide-react";
-import { format } from "date-fns";
+import { formatDate, formatTime12h } from "@/utils/dateTime";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
