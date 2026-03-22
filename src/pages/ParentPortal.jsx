@@ -31,7 +31,7 @@ const TABS = [
 
 export default function ParentPortal() {
   const location = useLocation();
-  const isStandalone = location.pathname === "/Portal";
+  const isStandalone = location.pathname === "/ParentPortal";
   const { user, isLoadingAuth } = useAuth();
   const userEmail = user?.email;
 
