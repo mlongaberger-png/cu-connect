@@ -5,7 +5,7 @@ import TopBar from "./TopBar";
 import OfflineIndicator from "./OfflineIndicator";
 
 const pageTitles = {
-  "/Dashboard": "Portal",
+  "/Portal": "Portal",
   "/Sports": "Sports",
   "/Teams": "Teams",
   "/Schedule": "Schedule",

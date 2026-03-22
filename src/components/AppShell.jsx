@@ -28,7 +28,7 @@ import PendingAccess from "@/pages/PendingAccess";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register"];
 const STAFF_ONLY_PATHS = [
-  "/Dashboard", "/Sports", "/Teams", "/Schedule", "/Messages",
+  "/Portal", "/Sports", "/Teams", "/Schedule", "/Messages",
   "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"
 ];
 
@@ -84,7 +84,7 @@ export default function AppShell() {
   const role = user?.role;
 
   // All authenticated users land on Dashboard; unknown/pending role → PendingAccess
-  const homeRoute = role && role !== "pending" ? "/Dashboard" : null;
+  const homeRoute = role && role !== "pending" ? "/Portal" : null;
 
   // Unknown / missing role → PendingAccess
   if (!homeRoute) {
@@ -103,7 +103,7 @@ export default function AppShell() {
 
       {/* Staff layout (with sidebar) */}
       <Route element={<AppLayout />}>
-        <Route path="/Dashboard" element={<Dashboard />} />
+        <Route path="/Portal" element={<Dashboard />} />
         <Route path="/Sports" element={<Sports />} />
         <Route path="/Teams" element={<Teams />} />
         <Route path="/TeamDetail" element={<TeamDetail />} />
