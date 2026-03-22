@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp } from "lucide-react";
 import { format } from "date-fns";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
+import PdfScheduleImporter from "@/components/schedule/PdfScheduleImporter";
 
 import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import { useAuth } from "@/lib/AuthContext";
