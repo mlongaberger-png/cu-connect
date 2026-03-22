@@ -343,6 +343,40 @@ export default function ParentPortal() {
       {/* Overview Tab */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+
+          {/* Family Analytics Stats */}
+          <FamilyDashboardStats
+            upcomingEvents={myUpcomingEvents}
+            myKids={myKids}
+            unpaidCount={myUnpaidInvoices.length}
+            pendingDocs={mySignatureRequests.length}
+            rsvpRequests={myAttendanceRequests}
+            rsvpResponses={myRsvpResponses}
+            volunteerAssignments={myVolunteerAssignments}
+          />
+
+          {/* Open RSVP Requests */}
+          {myAttendanceRequests.filter(r => !r.is_locked).length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Open RSVPs — Action Needed
+              </h3>
+              <div className="space-y-3">
+                {myAttendanceRequests.filter(r => !r.is_locked).slice(0, 5).map(req => (
+                  <AttendanceCard
+                    key={req.id}
+                    request={req}
+                    isStaff={false}
+                    currentUser={user}
+                    myPlayers={myKids}
+                    allPlayers={[]}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* My Kids */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {myKids.map(kid => {
