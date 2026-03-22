@@ -16,12 +16,12 @@ export default function Messages() {
   const { user } = useAuth();
   const role = user?.role;
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
+  const isParent = role === "parent" || role === "user";
 
-  // Redirect non-staff non-parents away (parents see ParentPortal for messages)
-  // Staff only route
   const [channel, setChannel] = useState("org");
   const [channelId, setChannelId] = useState("org");
   const [channelName, setChannelName] = useState("Organization");
+  const [parentChannelReady, setParentChannelReady] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [starredIds, setStarredIds] = useState([]);
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
@@ -58,6 +58,29 @@ export default function Messages() {
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
   });
+
+  // For parents: auto-select their team channel
+  const { data: guardianLinks = [] } = useQuery({
+    queryKey: ["my-guardian-links-msg", user?.email],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
+    enabled: isParent && !!user?.email,
+  });
+
+  useEffect(() => {
+    if (!isParent || parentChannelReady || teams.length === 0) return;
+    const linkedPlayerIds = new Set(guardianLinks.map(g => g.player_id));
+    const myPlayers = allPlayers.filter(p => linkedPlayerIds.has(p.id) || p.parent_email === user?.email);
+    const myTeamIds = [...new Set(myPlayers.map(p => p.team_id))];
+    if (myTeamIds.length > 0) {
+      const firstTeam = teams.find(t => t.id === myTeamIds[0]);
+      if (firstTeam) {
+        setChannel("team");
+        setChannelId(firstTeam.id);
+        setChannelName(firstTeam.name);
+        setParentChannelReady(true);
+      }
+    }
+  }, [isParent, guardianLinks, allPlayers, teams, parentChannelReady, user?.email]);
 
   // Attendance requests for current channel
   const { data: attendanceRequests = [] } = useQuery({
