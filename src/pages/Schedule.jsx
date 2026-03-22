@@ -65,6 +65,11 @@ export default function Schedule() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["events"] }),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Event.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setSelectedEvent(null); },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const team = teams.find(t => t.id === form.team_id);
