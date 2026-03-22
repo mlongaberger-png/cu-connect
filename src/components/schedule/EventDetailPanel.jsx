@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateICSContent, downloadICS } from "@/utils/calendarExport";
+import { useOrgTimezone } from "@/lib/useOrgTimezone";
 
 const EVENT_TYPES = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
 const TOURNAMENT_ROUNDS = ["Pool Play", "Round of 16", "Quarterfinals", "Semifinals", "Finals", "Championship"];
