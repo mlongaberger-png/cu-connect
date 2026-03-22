@@ -338,8 +338,8 @@ export default function ParentPortal() {
                 {myUpcomingEvents.slice(0, 8).map(event => (
                   <div key={event.id} className="flex items-start gap-4 p-3 rounded-xl bg-surface">
                     <div className="flex flex-col items-center min-w-[48px]">
-                      <span className="text-xs text-muted-foreground">{format(new Date(event.date), "MMM")}</span>
-                      <span className="text-xl font-bold text-foreground">{format(new Date(event.date), "dd")}</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(event.date, "MMM")}</span>
+                      <span className="text-xl font-bold text-foreground">{formatDate(event.date, "dd")}</span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -347,7 +347,7 @@ export default function ParentPortal() {
                       </div>
                       <p className="text-sm font-medium text-foreground">{event.title}</p>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {event.start_time}</span>}
+                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatTime12h(event.start_time)}</span>}
                         {event.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.location}</span>}
                         <span className="text-primary">{event.team_name}</span>
                       </div>
