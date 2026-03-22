@@ -416,7 +416,7 @@ export default function ParentPortal() {
             onEventClick={setSelectedEvent}
           />
 
-          {selectedEvent && <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+          {selectedEvent && <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} canEdit={false} />}
           {showExport && (
             <CalendarExportPanel
               events={filterTeam === "all" ? myEvents : myEvents.filter(e => e.team_id === filterTeam)}
