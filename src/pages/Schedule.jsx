@@ -202,7 +202,7 @@ export default function Schedule() {
                       </div>
                       <h3 className="text-base font-semibold text-foreground">{event.title}</h3>
                       <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-muted-foreground">
-                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {formatTime12h(event.start_time)}{event.end_time ? ` - ${formatTime12h(event.end_time)}` : ""}</span>}
+                        {event.start_time && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {formatTime12h(event.start_time)}{event.end_time ? ` - ${formatTime12h(event.end_time)}` : ""}{abbr ? <span className="text-muted-foreground/60 ml-0.5">{abbr}</span> : null}</span>}
                         {event.location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {event.location}</span>}
                       </div>
                       {event.team_name && <p className="text-xs text-primary mt-1">{event.team_name} {event.sport_name ? `• ${event.sport_name}` : ""}</p>}
