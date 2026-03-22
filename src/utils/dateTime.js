@@ -1,6 +1,7 @@
+import { format } from "date-fns";
+
 /**
- * Parse a YYYY-MM-DD date string as LOCAL time (not UTC).
- * Using new Date("2025-03-15") parses as UTC midnight → wrong day in US timezones.
+ * Parse a YYYY-MM-DD date string as LOCAL (midnight) — avoids UTC-shift bug.
  */
 export function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -8,9 +9,8 @@ export function parseLocalDate(dateStr) {
 }
 
 /**
- * Format a YYYY-MM-DD string using a date-fns format string, using local time.
+ * Format a YYYY-MM-DD string using date-fns format string, local time.
  */
-import { format } from "date-fns";
 export function formatDate(dateStr, fmt) {
   const d = parseLocalDate(dateStr);
   if (!d) return "";
@@ -27,4 +27,14 @@ export function formatTime12h(timeStr) {
   const ampm = hour >= 12 ? "PM" : "AM";
   hour = hour % 12 || 12;
   return `${hour}:${minute} ${ampm}`;
+}
+
+/**
+ * Format "HH:MM" to 12hr with optional timezone abbreviation label.
+ * e.g. "6:00 PM CT"
+ */
+export function formatTime12hWithTZ(timeStr, tzAbbr) {
+  const base = formatTime12h(timeStr);
+  if (!base) return "";
+  return tzAbbr ? `${base} ${tzAbbr}` : base;
 }
