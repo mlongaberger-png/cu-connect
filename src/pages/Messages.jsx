@@ -144,6 +144,11 @@ export default function Messages() {
         onSelectChannel={selectChannel}
         sports={sports}
         teams={teams}
+        filterTeamIds={isParent ? (() => {
+          const linkedIds = new Set(guardianLinks.map(g => g.player_id));
+          const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
+          return [...new Set(myKids.map(k => k.team_id))];
+        })() : null}
       />
 
       {/* Chat Area */}
