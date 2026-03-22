@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const users = await base44.asServiceRole.entities.User.filter({ email: userEmail });
     if (users.length > 0) {
       const existingUser = users[0];
-      if (existingUser.role !== 'parent' && existingUser.role !== 'admin' && existingUser.role !== 'coach') {
+      if (existingUser.role !== 'admin' && existingUser.role !== 'coach') {
         await base44.asServiceRole.entities.User.update(existingUser.id, { role: 'parent' });
         console.log(`Updated role to parent for existing user ${userEmail}`);
       }
