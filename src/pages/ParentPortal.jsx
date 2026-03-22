@@ -444,6 +444,22 @@ export default function ParentPortal() {
           {/* Family Performance Hero */}
           <PerformanceHero events={myEvents} teams={myTeams} sports={sports.filter(s => myTeams.some(t => t.sport_id === s.id))} players={myKids} />
 
+          {/* Team Rosters (if published) */}
+          {myTeams.some(t => t.roster_published) && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                Team Roster{myTeams.filter(t => t.roster_published).length > 1 ? "s" : ""}
+              </h3>
+              {myTeams.filter(t => t.roster_published).map(team => (
+                <TeamRosterView
+                  key={team.id}
+                  team={team}
+                  players={players.filter(p => p.team_id === team.id && p.is_active !== false)}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Announcements */}
           <div className="bg-card rounded-2xl border border-border p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
