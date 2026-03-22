@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, MessageSquare, Calendar, ClipboardList, DollarSign, Users, FileText, Moon } from "lucide-react";
+import { Bell, BellOff, MessageSquare, Calendar, ClipboardList, DollarSign, Users, FileText, Moon, Smartphone, CheckCircle2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const CATEGORIES = [
   { key: "messages",   label: "Messages",             icon: MessageSquare, desc: "Team chat and direct messages" },
@@ -64,6 +65,7 @@ export default function NotificationSettings() {
   });
 
   const update = (key, value) => setPrefs(p => ({ ...p, [key]: value }));
+  const { isSupported, isSubscribed, isLoading: pushLoading, permission, subscribe, unsubscribe } = usePushNotifications();
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
@@ -73,6 +75,40 @@ export default function NotificationSettings() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Control which notifications you receive and how.</p>
       </div>
+
+      {/* Push Notifications Card */}
+      {isSupported && (
+        <div className="bg-card rounded-2xl border border-border p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Smartphone className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Push Notifications</p>
+                <p className="text-xs text-muted-foreground">
+                  {isSubscribed ? "You'll receive browser push notifications in real time" :
+                   permission === 'denied' ? "Blocked in browser — update site permissions to enable" :
+                   "Get instant alerts even when the app isn't open"}
+                </p>
+              </div>
+            </div>
+            {permission === 'denied' ? (
+              <span className="text-xs text-muted-foreground bg-surface border border-border rounded-lg px-3 py-1.5">Blocked</span>
+            ) : isSubscribed ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle2 className="w-3 h-3" /> Active</span>
+                <button onClick={unsubscribe} disabled={pushLoading} className="text-xs text-muted-foreground hover:text-foreground underline">Disable</button>
+              </div>
+            ) : (
+              <Button size="sm" onClick={subscribe} disabled={pushLoading} className="gap-1.5 text-xs">
+                <Bell className="w-3.5 h-3.5" />
+                {pushLoading ? 'Enabling...' : 'Enable Push'}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Per-category */}
       <div className="bg-card rounded-2xl border border-border divide-y divide-border">
