@@ -124,7 +124,6 @@ export default function AppShell() {
 
       {/* Standalone pages (no sidebar) */}
       <Route path="/Portal" element={<ParentPortal />} />
-      <Route path="/Dashboard" element={<Navigate to={homeRoute} replace />} />
       <Route path="/Register" element={<Register />} />
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
