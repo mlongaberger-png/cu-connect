@@ -360,8 +360,8 @@ export default function ParentPortal() {
             )}
           </div>
 
-          {/* Org Performance Feed */}
-          <OrgPerformanceFeed events={events} teams={teams} />
+          {/* Org Performance Hero */}
+          <PerformanceHero events={events} teams={myTeams} players={myKids} />
 
           {/* Announcements */}
           <div className="bg-card rounded-2xl border border-border p-6">
