@@ -19,6 +19,9 @@ import { useAuth } from "@/lib/AuthContext";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
 import PerformanceHero from "@/components/dashboard/PerformanceHero";
 import RosterPDFButton from "@/components/roster/RosterPDFButton";
+import FamilyDashboardStats from "@/components/parentportal/FamilyDashboardStats";
+import TeamRosterView from "@/components/parentportal/TeamRosterView";
+import AttendanceCard from "@/components/attendance/AttendanceCard";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
