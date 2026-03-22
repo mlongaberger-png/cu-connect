@@ -3,44 +3,42 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { email, player_id, player_name } = await req.json();
+    const { email, relationship, players } = await req.json();
 
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
-    // Workspace only accepts 'admin' or 'user'
+    // Invite the user (this sends the magic-link / account setup email from Base44)
     await base44.users.inviteUser(email, 'user');
 
-    // Set the app-level role to 'parent' if user record already exists
-    try {
-      const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
-      if (existingUsers.length > 0) {
-        await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
-      }
-    } catch (roleErr) {
-      console.warn('Could not pre-set parent role:', roleErr.message);
-    }
-
-    // If a player_id is provided, ensure a PlayerGuardian link exists
-    if (player_id) {
-      const existing = await base44.asServiceRole.entities.PlayerGuardian.filter({
-        player_id,
-        user_email: email,
-      });
-
+    // Create PlayerGuardian links for each player
+    const playerList = Array.isArray(players) ? players : [];
+    for (const { player_id, player_name } of playerList) {
+      if (!player_id) continue;
+      const existing = await base44.asServiceRole.entities.PlayerGuardian.filter({ player_id, user_email: email });
       if (existing.length === 0) {
         await base44.asServiceRole.entities.PlayerGuardian.create({
           player_id,
-          player_name: player_name || "",
+          player_name: player_name || '',
           user_email: email,
-          relationship: "Guardian",
-          invited_by: "admin",
+          relationship: relationship || 'Guardian',
+          invited_by: 'admin',
         });
+        console.log(`Linked ${email} → player ${player_id}`);
+      }
+    }
+
+    // If user already exists, set role to parent
+    const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
+    if (existingUsers.length > 0) {
+      const u = existingUsers[0];
+      if (u.role !== 'admin' && u.role !== 'coach') {
+        await base44.asServiceRole.entities.User.update(u.id, { role: 'parent' });
       }
     }
 
     return Response.json({ success: true });
   } catch (error) {
-    console.error('Invite error:', error.message);
+    console.error('inviteParent error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

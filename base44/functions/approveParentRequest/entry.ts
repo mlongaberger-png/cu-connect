@@ -11,8 +11,6 @@ Deno.serve(async (req) => {
     }
 
     const { request_id, action, player_ids } = await req.json();
-    // action: 'approve' | 'reject'
-
     if (!request_id || !action) {
       return Response.json({ error: 'request_id and action are required.' }, { status: 400 });
     }
@@ -29,24 +27,19 @@ Deno.serve(async (req) => {
         reviewed_by: user.email,
         reviewed_at: new Date().toISOString(),
       });
+
+      // Notify parent of rejection
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: accessReq.parent_email,
+        subject: 'Update on Your Cornerstone United Access Request',
+        body: `Hi ${accessReq.parent_name},\n\nUnfortunately, your access request was not approved at this time. Please contact your organization admin for more information.\n\nCornerstone United Athletics`,
+      });
+
       return Response.json({ success: true });
     }
 
     if (action === 'approve') {
-      // Workspace only accepts 'admin' or 'user' — invite as 'user', app role is set separately
-      await base44.users.inviteUser(accessReq.parent_email, 'user');
-
-      // Set the app-level role to 'parent' if user record already exists
-      try {
-        const existingUsers = await base44.asServiceRole.entities.User.filter({ email: accessReq.parent_email });
-        if (existingUsers.length > 0) {
-          await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
-        }
-      } catch (roleErr) {
-        console.warn('Could not pre-set parent role:', roleErr.message);
-      }
-
-      // Link to players if provided
+      // Create PlayerGuardian links FIRST — so when they log in, the role auto-sets via automation
       if (player_ids && player_ids.length > 0) {
         for (const pid of player_ids) {
           const playerList = await base44.asServiceRole.entities.Player.filter({ id: pid });
@@ -69,27 +62,48 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Invite via Base44 (sends magic-link email for account setup)
+      await base44.users.inviteUser(accessReq.parent_email, 'user');
+
+      // If user account already exists, pre-set role to parent
+      try {
+        const existingUsers = await base44.asServiceRole.entities.User.filter({ email: accessReq.parent_email });
+        if (existingUsers.length > 0) {
+          await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
+        }
+      } catch (roleErr) {
+        console.warn('Could not pre-set parent role:', roleErr.message);
+      }
+
       await base44.asServiceRole.entities.AccessRequest.update(request_id, {
         status: 'approved',
         reviewed_by: user.email,
         reviewed_at: new Date().toISOString(),
       });
 
-      // Notify the parent
+      // Send friendly approval email with clear next steps (no "forgot password" confusion)
+      const appUrl = 'https://app.base44.com/app/69bae2515552e76ca1fbd6a0/Portal';
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: accessReq.parent_email,
-        subject: 'Your Parent Portal Access Has Been Approved',
-        body: `
-Hi ${accessReq.parent_name},
+        subject: '🎉 Welcome to Cornerstone United – Your Portal Access Is Ready!',
+        body: `Hi ${accessReq.parent_name},
 
-Your request to access the Cornerstone United parent portal has been approved!
+Great news! Your Cornerstone United parent portal access has been approved.
 
-You can now log in at the portal using your email address: ${accessReq.parent_email}
+You should receive a separate email shortly with a link to set up your account. Simply click that link, create your password, and you'll be taken straight to the portal.
 
-If you haven't set up your password yet, use the "Forgot Password" option on the login page.
+Once logged in, you can:
+• View your child's schedule & events
+• Track attendance and RSVPs
+• Manage payments & invoices
+• Access team documents
+
+IMPORTANT: Make sure to sign in with this email address: ${accessReq.parent_email}
+
+If you don't receive the account setup email within a few minutes, check your spam folder.
 
 Welcome aboard!
-        `.trim(),
+— Cornerstone United Athletics`,
       });
 
       return Response.json({ success: true });
