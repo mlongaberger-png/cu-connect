@@ -83,12 +83,8 @@ export default function AppShell() {
 
   const role = user?.role;
 
-  // Determine home route by role
-  const homeRoute =
-    role === "admin" || role === "athletic_director" ? "/Dashboard" :
-    role === "coach" ? "/Schedule" :
-    role === "parent" || role === "user" ? "/Portal" : // "user" is Base44's default role for new invitees
-    null; // unknown/pending role → PendingAccess
+  // All authenticated users land on Dashboard
+  const homeRoute = role ? "/Dashboard" : null;
 
   // Unknown / missing role → PendingAccess
   if (!homeRoute) {
