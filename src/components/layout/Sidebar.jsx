@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
   // Staff nav
-  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director", "coach"] },
+  { path: "/Dashboard", label: "Portal", icon: LayoutDashboard, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
   { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
@@ -24,7 +24,7 @@ const allNavItems = [
   { path: "/LegalPages", label: "Legal Pages", icon: Scale, roles: ["admin"] },
 
   // Parent nav
-  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["parent", "user"] },
+  { path: "/Dashboard", label: "Portal", icon: LayoutDashboard, roles: ["parent", "user"] },
   { path: "/Portal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
   { path: "/Portal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent", "user"] },
   { path: "/Portal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent", "user"] },
