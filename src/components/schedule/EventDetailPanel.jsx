@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
-import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, Ban } from "lucide-react";
+import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { generateICSContent, downloadICS } from "@/utils/calendarExport";
 
 const EVENT_TYPES = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
+const TOURNAMENT_ROUNDS = ["Pool Play", "Round of 16", "Quarterfinals", "Semifinals", "Finals", "Championship"];
 
 const typeColors = {
   practice: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -18,12 +19,20 @@ const typeColors = {
   other: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
 };
 
+const resultConfig = {
+  win:  { label: "Win",  color: "bg-green-500/20 text-green-400 border-green-500/30" },
+  loss: { label: "Loss", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  draw: { label: "Draw", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+};
+
 export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, canEdit }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...event });
   const [saving, setSaving] = useState(false);
 
   if (!event) return null;
+
+  const isCompetition = form.type === "game" || form.type === "tournament";
 
   const handleSave = async () => {
     setSaving(true);
@@ -49,17 +58,20 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
     window.open(url, "_blank");
   };
 
+  const hasScore = event.our_score != null && event.our_score !== "";
+  const isViewCompetition = (event.type === "game" || event.type === "tournament");
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60" onClick={editing ? undefined : onClose}>
       <div
-        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             {editing ? (
-              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v, tournament_round: v !== "tournament" ? "" : f.tournament_round }))}>
                 <SelectTrigger className="h-7 text-xs bg-surface border-border w-36"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {EVENT_TYPES.map(t => <SelectItem key={t} value={t} className="capitalize text-xs">{t}</SelectItem>)}
@@ -68,6 +80,20 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             ) : (
               <>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium border capitalize ${typeColors[event.type] || ""}`}>{event.type}</span>
+                {event.tournament_round && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">{event.tournament_round}</span>
+                )}
+                {event.result && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold border capitalize ${resultConfig[event.result]?.color || ""}`}>
+                    {resultConfig[event.result]?.label}
+                    {hasScore ? ` ${event.our_score}–${event.opponent_score ?? "?"}` : ""}
+                  </span>
+                )}
+                {event.is_championship_win && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 font-bold flex items-center gap-1">
+                    🏆 Championship
+                  </span>
+                )}
                 {event.is_cancelled && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">Cancelled</span>}
               </>
             )}
@@ -84,7 +110,7 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
           </div>
         </div>
 
-        {/* Title */}
+        {/* Edit Mode */}
         {editing ? (
           <div className="space-y-3">
             <div>
@@ -109,12 +135,71 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
               <Label className="text-xs">Location</Label>
               <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="bg-surface border-border mt-0.5" />
             </div>
-            {(form.type === "game" || form.type === "tournament") && (
-              <div>
-                <Label className="text-xs">Opponent</Label>
-                <Input value={form.opponent} onChange={e => setForm(f => ({ ...f, opponent: e.target.value }))} className="bg-surface border-border mt-0.5" />
-              </div>
+
+            {isCompetition && (
+              <>
+                <div>
+                  <Label className="text-xs">Opponent</Label>
+                  <Input value={form.opponent} onChange={e => setForm(f => ({ ...f, opponent: e.target.value }))} className="bg-surface border-border mt-0.5" />
+                </div>
+
+                {/* Tournament Round Dropdown */}
+                {form.type === "tournament" && (
+                  <div>
+                    <Label className="text-xs">Tournament Round</Label>
+                    <Select value={form.tournament_round || ""} onValueChange={v => setForm(f => ({ ...f, tournament_round: v }))}>
+                      <SelectTrigger className="bg-surface border-border mt-0.5">
+                        <SelectValue placeholder="Select round…" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-border">
+                        {TOURNAMENT_ROUNDS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Result */}
+                <div>
+                  <Label className="text-xs">Result</Label>
+                  <div className="flex gap-2 mt-1">
+                    {["win", "loss", "draw"].map(r => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, result: f.result === r ? "" : r, is_championship_win: r !== "win" ? false : f.is_championship_win }))}
+                        className={`flex-1 py-1.5 rounded-lg text-sm font-semibold border transition-all capitalize ${form.result === r ? resultConfig[r].color : "bg-surface border-border text-muted-foreground hover:text-foreground"}`}
+                      >
+                        {r === "win" ? "✓ Win" : r === "loss" ? "✗ Loss" : "~ Draw"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Score */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Our Score</Label>
+                    <Input value={form.our_score || ""} onChange={e => setForm(f => ({ ...f, our_score: e.target.value }))} placeholder="e.g. 3" className="bg-surface border-border mt-0.5" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Opponent Score</Label>
+                    <Input value={form.opponent_score || ""} onChange={e => setForm(f => ({ ...f, opponent_score: e.target.value }))} placeholder="e.g. 1" className="bg-surface border-border mt-0.5" />
+                  </div>
+                </div>
+
+                {/* Championship win toggle (only when result is win) */}
+                {form.result === "win" && (
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, is_championship_win: !f.is_championship_win }))}
+                    className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition-all ${form.is_championship_win ? "bg-primary/20 border-primary/40 text-primary" : "bg-surface border-border text-muted-foreground hover:text-foreground"}`}
+                  >
+                    🏆 {form.is_championship_win ? "Championship Win ✓" : "Mark as Championship Win"}
+                  </button>
+                )}
+              </>
             )}
+
             <div>
               <Label className="text-xs">Notes</Label>
               <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-surface border-border mt-0.5" />
@@ -125,11 +210,37 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             </div>
           </div>
         ) : (
+          /* View Mode */
           <>
+            {/* Championship hero */}
+            {event.is_championship_win && (
+              <div className="bg-gradient-to-r from-primary/20 via-yellow-500/10 to-primary/20 border border-primary/30 rounded-xl p-4 text-center">
+                <div className="text-3xl mb-1">🏆</div>
+                <p className="text-sm font-bold text-primary">Championship Victory!</p>
+                {hasScore && <p className="text-xs text-muted-foreground mt-0.5">Final Score: {event.our_score} – {event.opponent_score}</p>}
+              </div>
+            )}
+
             <div>
               <h2 className="text-xl font-bold text-foreground">{event.title}</h2>
               {event.opponent && <p className="text-sm text-muted-foreground mt-0.5">vs {event.opponent}</p>}
             </div>
+
+            {/* Score display for non-championship games */}
+            {isViewCompetition && hasScore && !event.is_championship_win && (
+              <div className={`flex items-center justify-center gap-4 p-4 rounded-xl border ${resultConfig[event.result]?.color || "border-border"}`}>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-foreground">{event.our_score}</p>
+                  <p className="text-xs text-muted-foreground">{event.team_name || "Us"}</p>
+                </div>
+                <span className="text-xl text-muted-foreground font-bold">–</span>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-foreground">{event.opponent_score ?? "?"}</p>
+                  <p className="text-xs text-muted-foreground">{event.opponent || "Opponent"}</p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2 text-sm">
               {event.date && (
                 <div className="flex items-center gap-2 text-muted-foreground">
