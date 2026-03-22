@@ -91,6 +91,11 @@ export default function Schedule() {
           <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowExport(true)}>
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
+          {(isAdmin || isAD) && (
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowPdfImport(true)}>
+              <FileUp className="w-4 h-4 mr-2" /> Import PDF
+            </Button>
+          )}
           <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
             <Plus className="w-4 h-4 mr-2" /> Add Event
           </Button>
