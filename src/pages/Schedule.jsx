@@ -95,7 +95,8 @@ export default function Schedule() {
           <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-1">{events.length} events scheduled</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <TimezoneSelector canEdit={isAdmin || isAD} />
           <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowExport(true)}>
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
