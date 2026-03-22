@@ -119,6 +119,8 @@ export default function PdfScheduleImporter({ open, onOpenChange, teams }) {
               <div
                 onClick={() => fileRef.current?.click()}
                 className="mt-1 border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary/50 transition-colors"
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f); }}
               >
                 <Upload className="w-8 h-8 text-muted-foreground" />
                 {file ? (
@@ -129,10 +131,10 @@ export default function PdfScheduleImporter({ open, onOpenChange, teams }) {
                 ) : (
                   <div className="text-center">
                     <p className="text-sm text-foreground font-medium">Click to upload PDF</p>
-                    <p className="text-xs text-muted-foreground mt-1">Supports standard schedule/roster PDFs</p>
+                    <p className="text-xs text-muted-foreground mt-1">Supports PDF and JPG schedule images</p>
                   </div>
                 )}
-                <input ref={fileRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleFilePick} />
+                <input ref={fileRef} type="file" accept=".pdf,application/pdf,.jpg,.jpeg,image/jpeg" className="hidden" onChange={handleFilePick} />
               </div>
             </div>
 
