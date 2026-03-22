@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
   // Staff nav
-  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director"] },
+  { path: "/Dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
   { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
