@@ -217,6 +217,13 @@ export default function Schedule() {
         />
       )}
 
+      {/* PDF Import Dialog */}
+      <PdfScheduleImporter
+        open={showPdfImport}
+        onOpenChange={setShowPdfImport}
+        teams={myTeams}
+      />
+
       {/* Add Event Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="bg-card border-border text-foreground max-h-[90vh] overflow-y-auto">
