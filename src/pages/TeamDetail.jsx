@@ -214,14 +214,16 @@ export default function TeamDetail() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                     {canManage && (
+                       <div className="flex items-center gap-1">
+                         <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                           <Pencil className="w-4 h-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
+                           <Trash2 className="w-4 h-4" />
+                         </Button>
+                       </div>
+                     )}
                     </TableCell>
                   </TableRow>
                 ))}
