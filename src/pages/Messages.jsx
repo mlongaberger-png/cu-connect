@@ -162,6 +162,11 @@ export default function Messages() {
               channelId={channelId}
               onSelectChannel={selectChannel}
               starredIds={starredIds}
+              filterTeamIds={isParent ? (() => {
+                const linkedIds = new Set(guardianLinks.map(g => g.player_id));
+                const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
+                return [...new Set(myKids.map(k => k.team_id))];
+              })() : null}
             />
           </div>
           <div className="hidden md:flex items-center gap-2 flex-1">
