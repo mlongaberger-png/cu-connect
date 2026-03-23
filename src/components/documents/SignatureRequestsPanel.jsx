@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Clock, XCircle, Download, Trash2, RotateCcw, PenLine } from "lucide-react";
 import { format } from "date-fns";
+import AdminSignDialog from "./AdminSignDialog";
 
 const statusConfig = {
   pending: { icon: Clock, cls: "bg-yellow-500/20 text-yellow-400", label: "Pending" },
@@ -15,6 +16,7 @@ const statusConfig = {
 export default function SignatureRequestsPanel({ user }) {
   const qc = useQueryClient();
   const [filterStatus, setFilterStatus] = useState("all");
+  const [adminSigning, setAdminSigning] = useState(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["signature-requests"],
