@@ -36,9 +36,7 @@ export default function TopBar({ onMenuToggle, title }) {
           <Button variant="ghost" size="icon" asChild className="relative text-muted-foreground hover:text-foreground">
             <Link to="/HelpCenter"><HelpCircle className="w-5 h-5" /></Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild className="relative text-muted-foreground hover:text-foreground">
-            <Link to="/NotificationSettings"><Bell className="w-5 h-5" /></Link>
-          </Button>
+          <NotificationBell />
         </div>
       </div>
     </header>

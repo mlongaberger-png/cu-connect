@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Shield, Bell,
-  HelpCircle, CalendarRange, Download, Scale } from "lucide-react";
+  HelpCircle, CalendarRange, Download, Scale, Settings } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
@@ -115,6 +115,9 @@ export default function Sidebar({ isOpen, onClose }) {
               </div>
             </div>
           )}
+          <Link to="/AccountSettings" onClick={onClose} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all">
+            <Settings className="w-4 h-4" /> Account Settings
+          </Link>
           <Link to="/NotificationSettings" onClick={onClose} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all">
             <Bell className="w-4 h-4" /> Notifications
           </Link>
