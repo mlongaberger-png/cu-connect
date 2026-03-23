@@ -1,8 +1,9 @@
 import React from "react";
-import { Menu, Bell, HelpCircle } from "lucide-react";
+import { Menu, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function TopBar({ onMenuToggle, title }) {
   const { user } = useAuth();
