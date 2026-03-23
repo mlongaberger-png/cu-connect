@@ -280,10 +280,26 @@ export default function TeamDetail() {
       </Dialog>
 
       {/* Add/Edit Player Dialog */}
-      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); } }}>
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); resetForm(); } }}>
         <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader><DialogTitle>{editingPlayer ? "Edit Player" : "Add Player"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Photo upload */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                {form.photo_url
+                  ? <img src={form.photo_url} alt="Player" className="w-full h-full object-cover" />
+                  : <UserCircle className="w-8 h-8 text-muted-foreground" />
+                }
+              </div>
+              <div>
+                <Label className="text-xs">Player Photo</Label>
+                <label className="mt-1 flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-surface text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                  {uploadingPhoto ? "Uploading..." : "Upload Photo"}
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+                </label>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>First Name</Label><Input value={form.first_name} onChange={e => setForm({...form, first_name: e.target.value})} className="bg-surface border-border" required /></div>
               <div><Label>Last Name</Label><Input value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} className="bg-surface border-border" required /></div>
