@@ -488,6 +488,25 @@ export default function ParentPortal() {
         </div>
       )}
 
+      {/* Athlete Cards Tab */}
+      {activeTab === "athlete-cards" && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold text-foreground">Athlete Cards</h3>
+            <p className="text-sm text-muted-foreground mt-1">Official digital athlete cards for your players.</p>
+          </div>
+          <div className="flex flex-wrap gap-8 justify-start">
+            {myKids.map(kid => {
+              const team = teams.find(t => t.id === kid.team_id);
+              const sport = sports.find(s => s.id === team?.sport_id);
+              return (
+                <AthleteCard key={kid.id} player={kid} team={team} sport={sport} />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Schedule Tab */}
       {activeTab === "schedule" && (
         <div className="space-y-4">
