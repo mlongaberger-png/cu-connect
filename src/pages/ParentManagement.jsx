@@ -218,7 +218,8 @@ export default function ParentManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="parent">Parent / Guardian</SelectItem>
+                    <SelectItem value="grandparent">Grandparent (view-only)</SelectItem>
                     <SelectItem value="user">User (unassigned)</SelectItem>
                     <SelectItem value="coach">Coach</SelectItem>
                     <SelectItem value="athletic_director">Athletic Director</SelectItem>
