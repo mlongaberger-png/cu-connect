@@ -35,7 +35,8 @@ export default function TeamDetail() {
     setInvitedEmails(prev => ({ ...prev, [player.id]: true }));
     setInviting(null);
   };
-  const [form, setForm] = useState({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" });
+  const [form, setForm] = useState({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" });
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: teams = [] } = useQuery({

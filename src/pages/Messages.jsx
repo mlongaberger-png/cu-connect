@@ -10,6 +10,7 @@ import MobileChannelPicker from "@/components/messages/MobileChannelPicker";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
+import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function Messages() {
