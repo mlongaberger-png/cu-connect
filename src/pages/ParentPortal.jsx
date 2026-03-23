@@ -23,7 +23,7 @@ import FamilyDashboardStats from "@/components/parentportal/FamilyDashboardStats
 import TeamRosterView from "@/components/parentportal/TeamRosterView";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 
-const TABS = [
+const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
   { id: "schedule", label: "Schedule", icon: Calendar },
   { id: "documents", label: "Documents", icon: FileText },
@@ -31,6 +31,7 @@ const TABS = [
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "volunteers", label: "Volunteers", icon: Users },
 ];
+const GRANDPARENT_TABS = ["overview", "schedule"];
 
 export default function ParentPortal() {
   const location = useLocation();
