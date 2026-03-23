@@ -38,6 +38,8 @@ export default function ParentPortal() {
   const isStandalone = location.pathname === "/ParentPortal";
   const { user, isLoadingAuth } = useAuth();
   const userEmail = user?.email;
+  const isGrandparent = user?.role === "grandparent";
+  const TABS = ALL_TABS.filter(t => !isGrandparent || GRANDPARENT_TABS.includes(t.id));
 
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
