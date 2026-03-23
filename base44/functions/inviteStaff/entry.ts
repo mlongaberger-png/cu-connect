@@ -22,7 +22,9 @@ Deno.serve(async (req) => {
 
     // Workspace only accepts 'admin' or 'user' — map app roles accordingly
     const workspaceRole = role === 'admin' ? 'admin' : 'user';
-    await base44.users.inviteUser(email, workspaceRole);
+    // Staff land on the main portal; parents land on AcceptInvite onboarding
+    const redirectPath = role === 'parent' ? '/AcceptInvite' : '/Portal';
+    await base44.users.inviteUser(email, workspaceRole, redirectPath);
 
     // Set the app-level role on the User record after invite
     // The user record is created on first login; attempt to update if it already exists
