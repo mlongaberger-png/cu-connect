@@ -26,6 +26,7 @@ import ParentSignup from "@/pages/ParentSignup";
 import Welcome from "@/pages/Welcome";
 import PendingAccess from "@/pages/PendingAccess";
 import AcceptInvite from "@/pages/AcceptInvite";
+import AccountSettings from "@/pages/AccountSettings";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite"];
 const STAFF_ONLY_PATHS = [
@@ -131,6 +132,7 @@ export default function AppShell() {
         <Route path="/SeasonManager" element={<SeasonManager />} />
         <Route path="/DataExport" element={<DataExport />} />
         <Route path="/LegalPages" element={<LegalPages />} />
+        <Route path="/AccountSettings" element={<AccountSettings />} />
       </Route>
 
       {/* Parent portal — standalone (no sidebar header clash) */}
