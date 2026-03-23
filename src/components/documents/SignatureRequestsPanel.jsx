@@ -139,12 +139,12 @@ export default function SignatureRequestsPanel({ user }) {
       )}
     </div>
 
-      {adminSigning && (
-        <AdminSignDialog
-          request={adminSigning}
-          user={user}
-          onClose={() => setAdminSigning(null)}
-        />
-      )}
+    {adminSigning && (
+      <AdminSignDialog
+        request={adminSigning}
+        user={user}
+        onClose={() => setAdminSigning(null)}
+      />
+    )}
   );
 }
