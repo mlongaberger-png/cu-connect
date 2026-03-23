@@ -85,6 +85,15 @@ export default function AppShell() {
 
   const role = user?.role;
 
+  // Newly invited users who haven't completed setup yet → AcceptInvite onboarding
+  if (currentPath !== "/AcceptInvite" && user && !user.setup_complete && role && role !== "pending") {
+    return (
+      <Routes>
+        <Route path="*" element={<AcceptInvite />} />
+      </Routes>
+    );
+  }
+
   // All authenticated users land on Dashboard; unknown/pending role → PendingAccess
   const homeRoute = role && role !== "pending" ? "/Portal" : null;
 
