@@ -404,6 +404,8 @@ export default function Messages() {
 
         </>
         )}
+      </div>
+
       {/* Create Attendance Dialog */}
       {showAttendanceDialog && (
         <CreateAttendanceDialog
