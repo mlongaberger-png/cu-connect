@@ -32,9 +32,9 @@ const allNavItems = [
   { path: "/ParentPortal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent", "user"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
 
-  // Grandparent nav — view only: athletes + schedule
-  { path: "/ParentPortal", label: "My Athletes", icon: UserCircle, roles: ["grandparent"] },
-  { path: "/ParentPortal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["grandparent"] },
+  // Grandparent nav — portal + schedule only
+  { path: "/Portal", label: "Portal", icon: LayoutDashboard, roles: ["grandparent"] },
+  { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["grandparent"] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
