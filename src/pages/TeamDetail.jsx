@@ -100,8 +100,17 @@ export default function TeamDetail() {
 
   const handleEdit = (player) => {
     setEditingPlayer(player);
-    setForm({ first_name: player.first_name || "", last_name: player.last_name || "", jersey_number: player.jersey_number || "", position: player.position || "", parent_name: player.parent_name || "", parent_email: player.parent_email || "", parent_phone: player.parent_phone || "" });
+    setForm({ first_name: player.first_name || "", last_name: player.last_name || "", jersey_number: player.jersey_number || "", position: player.position || "", photo_url: player.photo_url || "", parent_name: player.parent_name || "", parent_email: player.parent_email || "", parent_phone: player.parent_phone || "" });
     setShowForm(true);
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(f => ({ ...f, photo_url: file_url }));
+    setUploadingPhoto(false);
   };
 
   if (!team) {
