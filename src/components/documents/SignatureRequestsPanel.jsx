@@ -38,6 +38,7 @@ export default function SignatureRequestsPanel({ user }) {
   if (isLoading) return <div className="h-32 bg-card rounded-2xl animate-pulse border border-border" />;
 
   return (
+    <>
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -146,5 +147,6 @@ export default function SignatureRequestsPanel({ user }) {
         onClose={() => setAdminSigning(null)}
       />
     )}
+    </>
   );
 }
