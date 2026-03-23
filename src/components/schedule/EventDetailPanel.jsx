@@ -61,9 +61,25 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   };
 
   const handleAddToGoogleCalendar = () => {
-    const start = event.date?.replace(/-/g, "") + (event.start_time ? `T${event.start_time.replace(":", "")}00` : "");
-    const end = event.date?.replace(/-/g, "") + (event.end_time ? `T${event.end_time.replace(":", "")}00` : (event.start_time ? `T${event.start_time.replace(":", "")}00` : ""));
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&location=${encodeURIComponent(event.location || "")}&details=${encodeURIComponent(event.notes || "")}`;
+    const d = event.date?.replace(/-/g, "") || "";
+    let start, end;
+    if (event.start_time) {
+      start = `${d}T${event.start_time.replace(":", "")}00`;
+      if (event.end_time) {
+        end = `${d}T${event.end_time.replace(":", "")}00`;
+      } else {
+        // default to 1 hour later
+        const [h, m] = event.start_time.split(":").map(Number);
+        const endH = String((h + 1) % 24).padStart(2, "0");
+        end = `${d}T${endH}${String(m).padStart(2, "0")}00`;
+      }
+    } else {
+      // all-day event
+      start = d;
+      end = d;
+    }
+    const details = [event.notes, event.opponent ? `vs ${event.opponent}` : ""].filter(Boolean).join("\n");
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&location=${encodeURIComponent(event.location || "")}&details=${encodeURIComponent(details)}`;
     window.open(url, "_blank");
   };
 
