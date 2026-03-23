@@ -129,7 +129,7 @@ export default function InviteParentPanel() {
             ) : (
               <Send className="w-4 h-4" />
             )}
-            {success ? "Invite Sent!" : "Send Parent Invite"}
+            {success ? "Invite Sent!" : "Send Invite"}
           </Button>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
