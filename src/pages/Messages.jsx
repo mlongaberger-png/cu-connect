@@ -122,6 +122,7 @@ export default function Messages() {
       channel_name: channelName,
       sender_name: user?.full_name || "Staff",
       sender_email: user?.email || "",
+      sender_avatar: user?.avatar_url || "",
     });
   };
 
@@ -228,7 +229,7 @@ export default function Messages() {
             // Find sender's avatar from loaded users or fall back to initials
             const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
             const isMe = msg.sender_email === user?.email;
-            const senderAvatar = isMe ? user?.avatar_url : null;
+            const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;
             return (
             <div key={msg.id} className="flex gap-3">
               <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-border">
