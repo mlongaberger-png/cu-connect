@@ -26,6 +26,7 @@ import AthleteCard from "@/components/parentportal/AthleteCard";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
+  { id: "athlete-cards", label: "Athlete Cards", icon: UserCircle },
   { id: "schedule", label: "Schedule", icon: Calendar },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard },
