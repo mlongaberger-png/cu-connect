@@ -24,12 +24,8 @@ const allNavItems = [
   { path: "/LegalPages", label: "Legal Pages", icon: Scale, roles: ["admin"] },
 
   // Parent nav
-  { path: "/Portal", label: "Portal", icon: LayoutDashboard, roles: ["parent", "user"] },
+  { path: "/Portal", label: "Dashboard", icon: LayoutDashboard, roles: ["parent", "user"] },
   { path: "/ParentPortal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
-  { path: "/ParentPortal?tab=schedule", label: "Schedule", icon: Calendar, roles: ["parent", "user"] },
-  { path: "/ParentPortal?tab=documents", label: "Documents", icon: FolderOpen, roles: ["parent", "user"] },
-  { path: "/ParentPortal?tab=payments", label: "Payments", icon: UserCircle, roles: ["parent", "user"] },
-  { path: "/ParentPortal?tab=volunteers", label: "Volunteers", icon: Users, roles: ["parent", "user"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
 
   // Grandparent nav — portal + schedule only
