@@ -227,28 +227,20 @@ export default function Messages() {
           )}
 
           {sortedMessages.map((msg) => {
-            // Find sender's avatar from loaded users or fall back to initials
             const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
             const isMe = msg.sender_email === user?.email;
             const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;
             return (
-            <div key={msg.id} className="flex gap-3">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-border">
-                {senderAvatar
-                  ? <img src={senderAvatar} alt={msg.sender_name} className="w-full h-full object-cover" />
-                  : <span className="text-xs font-bold text-primary">{senderInitial}</span>
-                }
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground">{msg.sender_name || "Unknown"}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}
-                  </span>
-                </div>
-                <p className="text-sm text-foreground/80 mt-0.5">{msg.content}</p>
-              </div>
-            </div>
+            <MessageRow
+              key={msg.id}
+              msg={msg}
+              isMe={isMe}
+              senderAvatar={senderAvatar}
+              senderInitial={senderInitial}
+              isStaff={isStaff}
+              user={user}
+              channelId={channelId}
+            />
             );
           })}
           <div ref={messagesEndRef} />
