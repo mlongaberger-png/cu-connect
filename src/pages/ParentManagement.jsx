@@ -42,7 +42,7 @@ export default function ParentManagement() {
 
   // Only show parents (and unknowns who may be parents)
   const parentUsers = users.filter(u =>
-    u.role === "parent" || u.role === "user" || !u.role
+    u.role === "parent" || u.role === "grandparent" || u.role === "user" || !u.role
   );
 
   const filtered = parentUsers.filter(u => {
