@@ -51,14 +51,16 @@ export default function TeamDetail() {
   });
   const players = allPlayers.filter(p => p.team_id === teamId);
 
+  const resetForm = () => setForm({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Player.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["players"] }); setShowForm(false); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["players"] }); setShowForm(false); resetForm(); },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Player.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["players"] }); setShowForm(false); setEditingPlayer(null); setForm({ first_name: "", last_name: "", jersey_number: "", position: "", parent_name: "", parent_email: "", parent_phone: "" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["players"] }); setShowForm(false); setEditingPlayer(null); resetForm(); },
   });
 
   const deleteMutation = useMutation({
