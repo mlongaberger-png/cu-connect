@@ -85,8 +85,8 @@ export default function AppShell() {
 
   const role = user?.role;
 
-  // Newly invited users who haven't completed setup yet → AcceptInvite onboarding
-  if (currentPath !== "/AcceptInvite" && user && !user.setup_complete && role && role !== "pending") {
+  // Newly invited parents who haven't completed setup yet → AcceptInvite onboarding
+  if (currentPath !== "/AcceptInvite" && user && !user.setup_complete && role === "parent") {
     return (
       <Routes>
         <Route path="*" element={<AcceptInvite />} />
