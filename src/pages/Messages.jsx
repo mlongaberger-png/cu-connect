@@ -400,8 +400,6 @@ export default function Messages() {
             </Button>
           </div>
         </form>
-      </div>
-
         </>
         )}
       </div>
