@@ -75,9 +75,9 @@ export default function InviteParentPanel() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Email + Relationship */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Parent Email *</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1.5 sm:col-span-1">
+            <Label>Email *</Label>
             <Input
               type="email"
               value={email}
@@ -85,6 +85,16 @@ export default function InviteParentPanel() {
               placeholder="parent@example.com"
               required
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Portal Role</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="parent">Parent / Guardian</SelectItem>
+                <SelectItem value="grandparent">Grandparent (view-only)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Relationship</Label>
