@@ -12,7 +12,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role;
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
-  const isParent = role === "parent" || role === "user";
+  const isParent = role === "parent" || role === "user" || role === "grandparent";
 
   const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list() });
   const { data: teams = [] } = useQuery({ queryKey: ["teams"], queryFn: () => base44.entities.Team.list() });
