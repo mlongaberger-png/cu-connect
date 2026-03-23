@@ -27,7 +27,7 @@ import Welcome from "@/pages/Welcome";
 import PendingAccess from "@/pages/PendingAccess";
 import AcceptInvite from "@/pages/AcceptInvite";
 
-const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register"];
+const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite"];
 const STAFF_ONLY_PATHS = [
   "/Portal", "/Sports", "/Teams", "/Schedule", "/Messages",
   "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"
