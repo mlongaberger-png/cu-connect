@@ -224,10 +224,18 @@ export default function Messages() {
             </div>
           )}
 
-          {sortedMessages.map((msg) => (
+          {sortedMessages.map((msg) => {
+            // Find sender's avatar from loaded users or fall back to initials
+            const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
+            const isMe = msg.sender_email === user?.email;
+            const senderAvatar = isMe ? user?.avatar_url : null;
+            return (
             <div key={msg.id} className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-xs font-bold text-primary">{(msg.sender_name || "?")[0]}</span>
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-border">
+                {senderAvatar
+                  ? <img src={senderAvatar} alt={msg.sender_name} className="w-full h-full object-cover" />
+                  : <span className="text-xs font-bold text-primary">{senderInitial}</span>
+                }
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -239,7 +247,8 @@ export default function Messages() {
                 <p className="text-sm text-foreground/80 mt-0.5">{msg.content}</p>
               </div>
             </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
 

@@ -21,13 +21,14 @@ const pageTitles = {
   "/SeasonManager": "Season Manager",
   "/DataExport": "Import & Export",
   "/LegalPages": "Legal Pages",
+  "/AccountSettings": "Account Settings",
 };
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   
-  const title = pageTitles[location.pathname] || "SportSync";
+  const title = pageTitles[location.pathname] || "Cornerstone United Athletics";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
