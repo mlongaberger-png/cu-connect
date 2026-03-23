@@ -38,6 +38,7 @@ const PublicRoutes = () => (
     <Route path="/welcome" element={<Welcome />} />
     <Route path="/ParentSignup" element={<ParentSignup />} />
     <Route path="/Register" element={<Register />} />
+    <Route path="/AcceptInvite" element={<AcceptInvite />} />
     <Route path="*" element={<Navigate to="/welcome" replace />} />
   </Routes>
 );
