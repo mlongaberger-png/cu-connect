@@ -68,8 +68,8 @@ export default function InviteParentPanel() {
           <UserPlus className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h2 className="font-semibold text-foreground">Invite a Parent</h2>
-          <p className="text-xs text-muted-foreground">Send a portal invite and link them to one or more athletes across any sport or team</p>
+          <h2 className="font-semibold text-foreground">Invite a Parent / Guardian</h2>
+          <p className="text-xs text-muted-foreground">Send a portal invite as a Parent or Grandparent (view-only) and link them to athletes</p>
         </div>
       </div>
 
