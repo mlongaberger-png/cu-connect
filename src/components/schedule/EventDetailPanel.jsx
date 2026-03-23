@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
-import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2 } from "lucide-react";
+import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,9 @@ import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+
+const getGoogleMapsUrl = (location) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+const getAppleMapsUrl = (location) => `https://maps.apple.com/?q=${encodeURIComponent(location)}`;
 
 const EVENT_TYPES = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
 const TOURNAMENT_ROUNDS = ["Pool Play", "Round of 16", "Quarterfinals", "Semifinals", "Finals", "Championship"];
@@ -300,9 +303,19 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
                 </div>
               )}
               {event.location && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  <span>{event.location}</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>{event.location}</span>
+                  </div>
+                  <div className="flex gap-3 pl-6">
+                    <a href={getGoogleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline">
+                      <Navigation className="w-3 h-3" /> Google Maps
+                    </a>
+                    <a href={getAppleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-muted-foreground hover:underline">
+                      <Navigation className="w-3 h-3" /> Apple Maps
+                    </a>
+                  </div>
                 </div>
               )}
               {event.team_name && (
