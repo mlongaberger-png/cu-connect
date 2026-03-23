@@ -95,14 +95,24 @@ export default function SignatureRequestsPanel({ user }) {
                     </a>
                   )}
                   {req.status === "pending" && (
-                    <Button
-                      variant="ghost" size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-yellow-400"
-                      title="Revoke"
-                      onClick={() => updateMutation.mutate({ id: req.id, data: { status: "revoked" } })}
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title="Admin Sign"
+                        onClick={() => setAdminSigning(req)}
+                      >
+                        <PenLine className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-yellow-400"
+                        title="Revoke"
+                        onClick={() => updateMutation.mutate({ id: req.id, data: { status: "revoked" } })}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </>
                   )}
                   {req.status === "revoked" && (
                     <Button
