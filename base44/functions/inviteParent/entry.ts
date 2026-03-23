@@ -7,8 +7,8 @@ Deno.serve(async (req) => {
 
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
-    // Invite the user (this sends the magic-link / account setup email from Base44)
-    await base44.users.inviteUser(email, 'user');
+    // Invite the user — magic link will land them at /AcceptInvite
+    await base44.users.inviteUser(email, 'user', '/AcceptInvite');
 
     // Create PlayerGuardian links for each player
     const playerList = Array.isArray(players) ? players : [];
