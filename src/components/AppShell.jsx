@@ -25,6 +25,7 @@ import LegalPages from "@/pages/LegalPages";
 import ParentSignup from "@/pages/ParentSignup";
 import Welcome from "@/pages/Welcome";
 import PendingAccess from "@/pages/PendingAccess";
+import AcceptInvite from "@/pages/AcceptInvite";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register"];
 const STAFF_ONLY_PATHS = [
