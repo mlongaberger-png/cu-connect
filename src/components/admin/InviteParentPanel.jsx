@@ -41,16 +41,16 @@ export default function InviteParentPanel() {
     try {
       await base44.functions.invoke("inviteParent", {
         email,
+        role,
         relationship,
         players: linkedPlayers.map(p => ({
           player_id: p.id,
           player_name: `${p.first_name} ${p.last_name}`,
         })),
-        player_id: linkedPlayers[0]?.id || "",
-        player_name: linkedPlayers[0] ? `${linkedPlayers[0].first_name} ${linkedPlayers[0].last_name}` : "",
       });
       setSuccess(true);
       setEmail("");
+      setRole("parent");
       setRelationship("Guardian");
       setLinkedPlayers([]);
       setTimeout(() => setSuccess(false), 4000);
