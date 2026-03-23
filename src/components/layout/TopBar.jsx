@@ -25,13 +25,16 @@ export default function TopBar({ onMenuToggle, title }) {
 
         <div className="flex items-center gap-3">
           {user && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-primary">{(user.full_name || user.email || "A")[0].toUpperCase()}</span>
-              </div>
+            <Link to="/AccountSettings" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border hover:border-primary/40 transition-colors">
+              {user.avatar_url
+                ? <img src={user.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                : <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-primary">{(user.full_name || user.email || "A")[0].toUpperCase()}</span>
+                  </div>
+              }
               <span className="text-sm text-foreground">{user.full_name || user.email}</span>
               <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary capitalize">{user.role || "admin"}</span>
-            </div>
+            </Link>
           )}
           <Button variant="ghost" size="icon" asChild className="relative text-muted-foreground hover:text-foreground">
             <Link to="/HelpCenter"><HelpCircle className="w-5 h-5" /></Link>
