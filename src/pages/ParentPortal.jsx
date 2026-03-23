@@ -500,7 +500,7 @@ export default function ParentPortal() {
               const team = teams.find(t => t.id === kid.team_id);
               const sport = sports.find(s => s.id === team?.sport_id);
               return (
-                <AthleteCard key={kid.id} player={kid} team={team} sport={sport} />
+                <AthleteCard key={kid.id} player={kid} team={team} sport={sport} canEdit={true} />
               );
             })}
           </div>
