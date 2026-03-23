@@ -12,6 +12,7 @@ const RELATIONSHIPS = ["Guardian", "Mother", "Father", "Stepparent", "Other"];
 
 export default function InviteParentPanel() {
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("parent");
   const [relationship, setRelationship] = useState("Guardian");
   const [linkedPlayers, setLinkedPlayers] = useState([]);
   const [loading, setLoading] = useState(false);
