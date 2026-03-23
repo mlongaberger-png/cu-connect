@@ -1,8 +1,25 @@
-import React from "react";
-import { Trophy, Shield } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Trophy, Shield, Camera, Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useQueryClient } from "@tanstack/react-query";
 
-export default function AthleteCard({ player, team, sport }) {
+export default function AthleteCard({ player, team, sport, canEdit = false }) {
   const initials = `${player.first_name?.[0] || ""}${player.last_name?.[0] || ""}`.toUpperCase();
+  const [uploading, setUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(player.photo_url || "");
+  const fileInputRef = useRef(null);
+  const queryClient = useQueryClient();
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.entities.Player.update(player.id, { photo_url: file_url });
+    setPhotoUrl(file_url);
+    queryClient.invalidateQueries({ queryKey: ["players"] });
+    setUploading(false);
+  };
 
   return (
     <div className="relative w-64 rounded-3xl overflow-hidden shadow-2xl border border-primary/30 bg-gradient-to-b from-card via-card to-background select-none">
@@ -24,10 +41,10 @@ export default function AthleteCard({ player, team, sport }) {
 
       {/* Photo area */}
       <div className="flex justify-center px-5 pb-3">
-        <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-primary/40 shadow-lg bg-surface">
-          {player.photo_url ? (
+        <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-primary/40 shadow-lg bg-surface group">
+          {photoUrl ? (
             <img
-              src={player.photo_url}
+              src={photoUrl}
               alt={`${player.first_name} ${player.last_name}`}
               className="w-full h-full object-cover object-top"
             />
@@ -42,6 +59,27 @@ export default function AthleteCard({ player, team, sport }) {
               #{player.jersey_number}
             </div>
           )}
+          {/* Upload overlay (only when canEdit) */}
+          {canEdit && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer"
+            >
+              {uploading
+                ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                : <Camera className="w-5 h-5 text-white" />
+              }
+              {!uploading && <span className="text-[10px] text-white font-semibold">Upload</span>}
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
         </div>
       </div>
 
