@@ -13,6 +13,51 @@ import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDial
 import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import { useAuth } from "@/lib/AuthContext";
 
+function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId }) {
+  const tracked = React.useRef(false);
+
+  React.useEffect(() => {
+    if (isMe || tracked.current || !user?.email || !msg.id) return;
+    tracked.current = true;
+    // Record a read receipt (deduplicate on server via filter-then-create)
+    base44.entities.MessageReadReceipt.filter({ message_id: msg.id, reader_email: user.email })
+      .then(existing => {
+        if (existing.length === 0) {
+          base44.entities.MessageReadReceipt.create({
+            message_id: msg.id,
+            channel_id: channelId,
+            reader_email: user.email,
+            reader_name: user.full_name || user.email,
+            reader_avatar: user.avatar_url || "",
+          });
+        }
+      });
+  }, [msg.id, user?.email, isMe, channelId]);
+
+  return (
+    <div className="flex gap-3">
+      <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-border">
+        {senderAvatar
+          ? <img src={senderAvatar} alt={msg.sender_name} className="w-full h-full object-cover" />
+          : <span className="text-xs font-bold text-primary">{senderInitial}</span>
+        }
+      </div>
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">{msg.sender_name || "Unknown"}</span>
+          <span className="text-xs text-muted-foreground">
+            {msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}
+          </span>
+        </div>
+        <p className="text-sm text-foreground/80 mt-0.5">{msg.content}</p>
+        {isMe && isStaff && (
+          <MessageReadReceipts messageId={msg.id} channelId={channelId} isStaff={isStaff} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Messages() {
   const { user } = useAuth();
   const role = user?.role;
