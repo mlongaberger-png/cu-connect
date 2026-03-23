@@ -22,6 +22,7 @@ import RosterPDFButton from "@/components/roster/RosterPDFButton";
 import FamilyDashboardStats from "@/components/parentportal/FamilyDashboardStats";
 import TeamRosterView from "@/components/parentportal/TeamRosterView";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
+import AthleteCard from "@/components/parentportal/AthleteCard";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
