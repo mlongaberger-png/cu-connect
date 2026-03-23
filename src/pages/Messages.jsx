@@ -196,7 +196,7 @@ export default function Messages() {
   const currentTeam = teams.find(t => t.id === channelId);
 
   // Coaches to show as DM options for parents
-  const myCoachContacts = React.useMemo(() => {
+  const myCoachContacts = useMemo(() => {
     if (!isParent) return [];
     const linkedIds = new Set(guardianLinks.map(g => g.player_id));
     const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
