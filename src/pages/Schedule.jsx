@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet } from "lucide-react";
+import BulkEventImporter from "@/components/schedule/BulkEventImporter";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import CalendarView from "@/components/schedule/CalendarView";
@@ -41,6 +42,7 @@ export default function Schedule() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showExport, setShowExport] = useState(false);
   const [showPdfImport, setShowPdfImport] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   const queryClient = useQueryClient();
 
@@ -100,6 +102,11 @@ export default function Schedule() {
           <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowExport(true)}>
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
+          {(isAdmin || isAD || isCoach) && (
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowBulkImport(true)}>
+              <Sheet className="w-4 h-4 mr-2" /> Import CSV/Excel
+            </Button>
+          )}
           {(isAdmin || isAD) && (
             <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowPdfImport(true)}>
               <FileUp className="w-4 h-4 mr-2" /> Import PDF
@@ -241,6 +248,13 @@ export default function Schedule() {
           onClose={() => setShowExport(false)}
         />
       )}
+
+      {/* Bulk CSV/Excel Import */}
+      <BulkEventImporter
+        open={showBulkImport}
+        onOpenChange={setShowBulkImport}
+        teams={myTeams}
+      />
 
       {/* PDF Import Dialog */}
       <PdfScheduleImporter
