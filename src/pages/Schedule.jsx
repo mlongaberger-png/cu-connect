@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import BulkEventImporter from "@/components/schedule/BulkEventImporter";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
@@ -43,6 +43,7 @@ export default function Schedule() {
   const [showExport, setShowExport] = useState(false);
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc" | "desc"
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   const queryClient = useQueryClient();
 
@@ -86,6 +87,10 @@ export default function Schedule() {
   let filtered = (isCoach && myTeamIds.length > 0) ? events.filter(e => myTeamIds.includes(e.team_id)) : events;
   if (filterType !== "all") filtered = filtered.filter(e => e.type === filterType);
   if (filterTeam !== "all") filtered = filtered.filter(e => e.team_id === filterTeam);
+  filtered = [...filtered].sort((a, b) => {
+    const diff = new Date(a.date) - new Date(b.date);
+    return sortOrder === "asc" ? diff : -diff;
+  });
 
   const canEditEvent = (event) => isAdmin || isAD || (isCoach && myTeamIds.includes(event.team_id));
 
@@ -136,8 +141,16 @@ export default function Schedule() {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-3 flex-wrap">
+        {/* Filters + Sort */}
+        <div className="flex gap-3 flex-wrap items-center">
+          <button
+            onClick={() => setSortOrder(o => o === "asc" ? "desc" : "asc")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-border text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            title={sortOrder === "asc" ? "Oldest first" : "Newest first"}
+          >
+            {sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+            {sortOrder === "asc" ? "Oldest first" : "Newest first"}
+          </button>
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={filterType} onValueChange={setFilterType}>

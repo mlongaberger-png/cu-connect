@@ -1,12 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
+
+const CACHE_KEY = "topbar_weather_cache";
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 export default function TopBarWeather() {
-  const [weather, setWeather] = useState(null);
+  const [weather, setWeather] = useState(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) return data;
+      }
+    } catch {}
+    return null;
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // If we already have fresh cached data, skip fetching
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { ts } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) return;
+      }
+    } catch {}
+
     if (!navigator.geolocation) return;
     setLoading(true);
     navigator.geolocation.getCurrentPosition(
@@ -27,6 +48,7 @@ export default function TopBarWeather() {
             }
           });
           setWeather(result);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() }));
         } catch {
           // silently fail
         } finally {
@@ -37,10 +59,22 @@ export default function TopBarWeather() {
     );
   }, []);
 
-  if (loading || !weather) return null;
+  if (loading) {
+    return (
+      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-xs text-muted-foreground">
+        <Loader2 className="w-3 h-3 animate-spin" />
+        <span>Weather…</span>
+      </div>
+    );
+  }
+
+  if (!weather) return null;
 
   return (
-    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-xs text-muted-foreground" title={weather.condition}>
+    <div
+      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-xs text-muted-foreground"
+      title={weather.condition}
+    >
       <span className="text-base leading-none">{weather.condition_emoji || "🌤️"}</span>
       <span className="font-medium text-foreground">{Math.round(weather.temp_f)}°F</span>
       <div className="flex items-center gap-0.5">
