@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import TopBarWeather from "@/components/dashboard/TopBarWeather";
 
 export default function TopBar({ onMenuToggle, title }) {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function TopBar({ onMenuToggle, title }) {
         </div>
 
         <div className="flex items-center gap-3">
+          <TopBarWeather />
           {user && (
             <Link to="/AccountSettings" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border hover:border-primary/40 transition-colors">
               {user.avatar_url
