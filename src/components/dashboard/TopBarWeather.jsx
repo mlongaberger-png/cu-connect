@@ -5,6 +5,41 @@ import { MapPin, Loader2 } from "lucide-react";
 const CACHE_KEY = "topbar_weather_cache";
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+async function fetchWeatherByCoords(lat, lon) {
+  return base44.integrations.Core.InvokeLLM({
+    prompt: `Get current weather for coordinates ${lat}, ${lon}. Return current conditions as JSON.`,
+    add_context_from_internet: true,
+    response_json_schema: {
+      type: "object",
+      properties: {
+        city: { type: "string" },
+        temp_f: { type: "number" },
+        condition_emoji: { type: "string" },
+        condition: { type: "string" },
+      }
+    }
+  });
+}
+
+async function fetchWeatherByIP() {
+  // Use IP geolocation as fallback
+  const geoRes = await fetch("https://ipapi.co/json/");
+  const geo = await geoRes.json();
+  return base44.integrations.Core.InvokeLLM({
+    prompt: `Get current weather for ${geo.city}, ${geo.region}, ${geo.country_name}. Return current conditions as JSON.`,
+    add_context_from_internet: true,
+    response_json_schema: {
+      type: "object",
+      properties: {
+        city: { type: "string" },
+        temp_f: { type: "number" },
+        condition_emoji: { type: "string" },
+        condition: { type: "string" },
+      }
+    }
+  });
+}
+
 export default function TopBarWeather() {
   const [weather, setWeather] = useState(() => {
     try {
@@ -28,35 +63,42 @@ export default function TopBarWeather() {
       }
     } catch {}
 
-    if (!navigator.geolocation) return;
     setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `Get current weather for coordinates ${latitude}, ${longitude}. Return current conditions as JSON.`,
-            add_context_from_internet: true,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                city: { type: "string" },
-                temp_f: { type: "number" },
-                condition_emoji: { type: "string" },
-                condition: { type: "string" },
-              }
-            }
+
+    const doFetch = async () => {
+      try {
+        let result;
+        if (navigator.geolocation) {
+          result = await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              async (pos) => {
+                try {
+                  resolve(await fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude));
+                } catch {
+                  resolve(null);
+                }
+              },
+              async () => {
+                try { resolve(await fetchWeatherByIP()); } catch { resolve(null); }
+              },
+              { timeout: 5000 }
+            );
           });
+        } else {
+          result = await fetchWeatherByIP();
+        }
+        if (result) {
           setWeather(result);
           localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() }));
-        } catch {
-          // silently fail
-        } finally {
-          setLoading(false);
         }
-      },
-      () => setLoading(false)
-    );
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    doFetch();
   }, []);
 
   if (loading) {

@@ -6,37 +6,61 @@ import {
   HelpCircle, Settings, Image, ClipboardList } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
-const allNavItems = [
-  // Staff nav
-  { path: "/Portal", label: "Portal", icon: LayoutDashboard, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
-  { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
-  { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/Gallery", label: "Gallery", icon: Image, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/PracticePlans", label: "Practice Plans", icon: ClipboardList, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/Volunteers", label: "Volunteers", icon: Users, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
-  { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
-  { path: "/ParentPortal", label: "Parent Portal", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
-  { path: "/AthleticDirectors", label: "Admin Console", icon: ShieldCheck, roles: ["admin"] },
+const staffNavGroups = [
+  {
+    label: "Main",
+    items: [
+      { path: "/Portal", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director", "coach"] },
+    ]
+  },
+  {
+    label: "Team",
+    items: [
+      { path: "/Teams", label: "Teams & Roster", icon: Users, roles: ["admin", "athletic_director"] },
+      { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
+      { path: "/PracticePlans", label: "Practice Plans", icon: ClipboardList, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/Gallery", label: "Gallery", icon: Image, roles: ["admin", "athletic_director", "coach"] },
+    ]
+  },
+  {
+    label: "Manage",
+    items: [
+      { path: "/Volunteers", label: "Volunteers", icon: Users, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
+      { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
+      { path: "/ParentPortal", label: "Parent View", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/AthleticDirectors", label: "Admin Console", icon: ShieldCheck, roles: ["admin"] },
+    ]
+  }
+];
 
-  // Parent nav
+const parentNavItems = [
   { path: "/Portal", label: "Dashboard", icon: LayoutDashboard, roles: ["parent", "user"] },
   { path: "/ParentPortal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
   { path: "/Sports", label: "Sports & Register", icon: Trophy, roles: ["parent", "user"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
   { path: "/Gallery", label: "Gallery", icon: Image, roles: ["parent", "user"] },
+];
 
-  // Grandparent nav — portal + schedule only
+const grandparentNavItems = [
   { path: "/Portal", label: "Portal", icon: LayoutDashboard, roles: ["grandparent"] },
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["grandparent"] },
+];
+
+// flat list for backward compat
+const allNavItems = [
+  ...staffNavGroups.flatMap(g => g.items),
+  ...parentNavItems,
+  ...grandparentNavItems,
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const role = user?.role || "";
+  const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const navItems = allNavItems.filter(item => item.roles.includes(role));
   const currentPath = location.pathname + location.search;
 
@@ -79,29 +103,59 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = item.path.includes("?")
-              ? currentPath === item.path || currentPath.startsWith(item.path)
-              : location.pathname === item.path && !location.search;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={onClose}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
-                  ${isActive ?
-                'bg-primary/15 text-primary shadow-sm' :
-                'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}
-                `}>
-                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
-                {item.label}
-                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          {isStaff ? (
+            // Grouped nav for staff
+            staffNavGroups.map(group => {
+              const groupItems = group.items.filter(item => item.roles.includes(role));
+              if (groupItems.length === 0) return null;
+              return (
+                <div key={group.label} className="mb-4">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-4 mb-1">{group.label}</p>
+                  {groupItems.map(item => {
+                    const isActive = location.pathname === item.path && !location.search;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.path + item.label}
+                        to={item.path}
+                        onClick={onClose}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-0.5
+                          ${isActive ? 'bg-primary/15 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : ''}`} />
+                        {item.label}
+                        {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            })
+          ) : (
+            // Flat nav for parents/grandparents
+            <div className="space-y-0.5">
+              {navItems.map((item) => {
+                const isActive = item.path.includes("?")
+                  ? currentPath === item.path || currentPath.startsWith(item.path)
+                  : location.pathname === item.path && !location.search;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                      ${isActive ? 'bg-primary/15 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
+                    {item.label}
+                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         {/* Footer */}
