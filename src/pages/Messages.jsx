@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare } from "lucide-react";
+import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare, Settings2 } from "lucide-react";
+import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
 import { format } from "date-fns";
 import MessagesSidebar from "@/components/messages/MessagesSidebar";
@@ -72,7 +73,7 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState("");
   const [starredIds, setStarredIds] = useState([]);
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("channels"); // "channels" | "direct"
+  const [activeTab, setActiveTab] = useState("channels"); // "channels" | "direct" | "rooms"
   const [dmContact, setDmContact] = useState(null);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
@@ -116,12 +117,11 @@ export default function Messages() {
   });
   const parentUsers = allUsers.filter(u => ["parent", "user"].includes(u.role));
 
-  // For parents: auto-select their team channel
-  // Fetch coaches for parents to see DM history
-  const { data: teamsList = [] } = useQuery({
-    queryKey: ["teams-dm"],
-    queryFn: () => base44.entities.Team.list(),
-    enabled: isParent,
+  // For parents: fetch guardian links to scope their teams
+  const { data: guardianLinks = [] } = useQuery({
+    queryKey: ["guardian-links-messages"],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
+    enabled: isParent && !!user?.email,
   });
 
   useEffect(() => {
@@ -223,21 +223,36 @@ export default function Messages() {
           >
             <MessagesSquare className="w-3.5 h-3.5" /> Direct
           </button>
+          {(role === "admin" || role === "athletic_director") && (
+            <button
+              onClick={() => setActiveTab("rooms")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "rooms" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+              title="Manage Rooms"
+            >
+              <Settings2 className="w-3.5 h-3.5" /> Rooms
+            </button>
+          )}
         </div>
 
         {activeTab === "channels" ? (
           /* Sidebar — desktop only */
           <MessagesSidebar
-        channelId={channelId}
-        onSelectChannel={selectChannel}
-        sports={sports}
-          teams={teams}
-          filterTeamIds={isParent ? (() => {
-            const linkedIds = new Set(guardianLinks.map(g => g.player_id));
-            const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
-            return [...new Set(myKids.map(k => k.team_id))];
-          })() : null}
-        />
+            channelId={channelId}
+            onSelectChannel={selectChannel}
+            sports={sports}
+            teams={teams}
+            userRole={role}
+            userEmail={user?.email}
+            filterTeamIds={isParent ? (() => {
+              const linkedIds = new Set(guardianLinks.map(g => g.player_id));
+              const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
+              return [...new Set(myKids.map(k => k.team_id))];
+            })() : null}
+          />
+        ) : activeTab === "rooms" ? (
+          <div className="flex-1 overflow-y-auto">
+            <MessageRoomManager currentUser={user} />
+          </div>
         ) : (
           /* Direct Messages list */
           <div className="flex-1 overflow-y-auto p-2">

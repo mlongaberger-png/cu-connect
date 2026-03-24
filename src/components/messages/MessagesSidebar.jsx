@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Hash, Star, ChevronDown, ChevronRight, Building2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Hash, Star, ChevronDown, ChevronRight, Lock, Globe } from "lucide-react";
 
-export default function MessagesSidebar({ channelId, onSelectChannel, sports, teams, filterTeamIds = null }) {
+export default function MessagesSidebar({ channelId, onSelectChannel, sports, teams, filterTeamIds = null, userRole, userEmail }) {
   const [expandedSports, setExpandedSports] = useState({});
   const [starredChats, setStarredChats] = useState({}); // chatId -> preferenceId
   const [userId, setUserId] = useState(null);
@@ -34,6 +35,37 @@ export default function MessagesSidebar({ channelId, onSelectChannel, sports, te
   const toggleSport = (sportId) => {
     setExpandedSports(prev => ({ ...prev, [sportId]: !prev[sportId] }));
   };
+
+  const { data: allRooms = [] } = useQuery({
+    queryKey: ["message-rooms"],
+    queryFn: () => base44.entities.MessageRoom.filter({ is_active: true }),
+  });
+
+  // Filter rooms user can access
+  const visibleRooms = allRooms.filter(room => {
+    if (!room.is_private) return true;
+    // Check role access
+    if (room.allowed_roles) {
+      try {
+        const roles = JSON.parse(room.allowed_roles);
+        if (roles.includes(userRole)) return true;
+      } catch {
+        // comma-separated fallback
+        if (room.allowed_roles.split(",").map(s => s.trim()).includes(userRole)) return true;
+      }
+    }
+    // Check email access
+    if (room.allowed_emails) {
+      try {
+        const emails = JSON.parse(room.allowed_emails);
+        if (emails.includes(userEmail)) return true;
+      } catch {
+        if (room.allowed_emails.split(",").map(s => s.trim()).includes(userEmail)) return true;
+      }
+    }
+    // Admins always see
+    return userRole === "admin" || room.created_by === userEmail;
+  });
 
   const isStarred = (id) => !!starredChats[id];
 
@@ -126,10 +158,28 @@ export default function MessagesSidebar({ channelId, onSelectChannel, sports, te
             })}
 
             {/* Teams not under any sport */}
-            {visibleTeams.filter(t => !t.sport_id).map(t => channelBtn(t.id, t.name, "team"))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+              {visibleTeams.filter(t => !t.sport_id).map(t => channelBtn(t.id, t.name, "team"))}
+              </div>
+            )}
+
+            {/* Custom Rooms */}
+            {visibleRooms.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-1">Rooms</p>
+                {visibleRooms.map(room => (
+                  <div key={room.id} className={`flex items-center group rounded-lg mb-0.5 transition-colors ${channelId === room.id ? "bg-primary/15" : "hover:bg-surface"}`}>
+                    <button
+                      onClick={() => onSelectChannel("room", room.id, room.name)}
+                      className={`flex-1 flex items-center gap-2 px-3 py-2.5 text-sm text-left ${channelId === room.id ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {room.is_private ? <Lock className="w-3.5 h-3.5 flex-shrink-0" /> : <Globe className="w-3.5 h-3.5 flex-shrink-0" />}
+                      <span className="truncate">{room.name}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            </div>
+            </div>
+            );
 }

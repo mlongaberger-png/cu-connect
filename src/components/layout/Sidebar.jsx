@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const allNavItems = [
@@ -13,6 +13,8 @@ const allNavItems = [
   { path: "/Teams", label: "Teams", icon: Users, roles: ["admin", "athletic_director"] },
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director", "coach"] },
+  { path: "/Gallery", label: "Gallery", icon: Image, roles: ["admin", "athletic_director", "coach"] },
+  { path: "/PracticePlans", label: "Practice Plans", icon: ClipboardList, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Volunteers", label: "Volunteers", icon: Users, roles: ["admin", "athletic_director", "coach"] },
   { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
   { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
@@ -24,6 +26,7 @@ const allNavItems = [
   { path: "/ParentPortal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
   { path: "/Sports", label: "Sports & Register", icon: Trophy, roles: ["parent", "user"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
+  { path: "/Gallery", label: "Gallery", icon: Image, roles: ["parent", "user"] },
 
   // Grandparent nav — portal + schedule only
   { path: "/Portal", label: "Portal", icon: LayoutDashboard, roles: ["grandparent"] },
