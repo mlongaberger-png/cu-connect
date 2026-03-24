@@ -30,7 +30,7 @@ import AccountSettings from "@/pages/AccountSettings";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite"];
 const STAFF_ONLY_PATHS = [
-  "/Sports", "/Teams", "/Messages",
+  "/Teams", "/Messages",
   "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"
 ];
 

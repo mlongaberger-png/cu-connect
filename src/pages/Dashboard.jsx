@@ -6,6 +6,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import RecentAnnouncements from "@/components/dashboard/RecentAnnouncements";
 import PerformanceHero from "@/components/dashboard/PerformanceHero";
+import WeatherWidget from "@/components/dashboard/WeatherWidget";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function Dashboard() {
@@ -98,6 +99,8 @@ export default function Dashboard() {
           <StatCard label="Upcoming Events" value={upcomingEvents.length} icon={Calendar} />
         </div>
       )}
+
+      <WeatherWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingEvents events={upcomingEvents} />

@@ -56,8 +56,8 @@ const EXPORTS = [
   },
 ];
 
-export default function DataExport() {
-  useAdminGuard();
+export default function DataExport({ embedded = false }) {
+  if (!embedded) useAdminGuard();
   const [exporting, setExporting] = useState(null);
   const [importFile, setImportFile] = useState(null);
   const [importType, setImportType] = useState("players");
@@ -153,7 +153,7 @@ export default function DataExport() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-8">
+    <div className={embedded ? "space-y-8" : "p-4 md:p-6 max-w-4xl mx-auto space-y-8"}>
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <FileText className="w-6 h-6 text-primary" /> Data Import & Export

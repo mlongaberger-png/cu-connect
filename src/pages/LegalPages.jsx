@@ -22,7 +22,7 @@ const DEFAULT_CONTENT = {
   data_retention: `# Data Retention Policy\n\nLast updated: ${new Date().toLocaleDateString()}\n\n## How Long We Keep Your Data\n- Active player records are retained for the duration of their participation\n- Payment records are retained for 7 years per financial regulations\n- Archived season data is retained for 3 years\n- Inactive accounts are reviewed annually\n\n## Your Rights\n- You may request a copy of your data by contacting your administrator\n- You may request deletion of your data after your child's participation ends\n\n## Data Security\n- All data is encrypted in transit and at rest\n- Access is restricted to authorized administrators and coaches only`,
 };
 
-export default function LegalPages() {
+export default function LegalPages({ embedded = false }) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [activeType, setActiveType] = useState("privacy_policy");
@@ -68,7 +68,7 @@ export default function LegalPages() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className={embedded ? "space-y-6" : "p-4 md:p-6 max-w-4xl mx-auto space-y-6"}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

@@ -16,8 +16,8 @@ const YEARS = ["2024", "2025", "2026", "2027"];
 
 const BLANK = { name: "", year: new Date().getFullYear().toString(), term: "fall", start_date: "", end_date: "", notes: "", is_active: false, is_archived: false };
 
-export default function SeasonManager() {
-  useAdminGuard();
+export default function SeasonManager({ embedded = false }) {
+  if (!embedded) useAdminGuard();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -81,7 +81,7 @@ export default function SeasonManager() {
   const archived = seasons.filter(s => s.is_archived);
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className={embedded ? "space-y-6" : "p-4 md:p-6 max-w-4xl mx-auto space-y-6"}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

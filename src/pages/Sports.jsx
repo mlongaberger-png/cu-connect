@@ -7,19 +7,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Trophy, ClipboardList } from "lucide-react";
-import { Link } from "react-router-dom";
-import SportRegistrationManager from "@/components/sports/SportRegistrationManager";
-import { useAdminGuard } from "@/hooks/useRoleGuard";
+import { Plus, Trophy } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import SportProfileCard from "@/components/sports/SportProfileCard";
+import AthleteRegistrationForm from "@/components/registration/AthleteRegistrationForm";
+import LeadershipApplicationForm from "@/components/registration/LeadershipApplicationForm";
 
 const seasons = ["fall", "winter", "spring", "summer", "year_round"];
 
 export default function Sports() {
-  useAdminGuard(); // admin only
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const isStaff = ["admin", "athletic_director", "coach"].includes(user?.role);
+
   const [showForm, setShowForm] = useState(false);
-  const [showRegistrations, setShowRegistrations] = useState(false);
   const [editingSport, setEditingSport] = useState(null);
-  const [form, setForm] = useState({ name: "", icon: "🎀", season: "year_round", description: "" });
+  const [form, setForm] = useState({ name: "", icon: "🏅", season: "year_round", description: "" });
+  const [registerSport, setRegisterSport] = useState(null);
+  const [showLeadershipForm, setShowLeadershipForm] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: sports = [], isLoading } = useQuery({
@@ -30,10 +35,6 @@ export default function Sports() {
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
-  });
-  const { data: registrations = [] } = useQuery({
-    queryKey: ["registrations-all"],
-    queryFn: () => base44.entities.TeamRegistration.filter({ is_open: true }),
   });
 
   const createMutation = useMutation({
@@ -57,142 +58,124 @@ export default function Sports() {
     setShowForm(true);
   };
 
-  const openEdit = (sport) => {
-    setEditingSport(sport);
-    setForm({ name: sport.name, icon: sport.icon || "🏅", season: sport.season || "year_round", description: sport.description || "" });
-    setShowForm(true);
-  };
-
   const closeForm = () => { setShowForm(false); setEditingSport(null); };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (editingSport) {
-      updateMutation.mutate({ id: editingSport.id, data: form });
-    } else {
-      createMutation.mutate(form);
-    }
+    if (editingSport) updateMutation.mutate({ id: editingSport.id, data: form });
+    else createMutation.mutate(form);
   };
 
-  const teamCount = (sportId) => teams.filter(t => t.sport_id === sportId).length;
-  const openRegCount = (sportId) => {
-    const sportTeamIds = teams.filter(t => t.sport_id === sportId).map(t => t.id);
-    return registrations.filter(r => sportTeamIds.includes(r.team_id)).length;
-  };
+  const visibleSports = isStaff ? sports : sports.filter(s => s.is_active !== false);
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Sports</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your organization's sports programs</p>
+          <h1 className="text-2xl font-bold text-foreground">Sports Programs</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isStaff ? "Manage your organization's sports programs" : "Explore our athletic programs and register your athlete"}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowRegistrations(true)} className="border-border">
-            <ClipboardList className="w-4 h-4 mr-2" /> Registrations
-          </Button>
-          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" /> Add Sport
-          </Button>
+          {!isStaff && (
+            <Button variant="outline" onClick={() => setShowLeadershipForm(true)} className="border-border text-sm">
+              Apply for Leadership Role
+            </Button>
+          )}
+          {isAdmin && (
+            <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" /> Add Sport
+            </Button>
+          )}
         </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => <div key={i} className="h-40 bg-card rounded-2xl animate-pulse border border-border" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3].map(i => <div key={i} className="h-64 bg-card rounded-2xl animate-pulse border border-border" />)}
         </div>
-      ) : sports.length === 0 ? (
+      ) : visibleSports.length === 0 ? (
         <div className="text-center py-20 bg-card rounded-2xl border border-border">
           <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">No sports yet</h3>
           <p className="text-muted-foreground mb-4">Add your first sport to get started</p>
-          <Button onClick={openCreate} className="bg-primary text-primary-foreground">
-            <Plus className="w-4 h-4 mr-2" /> Add Sport
-          </Button>
+          {isAdmin && (
+            <Button onClick={openCreate} className="bg-primary text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" /> Add Sport
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sports.map((sport) => (
-            <div key={sport.id} className="bg-card rounded-2xl border border-border p-6 hover:border-primary/30 transition-all group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="text-4xl">{sport.icon || "🏅"}</div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(sport)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(sport.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              <h3 className="text-lg font-bold text-foreground">{sport.name}</h3>
-              {sport.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{sport.description}</p>}
-              <div className="flex items-center gap-3 mt-4 flex-wrap">
-                <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary capitalize">
-                  {(sport.season || "").replace("_", " ")}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {teamCount(sport.id)} team{teamCount(sport.id) !== 1 ? "s" : ""}
-                </span>
-                {openRegCount(sport.id) > 0 && (
-                  <span className="text-xs flex items-center gap-1 text-green-400">
-                    <ClipboardList className="w-3 h-3" />
-                    {openRegCount(sport.id)} open
-                  </span>
-                )}
-              </div>
-              {openRegCount(sport.id) > 0 && (
-                <Link to={`/Register?sport=${sport.id}`}>
-                  <Button size="sm" variant="outline" className="mt-3 w-full border-primary/30 text-primary hover:bg-primary/10 text-xs">
-                    View Registrations
-                  </Button>
-                </Link>
-              )}
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {visibleSports.map((sport) => (
+            <SportProfileCard
+              key={sport.id}
+              sport={sport}
+              teams={teams}
+              canEdit={isAdmin}
+              onRegisterClick={(s) => setRegisterSport(s)}
+            />
           ))}
         </div>
       )}
 
-      <SportRegistrationManager open={showRegistrations} onClose={() => setShowRegistrations(false)} />
+      {/* Athlete Registration Form */}
+      <AthleteRegistrationForm
+        sport={registerSport}
+        open={!!registerSport}
+        onClose={() => setRegisterSport(null)}
+      />
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="bg-card border-border text-foreground">
+      {/* Leadership Application Dialog */}
+      <Dialog open={showLeadershipForm} onOpenChange={setShowLeadershipForm}>
+        <DialogContent className="bg-card border-border text-foreground max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingSport ? "Edit Sport" : "Add Sport"}</DialogTitle>
+            <DialogTitle>Apply for a Leadership Role</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <Label>Icon</Label>
-                <Input value={form.icon} onChange={e => setForm({...form, icon: e.target.value})} className="bg-surface border-border text-center text-2xl" />
-              </div>
-              <div className="col-span-3">
-                <Label>Sport Name</Label>
-                <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Football" className="bg-surface border-border" required />
-              </div>
-            </div>
-            <div>
-              <Label>Season</Label>
-              <Select value={form.season} onValueChange={v => setForm({...form, season: v})}>
-                <SelectTrigger className="bg-surface border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {seasons.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="bg-surface border-border" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={closeForm} className="border-border">Cancel</Button>
-              <Button type="submit" className="bg-primary text-primary-foreground">{editingSport ? "Update" : "Create"}</Button>
-            </div>
-          </form>
+          <LeadershipApplicationForm onClose={() => setShowLeadershipForm(false)} />
         </DialogContent>
       </Dialog>
+
+      {/* Add Sport Dialog (admin only) */}
+      {isAdmin && (
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogContent className="bg-card border-border text-foreground">
+            <DialogHeader>
+              <DialogTitle>{editingSport ? "Edit Sport" : "Add Sport"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label>Icon</Label>
+                  <Input value={form.icon} onChange={e => setForm({...form, icon: e.target.value})} className="bg-surface border-border text-center text-2xl" />
+                </div>
+                <div className="col-span-3">
+                  <Label>Sport Name</Label>
+                  <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Football" className="bg-surface border-border" required />
+                </div>
+              </div>
+              <div>
+                <Label>Season</Label>
+                <Select value={form.season} onValueChange={v => setForm({...form, season: v})}>
+                  <SelectTrigger className="bg-surface border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {seasons.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Short Description</Label>
+                <Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="bg-surface border-border" rows={2} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={closeForm} className="border-border">Cancel</Button>
+                <Button type="submit" className="bg-primary text-primary-foreground">{editingSport ? "Update" : "Create"}</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

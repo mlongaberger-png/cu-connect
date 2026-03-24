@@ -10,8 +10,8 @@ import AuditLogRow from "@/components/audit/AuditLogRow";
 
 const CATEGORIES = ["payment", "schedule", "volunteer", "document", "user", "roster", "other"];
 
-export default function AuditLog() {
-  useAdminGuard();
+export default function AuditLog({ embedded = false }) {
+  if (!embedded) useAdminGuard();
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
 
@@ -30,7 +30,7 @@ export default function AuditLog() {
   });
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className={embedded ? "space-y-6" : "p-4 md:p-6 max-w-7xl mx-auto space-y-6"}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
