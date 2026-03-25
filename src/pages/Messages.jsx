@@ -14,6 +14,7 @@ import AttendanceCard from "@/components/attendance/AttendanceCard";
 import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
 import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import { useAuth } from "@/lib/AuthContext";
+import usePullToRefresh from "@/hooks/usePullToRefresh";
 
 function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId }) {
   const tracked = React.useRef(false);
@@ -76,7 +77,12 @@ export default function Messages() {
   const [activeTab, setActiveTab] = useState("channels"); // "channels" | "direct" | "rooms"
   const [dmContact, setDmContact] = useState(null);
   const messagesEndRef = useRef(null);
+  const messagesScrollRef = useRef(null);
   const queryClient = useQueryClient();
+
+  const refreshing = usePullToRefresh(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["messages", channelId] });
+  }, messagesScrollRef);
 
   // Current channel team (if it's a team channel)
   const isTeamChannel = channel === "team";
@@ -353,7 +359,12 @@ export default function Messages() {
         </div>
 
         {/* Messages + Attendance Cards */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+          {refreshing && (
+            <div className="flex justify-center py-2">
+              <div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" />
+            </div>
+          )}
           {/* Pinned attendance requests at top of team channel */}
           {isTeamChannel && attendanceRequests.length > 0 && (
             <div className="space-y-3 pb-2 border-b border-border">
