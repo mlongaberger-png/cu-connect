@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Megaphone, Pin, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Megaphone, Pin, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
+import usePullToRefresh from "@/hooks/usePullToRefresh";
 import { format } from "date-fns";
 
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
@@ -24,6 +25,10 @@ export default function Announcements() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", content: "", priority: "normal", target: "org", target_id: "", is_pinned: false });
   const queryClient = useQueryClient();
+
+  const refreshing = usePullToRefresh(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["announcements"] });
+  });
 
   const { data: announcements = [], isLoading } = useQuery({
     queryKey: ["announcements"],
@@ -69,6 +74,7 @@ export default function Announcements() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {refreshing && <div className="flex justify-center"><div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Announcements</h1>

@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, ClipboardList, Shield } from "lucide-react";
+import usePullToRefresh from "@/hooks/usePullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import VolunteerRolesPanel from "@/components/volunteers/VolunteerRolesPanel";
 import VolunteerOpportunitiesPanel from "@/components/volunteers/VolunteerOpportunitiesPanel";
@@ -21,6 +23,12 @@ export default function Volunteers() {
   const isCoach = role === "coach";
   const [activeTab, setActiveTab] = useState("opportunities");
   const [filterTeam, setFilterTeam] = useState("all");
+  const queryClient = useQueryClient();
+
+  const refreshing = usePullToRefresh(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["volunteer-opportunities"] });
+    await queryClient.invalidateQueries({ queryKey: ["volunteer-assignments"] });
+  });
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
@@ -34,6 +42,7 @@ export default function Volunteers() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {refreshing && <div className="flex justify-center"><div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Volunteers</h1>

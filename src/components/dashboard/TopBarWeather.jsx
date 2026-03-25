@@ -1,43 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { MapPin, Loader2 } from "lucide-react";
 
-const CACHE_KEY = "topbar_weather_cache";
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_KEY = "topbar_weather_v2";
+const CACHE_TTL = 30 * 60 * 1000;
 
-async function fetchWeatherByCoords(lat, lon) {
-  return base44.integrations.Core.InvokeLLM({
-    prompt: `Get current weather for coordinates ${lat}, ${lon}. Return current conditions as JSON.`,
-    add_context_from_internet: true,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        city: { type: "string" },
-        temp_f: { type: "number" },
-        condition_emoji: { type: "string" },
-        condition: { type: "string" },
-      }
-    }
-  });
-}
+const WMO_EMOJI = {
+  0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+  45: "🌫️", 48: "🌫️",
+  51: "🌦️", 53: "🌦️", 55: "🌧️",
+  61: "🌧️", 63: "🌧️", 65: "🌧️",
+  71: "🌨️", 73: "🌨️", 75: "❄️",
+  80: "🌦️", 81: "🌧️", 82: "⛈️",
+  95: "⛈️", 96: "⛈️", 99: "⛈️",
+};
+
+function celsiusToF(c) { return Math.round(c * 9 / 5 + 32); }
 
 async function fetchWeatherByIP() {
-  // Use IP geolocation as fallback
-  const geoRes = await fetch("https://ipapi.co/json/");
-  const geo = await geoRes.json();
-  return base44.integrations.Core.InvokeLLM({
-    prompt: `Get current weather for ${geo.city}, ${geo.region}, ${geo.country_name}. Return current conditions as JSON.`,
-    add_context_from_internet: true,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        city: { type: "string" },
-        temp_f: { type: "number" },
-        condition_emoji: { type: "string" },
-        condition: { type: "string" },
-      }
-    }
-  });
+  // Step 1: IP geolocation (no key needed)
+  const geo = await fetch("https://ipapi.co/json/").then(r => r.json());
+  const { latitude, longitude, city } = geo;
+  if (!latitude || !longitude) throw new Error("No location");
+
+  // Step 2: Open-Meteo (free, no key)
+  const wx = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`
+  ).then(r => r.json());
+
+  const temp_f = Math.round(wx.current?.temperature_2m ?? 0);
+  const code = wx.current?.weather_code ?? 0;
+  const emoji = WMO_EMOJI[code] ?? "🌤️";
+
+  return { city: city || "Local", temp_f, condition_emoji: emoji };
 }
 
 export default function TopBarWeather() {
@@ -51,54 +45,26 @@ export default function TopBarWeather() {
     } catch {}
     return null;
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!weather);
 
   useEffect(() => {
-    // If we already have fresh cached data, skip fetching
+    // Skip if fresh cache exists
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         const { ts } = JSON.parse(cached);
-        if (Date.now() - ts < CACHE_TTL) return;
+        if (Date.now() - ts < CACHE_TTL) { setLoading(false); return; }
       }
     } catch {}
 
     setLoading(true);
-
-    const doFetch = async () => {
-      try {
-        let result;
-        if (navigator.geolocation) {
-          result = await new Promise((resolve) => {
-            navigator.geolocation.getCurrentPosition(
-              async (pos) => {
-                try {
-                  resolve(await fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude));
-                } catch {
-                  resolve(null);
-                }
-              },
-              async () => {
-                try { resolve(await fetchWeatherByIP()); } catch { resolve(null); }
-              },
-              { timeout: 5000 }
-            );
-          });
-        } else {
-          result = await fetchWeatherByIP();
-        }
-        if (result) {
-          setWeather(result);
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() }));
-        }
-      } catch {
-        // silently fail
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    doFetch();
+    fetchWeatherByIP()
+      .then(data => {
+        setWeather(data);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -113,12 +79,9 @@ export default function TopBarWeather() {
   if (!weather) return null;
 
   return (
-    <div
-      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-xs text-muted-foreground"
-      title={weather.condition}
-    >
-      <span className="text-base leading-none">{weather.condition_emoji || "🌤️"}</span>
-      <span className="font-medium text-foreground">{Math.round(weather.temp_f)}°F</span>
+    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-xs text-muted-foreground">
+      <span className="text-base leading-none">{weather.condition_emoji}</span>
+      <span className="font-medium text-foreground">{weather.temp_f}°F</span>
       <div className="flex items-center gap-0.5">
         <MapPin className="w-3 h-3" />
         <span className="max-w-[80px] truncate">{weather.city}</span>

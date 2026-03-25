@@ -18,6 +18,7 @@ import PdfScheduleImporter from "@/components/schedule/PdfScheduleImporter";
 import TimezoneSelector from "@/components/schedule/TimezoneSelector";
 
 import { useScheduleGuard } from "@/hooks/useRoleGuard";
+import usePullToRefresh from "@/hooks/usePullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
 
 const eventTypes = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
@@ -46,6 +47,10 @@ export default function Schedule() {
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" | "desc"
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   const queryClient = useQueryClient();
+
+  const refreshing = usePullToRefresh(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["events"] });
+  });
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["events"],
@@ -96,6 +101,7 @@ export default function Schedule() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {refreshing && <div className="flex justify-center"><div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
