@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, ClipboardList, Shield } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
 import VolunteerRolesPanel from "@/components/volunteers/VolunteerRolesPanel";
@@ -48,14 +49,15 @@ export default function Volunteers() {
           <p className="text-sm text-muted-foreground mt-1">Manage volunteer opportunities and assignments</p>
         </div>
         {myTeams.length > 1 && (
-          <select
-            value={filterTeam}
-            onChange={e => setFilterTeam(e.target.value)}
-            className="text-sm bg-surface border border-border rounded-lg px-3 py-2 text-foreground"
-          >
-            <option value="all">All Teams</option>
-            {myTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          <Select value={filterTeam} onValueChange={setFilterTeam}>
+            <SelectTrigger className="w-44 bg-surface border-border text-sm">
+              <SelectValue placeholder="All Teams" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="all">All Teams</SelectItem>
+              {myTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         )}
       </div>
 
