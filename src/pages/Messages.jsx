@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare, Settings2 } from "lucide-react";
@@ -164,13 +165,18 @@ export default function Messages() {
     (role === "coach" && myCoachTeams.some(t => t.id === channelId))
   );
 
-  const sendMutation = useMutation({
-    mutationFn: (data) => base44.entities.Message.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", channelId] });
-      setNewMessage("");
-    },
-  });
+  const sendMutation = useOptimisticMutation(
+    (data) => base44.entities.Message.create(data),
+    {
+      queryClient,
+      queryKey: ["messages", channelId],
+      updater: (old, newMsg) => [
+        ...old,
+        { ...newMsg, id: "temp-" + Date.now(), created_date: new Date().toISOString() },
+      ],
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["messages", channelId] }),
+    }
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
