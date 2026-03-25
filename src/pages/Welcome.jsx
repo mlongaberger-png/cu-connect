@@ -76,6 +76,8 @@ export default function Welcome() {
 
       <footer className="py-5 text-center text-xs text-muted-foreground border-t border-border">
         © {new Date().getFullYear()} Cornerstone United Athletics
+        <span className="mx-2">·</span>
+        <Link to="/privacy-policy" className="hover:text-foreground underline underline-offset-2 transition-colors">Privacy Policy</Link>
       </footer>
     </div>
   );

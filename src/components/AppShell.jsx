@@ -29,8 +29,9 @@ import AcceptInvite from "@/pages/AcceptInvite";
 import AccountSettings from "@/pages/AccountSettings";
 import Gallery from "@/pages/Gallery";
 import PracticePlans from "@/pages/PracticePlans";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
-const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite"];
+const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
   "/Teams", "/Messages",
   "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"
@@ -42,6 +43,7 @@ const PublicRoutes = () => (
     <Route path="/ParentSignup" element={<ParentSignup />} />
     <Route path="/Register" element={<Register />} />
     <Route path="/AcceptInvite" element={<AcceptInvite />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
     <Route path="*" element={<Navigate to="/welcome" replace />} />
   </Routes>
 );
@@ -138,6 +140,9 @@ export default function AppShell() {
         <Route path="/Gallery" element={<Gallery />} />
         <Route path="/PracticePlans" element={<PracticePlans />} />
       </Route>
+
+      {/* Public legal pages — always accessible */}
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
       {/* Parent portal — standalone (no sidebar header clash) */}
       <Route path="/ParentPortal" element={<ParentPortal />} />

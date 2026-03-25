@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function AccountSettings() {
@@ -251,11 +252,16 @@ export default function AccountSettings() {
           <CardDescription>Access your rights and our data policies.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {["Privacy Policy", "Terms of Service", "Payment Terms", "Data Retention Policy"].map(label => (
-            <a key={label} href="/LegalPages" className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground">
+          {[
+            { label: "Privacy Policy", href: "/privacy-policy" },
+            { label: "Terms of Service", href: "/LegalPages" },
+            { label: "Payment Terms", href: "/LegalPages" },
+            { label: "Data Retention Policy", href: "/LegalPages" },
+          ].map(({ label, href }) => (
+            <Link key={label} to={href} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground">
               <span>{label}</span>
               <span className="text-muted-foreground">›</span>
-            </a>
+            </Link>
           ))}
         </CardContent>
       </Card>
