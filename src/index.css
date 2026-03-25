@@ -89,6 +89,10 @@
   }
   body {
     @apply bg-background text-foreground font-inter;
+    overscroll-behavior-y: contain;
+  }
+  main {
+    overscroll-behavior-y: contain;
   }
 }
 

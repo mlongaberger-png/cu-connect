@@ -67,13 +67,6 @@ export default function AuditLog({ embedded = false }) {
 
       {/* Log Table */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <div className="hidden md:grid grid-cols-[140px_1fr_180px_120px] gap-4 px-5 py-3 border-b border-border bg-surface">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Time</span>
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Action</span>
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actor</span>
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Category</span>
-        </div>
-
         {isLoading ? (
           <div className="space-y-px">
             {[1,2,3,4,5].map(i => (

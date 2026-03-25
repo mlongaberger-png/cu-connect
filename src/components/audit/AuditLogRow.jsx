@@ -17,45 +17,36 @@ export default function AuditLogRow({ log }) {
   const Icon = cfg.icon;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[140px_1fr_180px_120px] gap-2 md:gap-4 px-5 py-4 border-b border-border last:border-0 hover:bg-surface/50 transition-colors">
-      {/* Time */}
-      <div className="flex items-center">
-        <span className="text-xs text-muted-foreground">
-          {log.created_date ? format(new Date(log.created_date), "MMM d, h:mm a") : "—"}
-        </span>
-      </div>
-
-      {/* Description */}
+    <div className="px-4 py-4 border-b border-border last:border-0 hover:bg-surface/50 transition-colors">
+      {/* Mobile card layout */}
       <div className="flex items-start gap-3">
-        <div className={`w-7 h-7 rounded-lg ${cfg.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-          <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
+        <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+          <Icon className={`w-4 h-4 ${cfg.color}`} />
         </div>
-        <div className="min-w-0">
-          <p className="text-sm text-foreground leading-snug">{log.description}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm text-foreground leading-snug flex-1">{log.description}</p>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
+              {log.category}
+            </span>
+          </div>
           {log.target_name && (
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{log.target_entity}: {log.target_name}</p>
           )}
+          <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-[9px] font-bold text-primary">
+                  {(log.actor_name || log.actor_email || "?")[0].toUpperCase()}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">{log.actor_name || log.actor_email}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {log.created_date ? format(new Date(log.created_date), "MMM d, h:mm a") : "—"}
+            </span>
+          </div>
         </div>
-      </div>
-
-      {/* Actor */}
-      <div className="flex items-center gap-2 md:col-auto col-span-1">
-        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-          <span className="text-[10px] font-bold text-primary">
-            {(log.actor_name || log.actor_email || "?")[0].toUpperCase()}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-foreground truncate">{log.actor_name || log.actor_email}</p>
-          <p className="text-[10px] text-muted-foreground capitalize">{log.actor_role}</p>
-        </div>
-      </div>
-
-      {/* Category badge */}
-      <div className="flex items-center">
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${cfg.bg} ${cfg.color}`}>
-          {log.category}
-        </span>
       </div>
     </div>
   );

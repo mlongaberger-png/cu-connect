@@ -42,7 +42,7 @@ export default function AppLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
         {/* Main content — add bottom padding on mobile for the tab bar */}
-        <main className="flex-1 overflow-y-auto safe-area-bottom pb-0 lg:pb-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <main className="flex-1 overflow-y-auto" style={{ overscrollBehaviorY: "contain", paddingBottom: 0 }}>
           <div className="pb-16 lg:pb-0 h-full">
             <PageTransition>
               <Outlet />
