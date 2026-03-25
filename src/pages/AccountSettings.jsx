@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2 } from "lucide-react";
+import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function AccountSettings() {
@@ -25,6 +25,9 @@ export default function AccountSettings() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -93,6 +96,13 @@ export default function AccountSettings() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    setDeleting(true);
+    await base44.functions.invoke("deleteAccount", {});
+    base44.auth.logout();
+  };
 
   const roleLabel = {
     admin: "Administrator",
@@ -233,6 +243,62 @@ export default function AccountSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Legal Links */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-base">Legal & Privacy</CardTitle>
+          <CardDescription>Access your rights and our data policies.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {["Privacy Policy", "Terms of Service", "Payment Terms", "Data Retention Policy"].map(label => (
+            <a key={label} href="/LegalPages" className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground">
+              <span>{label}</span>
+              <span className="text-muted-foreground">›</span>
+            </a>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Delete Account */}
+      {["parent", "user", "grandparent"].includes(user?.role) && (
+        <Card className="bg-card border-red-900/30">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 text-red-400"><Trash2 className="w-4 h-4" /> Delete My Account</CardTitle>
+            <CardDescription>Permanently remove your account and guardian links. Financial and compliance records are retained as required.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!showDeleteConfirm ? (
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(true)} className="border-red-900/50 text-red-400 hover:bg-red-900/20 hover:text-red-300 w-full">
+                <Trash2 className="w-4 h-4 mr-2" /> Request Account Deletion
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-red-900/20 border border-red-900/30 text-sm text-red-300">
+                  ⚠️ This action is <strong>permanent</strong>. Your account, guardian links, and personal data will be deleted. Type <strong>DELETE</strong> below to confirm.
+                </div>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={e => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  className="w-full rounded-md border border-red-900/50 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500"
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }} className="flex-1">Cancel</Button>
+                  <Button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== "DELETE" || deleting}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-40"
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete My Account"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
