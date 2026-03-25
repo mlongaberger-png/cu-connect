@@ -31,11 +31,11 @@ export default function AppLayout() {
   const title = pageTitles[location.pathname] || "Cornerstone United Athletics";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background safe-area-left safe-area-right">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto safe-area-bottom">
           <Outlet />
         </main>
       </div>
