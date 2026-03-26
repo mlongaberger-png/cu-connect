@@ -51,7 +51,9 @@ export default function TeamDetail() {
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
   });
-  const players = allPlayers.filter(p => p.team_id === teamId);
+  const players = allPlayers
+    .filter(p => p.team_id === teamId)
+    .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`));
 
   const resetForm = () => setForm({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" });
 
