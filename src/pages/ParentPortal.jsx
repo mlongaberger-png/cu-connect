@@ -232,7 +232,7 @@ export default function ParentPortal() {
   if (myKids.length === 0) {
     const isLoggedIn = !!user;
     return (
-      <div className={isStandalone ? "min-h-screen bg-background" : ""}>
+      <div className={isStandalone ? "min-h-screen bg-background overflow-x-hidden" : "overflow-x-hidden"}>
         {isStandalone && standaloneHeader}
         <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <div className="text-center py-10 bg-card rounded-2xl border border-border px-6">
@@ -315,9 +315,9 @@ export default function ParentPortal() {
   }
 
   return (
-    <div className={isStandalone ? "min-h-screen bg-background" : ""}>
-      {isStandalone && standaloneHeader}
-      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className={isStandalone ? "min-h-screen bg-background overflow-x-hidden" : "overflow-x-hidden"}>
+    {isStandalone && standaloneHeader}
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
         <div>
