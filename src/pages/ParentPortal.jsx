@@ -327,16 +327,16 @@ export default function ParentPortal() {
 
         <PushNotificationBanner />
 
-      {/* Tabs — horizontally scrollable on mobile */}
-      <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0" style={{WebkitOverflowScrolling: "touch"}}>
-        <div className="flex gap-1 bg-surface rounded-xl p-1 w-max">
+      {/* Tabs — responsive grid/wrap, no horizontal scroll */}
+      <div className="bg-surface rounded-xl p-1">
+        <div className="flex flex-wrap gap-1">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}

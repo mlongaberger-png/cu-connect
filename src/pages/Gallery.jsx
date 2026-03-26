@@ -21,8 +21,8 @@ export default function Gallery() {
   const [lightbox, setLightbox] = useState(null);
   const [uploadForm, setUploadForm] = useState({ team_id: "", caption: "" });
   const [uploading, setUploading] = useState(false);
-  const [filePreview, setFilePreview] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
@@ -69,35 +69,39 @@ export default function Gallery() {
   });
 
   const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFile(file);
-    setFilePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setSelectedFiles(files);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !uploadForm.team_id) return;
+    if (!selectedFiles.length || !uploadForm.team_id) return;
     setUploading(true);
+    setUploadProgress({ done: 0, total: selectedFiles.length });
+    const team = teams.find(t => t.id === uploadForm.team_id);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-      const team = teams.find(t => t.id === uploadForm.team_id);
-      await base44.entities.PhotoPost.create({
-        team_id: uploadForm.team_id,
-        team_name: team?.name || "",
-        sport_name: team?.sport_name || "",
-        photo_url: file_url,
-        caption: uploadForm.caption,
-        uploader_name: user?.full_name || user?.email || "",
-        uploader_email: user?.email || "",
-        uploader_role: isStaff ? "staff" : "parent",
-      });
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        await base44.entities.PhotoPost.create({
+          team_id: uploadForm.team_id,
+          team_name: team?.name || "",
+          sport_name: team?.sport_name || "",
+          photo_url: file_url,
+          caption: uploadForm.caption,
+          uploader_name: user?.full_name || user?.email || "",
+          uploader_email: user?.email || "",
+          uploader_role: isStaff ? "staff" : "parent",
+        });
+        setUploadProgress({ done: i + 1, total: selectedFiles.length });
+      }
       queryClient.invalidateQueries({ queryKey: ["photos"] });
       setShowUpload(false);
       setUploadForm({ team_id: "", caption: "" });
-      setSelectedFile(null);
-      setFilePreview(null);
+      setSelectedFiles([]);
     } finally {
       setUploading(false);
+      setUploadProgress({ done: 0, total: 0 });
     }
   };
 
@@ -184,18 +188,29 @@ export default function Gallery() {
           <DialogHeader><DialogTitle>Upload Photo</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div
-              className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
               onClick={() => document.getElementById("photo-upload-input").click()}
             >
-              {filePreview ? (
-                <img src={filePreview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain" />
+              {selectedFiles.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {selectedFiles.slice(0, 6).map((f, i) => (
+                      <img key={i} src={URL.createObjectURL(f)} alt="" className="h-16 w-16 object-cover rounded-lg" />
+                    ))}
+                    {selectedFiles.length > 6 && (
+                      <div className="h-16 w-16 rounded-lg bg-surface flex items-center justify-center text-sm text-muted-foreground">+{selectedFiles.length - 6}</div>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selectedFiles.length} photo{selectedFiles.length !== 1 ? "s" : ""} selected</p>
+                </div>
               ) : (
                 <>
                   <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Click to select a photo</p>
+                  <p className="text-sm text-muted-foreground">Click to select photos</p>
+                  <p className="text-xs text-muted-foreground mt-1">You can select multiple at once</p>
                 </>
               )}
-              <input id="photo-upload-input" type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+              <input id="photo-upload-input" type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
             </div>
 
             <Select value={uploadForm.team_id} onValueChange={v => setUploadForm(f => ({ ...f, team_id: v }))}>
@@ -217,10 +232,12 @@ export default function Gallery() {
               <Button variant="outline" onClick={() => setShowUpload(false)} className="border-border">Cancel</Button>
               <Button
                 onClick={handleUpload}
-                disabled={!selectedFile || !uploadForm.team_id || uploading}
+                disabled={!selectedFiles.length || !uploadForm.team_id || uploading}
                 className="bg-primary text-primary-foreground"
               >
-                {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading…</> : "Upload"}
+                {uploading
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {uploadProgress.done}/{uploadProgress.total}…</>
+                  : `Upload${selectedFiles.length > 1 ? ` ${selectedFiles.length} Photos` : ""}`}
               </Button>
             </div>
           </div>
