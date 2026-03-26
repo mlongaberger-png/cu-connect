@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
 import RosterPDFButton from "@/components/roster/RosterPDFButton";
+import RosterImporter from "@/components/roster/RosterImporter";
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
 
 export default function TeamDetail() {
@@ -20,6 +21,7 @@ export default function TeamDetail() {
   const [showForm, setShowForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [showTeamForm, setShowTeamForm] = useState(false);
+  const [showRosterImporter, setShowRosterImporter] = useState(false);
   const [teamForm, setTeamForm] = useState({});
   const [invitedEmails, setInvitedEmails] = useState({});
   const [inviting, setInviting] = useState(null);
@@ -154,6 +156,11 @@ export default function TeamDetail() {
             </Button>
           )}
           {canManage && (
+            <Button variant="outline" onClick={() => setShowRosterImporter(true)} className="border-border gap-1.5">
+              <FileUp className="w-4 h-4" /> Import Roster
+            </Button>
+          )}
+          {canManage && (
             <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
               <Plus className="w-4 h-4 mr-2" /> Add Player
             </Button>
@@ -278,6 +285,9 @@ export default function TeamDetail() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Roster Importer */}
+      <RosterImporter open={showRosterImporter} onOpenChange={setShowRosterImporter} team={team} />
 
       {/* Add/Edit Player Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); resetForm(); } }}>
