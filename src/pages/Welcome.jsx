@@ -7,7 +7,7 @@ const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0
 
 export default function Welcome() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Header */}
       <header className="px-6 py-4 flex items-center justify-between border-b border-border">
         <div className="flex items-center gap-3">
@@ -57,7 +57,7 @@ export default function Welcome() {
         </p>
 
         {/* Feature highlights */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-14 w-full text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-14 w-full max-w-full text-left">
           {[
             { icon: Calendar, label: "Schedules", desc: "View practices, games, and events for your child's team." },
             { icon: FileText, label: "Documents", desc: "Access waivers, forms, and sign required documents." },
