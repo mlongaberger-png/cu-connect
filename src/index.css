@@ -84,18 +84,24 @@
 }
 
 @layer base {
+  html {
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground font-inter;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     overflow-x: hidden;
     max-width: 100vw;
+    -webkit-tap-highlight-color: transparent;
   }
   main {
     overscroll-behavior: contain;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
   #root {
     overflow-x: hidden;

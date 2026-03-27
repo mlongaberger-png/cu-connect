@@ -10,8 +10,11 @@ export default function TopBar({ onMenuToggle, title }) {
   const { user } = useAuth();
 
   return (
-    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border safe-area-top">
-      <div className="flex items-center justify-between px-4 md:px-6 h-16">
+    <header
+      className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border safe-area-top"
+      style={{ transform: "translateZ(0)", willChange: "transform" }}
+    >
+      <div className="flex items-center justify-between px-4 md:px-6 h-14">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"

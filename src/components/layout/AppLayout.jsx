@@ -44,7 +44,12 @@ export default function AppLayout() {
         {/* Main content — pb accounts for bottom tab bar on mobile */}
         <main
           className="flex-1 overflow-y-auto overflow-x-hidden"
-          style={{ overscrollBehaviorY: "contain", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          style={{
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            transform: "translateZ(0)",
+          }}
         >
           <div className="pb-20 lg:pb-6">
             <PageTransition>

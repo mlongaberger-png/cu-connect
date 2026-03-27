@@ -64,6 +64,9 @@ export default function BottomTabBar({ onOpenSidebar }) {
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         WebkitUserSelect: "none",
         userSelect: "none",
+        transform: "translateZ(0)",
+        willChange: "transform",
+        backfaceVisibility: "hidden",
       }}
     >
       <div className="flex items-stretch">
@@ -76,7 +79,7 @@ export default function BottomTabBar({ onOpenSidebar }) {
               <button
                 key="more"
                 onClick={onOpenSidebar}
-                className="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-muted-foreground active:text-foreground transition-colors"
+                className="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-muted-foreground active:bg-white/5 transition-none"
                 style={{ minHeight: 56 }}
               >
                 <Icon className="w-5 h-5" />
@@ -89,8 +92,8 @@ export default function BottomTabBar({ onOpenSidebar }) {
             <button
               key={tab.root}
               onClick={() => handleTabPress(tab)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-colors relative ${
-                isActive ? "text-primary" : "text-muted-foreground active:text-foreground"
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-none relative ${
+                isActive ? "text-primary" : "text-muted-foreground active:bg-white/5"
               }`}
               style={{ minHeight: 56 }}
             >

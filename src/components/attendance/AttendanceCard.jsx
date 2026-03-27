@@ -47,7 +47,35 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
         });
       }
     },
-    onSuccess: () => {
+    onMutate: async ({ player, status }) => {
+      // Cancel any in-flight refetches
+      await queryClient.cancelQueries({ queryKey: ["attendance-responses", request.id] });
+      const previous = queryClient.getQueryData(["attendance-responses", request.id]);
+      // Optimistically update the cache
+      queryClient.setQueryData(["attendance-responses", request.id], (old = []) => {
+        const exists = old.find(r => r.player_id === player.id);
+        if (exists) {
+          return old.map(r => r.player_id === player.id ? { ...r, status } : r);
+        }
+        return [...old, {
+          id: `optimistic-${player.id}`,
+          attendance_request_id: request.id,
+          player_id: player.id,
+          player_name: `${player.first_name} ${player.last_name}`,
+          team_id: request.team_id,
+          responder_email: currentUser?.email || "",
+          status,
+        }];
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      // Roll back on failure
+      if (context?.previous) {
+        queryClient.setQueryData(["attendance-responses", request.id], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance-responses", request.id] });
       setRespondingFor(null);
     },
