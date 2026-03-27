@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
 import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
+import PendingChildrenPanel from "@/components/admin/PendingChildrenPanel";
 import ParentAccountsTab from "@/components/admin/ParentAccountsTab";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
 import RegistrationsTab from "@/components/admin/RegistrationsTab";
@@ -118,6 +119,7 @@ export default function AthleticDirectors() {
               { id: "staff", label: "Staff & Admins" },
               { id: "parents", label: "Parent Accounts" },
               { id: "access", label: "Access Requests" },
+              { id: "children", label: "Child Submissions" },
             ].map(sub => (
               <button key={sub.id} onClick={() => setPeopleSubTab(sub.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${peopleSubTab === sub.id ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
@@ -164,6 +166,7 @@ export default function AthleticDirectors() {
 
           {peopleSubTab === "parents" && <ParentAccountsTab />}
           {peopleSubTab === "access" && <AccessRequestsPanel />}
+          {peopleSubTab === "children" && <PendingChildrenPanel />}
         </div>
       )}
 

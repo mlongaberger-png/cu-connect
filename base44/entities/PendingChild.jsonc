@@ -1,0 +1,75 @@
+{
+  "name": "PendingChild",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date"
+    },
+    "grade": {
+      "type": "string",
+      "description": "School grade (e.g. 3rd, 8th)"
+    },
+    "sport_interest": {
+      "type": "string",
+      "description": "Sport(s) parent mentioned"
+    },
+    "parent_email": {
+      "type": "string",
+      "description": "Email of submitting parent"
+    },
+    "parent_name": {
+      "type": "string",
+      "description": "Name of submitting parent"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "matched"
+      ],
+      "default": "pending"
+    },
+    "matched_player_id": {
+      "type": "string",
+      "description": "ID of existing Player record if matched/linked"
+    },
+    "matched_player_name": {
+      "type": "string",
+      "description": "Denormalized matched player name"
+    },
+    "assigned_team_id": {
+      "type": "string"
+    },
+    "assigned_team_name": {
+      "type": "string"
+    },
+    "admin_notes": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string"
+    },
+    "guardian_confirmed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Parent confirmed guardian acknowledgment"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "parent_email"
+  ]
+}

@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2 } from "lucide-react";
+import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import MyChildrenPanel from "@/components/parentportal/MyChildrenPanel";
 import { Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -29,6 +31,23 @@ export default function AccountSettings() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+
+  const isParent = ["parent", "grandparent"].includes(user?.role);
+
+  const { data: myGuardianLinks = [] } = useQuery({
+    queryKey: ["my-guardian-links-settings", user?.email],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
+    enabled: isParent && !!user?.email,
+  });
+
+  const { data: allPlayers = [] } = useQuery({
+    queryKey: ["players-all-settings"],
+    queryFn: () => base44.entities.Player.list(),
+    enabled: isParent,
+  });
+
+  const linkedPlayerIds = new Set(myGuardianLinks.map(g => g.player_id));
+  const linkedPlayers = allPlayers.filter(p => linkedPlayerIds.has(p.id) || p.parent_email === user?.email);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -265,6 +284,19 @@ export default function AccountSettings() {
           ))}
         </CardContent>
       </Card>
+
+      {/* My Children — parents/grandparents only */}
+      {isParent && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> My Children</CardTitle>
+            <CardDescription>Manage your children's profiles and check their status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MyChildrenPanel userEmail={user?.email} userName={user?.full_name} linkedPlayers={linkedPlayers} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete Account */}
       {["parent", "user", "grandparent"].includes(user?.role) && (

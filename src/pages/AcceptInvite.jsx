@@ -1,19 +1,20 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { Trophy, CheckCircle, Loader2, Mail, User, Phone } from "lucide-react";
+import { Trophy, CheckCircle, Loader2, Mail, User, Phone, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import AddChildForm from "@/components/parentportal/AddChildForm";
 
 const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/2ff00e9bd_file_0000000089d071f8be26c9f306ac7ce1.png";
 
 export default function AcceptInvite() {
   const { user } = useAuth();
+  const [step, setStep] = useState("profile"); // "profile" | "children"
   const [name, setName] = useState(user?.full_name || "");
   const [phone, setPhone] = useState(user?.phone || "");
-  const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false); // "profile" | "children"
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,20 +22,48 @@ export default function AcceptInvite() {
     const updates = { setup_complete: true };
     if (phone.trim()) updates.phone = phone.trim();
     await base44.auth.updateMe(updates);
-    setDone(true);
-    setTimeout(() => {
-      window.location.href = "/Portal";
-    }, 1200);
+    setSaving(false);
+    setStep("children");
   };
 
-  if (done) {
+  const handleDone = () => { window.location.href = "/Portal"; };
+
+  if (step === "children") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="text-center">
-          <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">You're all set!</h2>
-          <p className="text-muted-foreground">Taking you to the portal…</p>
-        </div>
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
+          <div className="w-9 h-9 rounded-lg overflow-hidden">
+            <img src={CU_LOGO} alt="CU Logo" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-bold text-foreground text-lg">Cornerstone United</span>
+        </header>
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <UserPlus className="w-7 h-7 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-1">Add Your Children</h1>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Optionally add your children now to see their schedule, documents, and payments. You can always do this later.
+              </p>
+            </div>
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <AddChildForm
+                parentEmail={user?.email}
+                parentName={user?.full_name}
+                onChildAdded={() => {}}
+                onSkip={handleDone}
+                showSkip={true}
+              />
+              <div className="mt-4 pt-4 border-t border-border">
+                <Button variant="default" onClick={handleDone} className="w-full">
+                  Continue to Portal →
+                </Button>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
