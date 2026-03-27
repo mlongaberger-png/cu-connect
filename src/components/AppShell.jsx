@@ -29,6 +29,7 @@ import AcceptInvite from "@/pages/AcceptInvite";
 import AccountSettings from "@/pages/AccountSettings";
 import Gallery from "@/pages/Gallery";
 import PracticePlans from "@/pages/PracticePlans";
+import GameDayPlaylists from "@/pages/GameDayPlaylists";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
@@ -139,6 +140,7 @@ export default function AppShell() {
         <Route path="/AccountSettings" element={<AccountSettings />} />
         <Route path="/Gallery" element={<Gallery />} />
         <Route path="/PracticePlans" element={<PracticePlans />} />
+        <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
       </Route>
 
       {/* Public legal pages — always accessible */}

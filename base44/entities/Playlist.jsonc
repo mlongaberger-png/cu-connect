@@ -1,0 +1,52 @@
+{
+  "name": "Playlist",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Playlist name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "pregame",
+        "walkup",
+        "warmup",
+        "postgame",
+        "practice"
+      ],
+      "description": "Type of playlist"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Team this playlist belongs to"
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Denormalized team name"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "Optional: link to a specific event"
+    },
+    "songs": {
+      "type": "string",
+      "description": "JSON array of song objects: [{title, artist, player_name, player_id, spotify_url, youtube_url, notes}]"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_by_name": {
+      "type": "string"
+    },
+    "created_by_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "team_id"
+  ]
+}

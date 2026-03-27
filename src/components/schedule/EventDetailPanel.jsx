@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
-import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2, Navigation } from "lucide-react";
+import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2, Navigation, ExternalLink, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,8 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   const [saving, setSaving] = useState(false);
   const [creatingRsvp, setCreatingRsvp] = useState(false);
   const [rsvpCreated, setRsvpCreated] = useState(false);
+  const [sendingNotif, setSendingNotif] = useState(null);
+  const [notifSent, setNotifSent] = useState(null);
 
   if (!event) return null;
 
@@ -84,6 +86,27 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
     const details = [event.notes, event.opponent ? `vs ${event.opponent}` : ""].filter(Boolean).join("\n");
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${start}/${end}&location=${encodeURIComponent(event.location || "")}&details=${encodeURIComponent(details)}`;
     window.open(url, "_blank");
+  };
+
+  const isGameDay = event.type === "game" || event.type === "tournament";
+
+  const handleGameDayNotif = async (type) => {
+    setSendingNotif(type);
+    const title = type === "pregame"
+      ? `🏟️ Game Day! ${event.title}`
+      : `🎉 Final Score: ${event.title}`;
+    const body = type === "pregame"
+      ? `${event.start_time ? `Tip-off at ${formatTime12h(event.start_time)}` : "Game is starting!"}${event.location ? ` · ${event.location}` : ""}`
+      : `${event.our_score != null ? `${event.our_score} – ${event.opponent_score ?? "?"}` : "Game complete!"}${event.result ? ` · ${event.result.toUpperCase()}` : ""}`;
+    await base44.functions.invoke("sendPushNotification", {
+      title,
+      body,
+      url: "/ParentPortal",
+      team_id: event.team_id || null,
+    });
+    setSendingNotif(null);
+    setNotifSent(type);
+    setTimeout(() => setNotifSent(null), 3000);
   };
 
   const hasScore = event.our_score != null && event.our_score !== "";
@@ -371,6 +394,50 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
                 )}
               </div>
             )}
+            {/* GameChanger */}
+            {isGameDay && (
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">GameChanger</p>
+                <a
+                  href="https://gc.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 text-sm font-medium hover:bg-green-500/20 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Watch Live on GameChanger
+                </a>
+              </div>
+            )}
+
+            {/* Pregame / Postgame push notifications (staff only) */}
+            {canEdit && isGameDay && event.team_id && (
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Push Notifications</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10 gap-1.5"
+                    onClick={() => handleGameDayNotif("pregame")}
+                    disabled={sendingNotif === "pregame"}
+                  >
+                    <Bell className="w-3.5 h-3.5" />
+                    {notifSent === "pregame" ? "Sent ✓" : sendingNotif === "pregame" ? "Sending..." : "Pregame Alert"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-green-500/30 text-green-400 hover:bg-green-500/10 gap-1.5"
+                    onClick={() => handleGameDayNotif("postgame")}
+                    disabled={sendingNotif === "postgame"}
+                  >
+                    <Bell className="w-3.5 h-3.5" />
+                    {notifSent === "postgame" ? "Sent ✓" : sendingNotif === "postgame" ? "Sending..." : "Postgame Update"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Add to Calendar</p>
               <div className="flex gap-2 flex-wrap">
