@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     actor_email: user.email,
     actor_name: user.full_name || user.email,
     actor_role: user.role || 'user',
-    description: `User ${user.email} requested account deletion. Guardian links and personal data removed. Financial records retained per compliance policy.`,
+    description: `User ${user.email} requested account deletion. Guardian links, push subscriptions, and personal data removed immediately. All remaining user data will be fully purged within 90 days per data retention policy. Financial records retained per compliance policy.`,
   });
 
   return Response.json({ success: true });
