@@ -144,8 +144,6 @@ export default function AppShell() {
       {/* Public legal pages — always accessible */}
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
-      {/* Parent portal — standalone (no sidebar header clash) */}
-      <Route path="/ParentPortal" element={<ParentPortal />} />
       <Route path="/Register" element={<Register />} />
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
