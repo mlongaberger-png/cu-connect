@@ -330,7 +330,7 @@ export default function ParentPortal() {
   return (
     <div className={isStandalone ? "min-h-screen bg-background overflow-x-hidden" : "overflow-x-hidden"}>
     {isStandalone && standaloneHeader}
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
 
         {/* Header */}
         <div>
@@ -340,18 +340,18 @@ export default function ParentPortal() {
 
         <PushNotificationBanner />
 
-      {/* Tabs — responsive grid/wrap, no horizontal scroll */}
-      <div className="bg-surface rounded-xl p-1">
-        <div className="flex flex-wrap gap-1">
+      {/* Tabs — horizontal scroll on mobile, no wrapping */}
+      <div className="bg-surface rounded-xl p-1 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
                 {tab.label}
               </button>
             );
