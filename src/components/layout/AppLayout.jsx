@@ -39,11 +39,14 @@ export default function AppLayout() {
       {/* Sidebar — desktop always visible, mobile as overlay */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
-        {/* Main content — add bottom padding on mobile for the tab bar */}
-        <main className="flex-1 overflow-y-auto" style={{ overscrollBehaviorY: "contain", paddingBottom: 0 }}>
-          <div className="pb-16 lg:pb-0 h-full">
+        {/* Main content — pb accounts for bottom tab bar on mobile */}
+        <main
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+          style={{ overscrollBehaviorY: "contain", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          <div className="pb-20 lg:pb-6">
             <PageTransition>
               <Outlet />
             </PageTransition>
