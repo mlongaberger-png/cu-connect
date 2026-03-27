@@ -23,6 +23,7 @@ import FamilyDashboardStats from "@/components/parentportal/FamilyDashboardStats
 import TeamRosterView from "@/components/parentportal/TeamRosterView";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import AthleteCard from "@/components/parentportal/AthleteCard";
+import DeleteAccountModal from "@/components/parentportal/DeleteAccountModal";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -51,6 +52,7 @@ export default function ParentPortal() {
   const [filterTeam, setFilterTeam] = useState("all");
   const [loadingPayFor, setLoadingPayFor] = useState(null);
   const [loadingPayAll, setLoadingPayAll] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   // Check for payment return
   useEffect(() => {
@@ -233,6 +235,7 @@ export default function ParentPortal() {
     const isLoggedIn = !!user;
     return (
       <div className={isStandalone ? "min-h-screen bg-background overflow-x-hidden" : "overflow-x-hidden"}>
+        <DeleteAccountModal open={showDeleteAccount} onClose={() => setShowDeleteAccount(false)} />
         {isStandalone && standaloneHeader}
         <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <div className="text-center py-10 bg-card rounded-2xl border border-border px-6">
@@ -309,6 +312,16 @@ export default function ParentPortal() {
             </>
           )}
         </div>
+        {isStandalone && user && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => setShowDeleteAccount(true)}
+              className="text-xs text-red-500/70 hover:text-red-400 transition-colors underline underline-offset-2"
+            >
+              Delete My Account
+            </button>
+          </div>
+        )}
         </div>
       </div>
     );
@@ -628,7 +641,7 @@ export default function ParentPortal() {
 
       {/* Footer */}
       {isStandalone && (
-        <footer className="mt-8 pb-6 text-center space-y-2">
+        <footer className="mt-8 pb-6 text-center space-y-3">
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground flex-wrap">
             <Link to="/LegalPages" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <span>·</span>
@@ -638,9 +651,16 @@ export default function ParentPortal() {
             <span>·</span>
             <Link to="/HelpCenter" className="hover:text-foreground transition-colors">Help Center</Link>
           </div>
+          <button
+            onClick={() => setShowDeleteAccount(true)}
+            className="text-xs text-red-500/70 hover:text-red-400 transition-colors underline underline-offset-2"
+          >
+            Delete My Account
+          </button>
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Cornerstone United Athletics</p>
         </footer>
       )}
+      <DeleteAccountModal open={showDeleteAccount} onClose={() => setShowDeleteAccount(false)} />
     </div>
   );
 }
