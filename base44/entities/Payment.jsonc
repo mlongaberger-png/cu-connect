@@ -1,0 +1,119 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string"
+    },
+    "player_name": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "parent_email": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Total invoice amount in cents (after discounts/credits)"
+    },
+    "paid_amount": {
+      "type": "number",
+      "description": "Amount paid so far in cents",
+      "default": 0
+    },
+    "description": {
+      "type": "string"
+    },
+    "fee_type": {
+      "type": "string",
+      "enum": [
+        "registration",
+        "uniforms",
+        "tournament",
+        "fundraising",
+        "other"
+      ],
+      "default": "other"
+    },
+    "line_items": {
+      "type": "string",
+      "description": "JSON array of [{name, quantity, unit_amount}] in cents"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Parent-visible notes"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "discount_amount": {
+      "type": "number",
+      "description": "Discount in cents",
+      "default": 0
+    },
+    "credit_amount": {
+      "type": "number",
+      "description": "Credit applied in cents",
+      "default": 0
+    },
+    "discount_note": {
+      "type": "string",
+      "description": "Reason for discount or credit"
+    },
+    "season_id": {
+      "type": "string"
+    },
+    "season_name": {
+      "type": "string"
+    },
+    "stripe_session_id": {
+      "type": "string"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "partial",
+        "overdue",
+        "voided",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "voided_by": {
+      "type": "string"
+    },
+    "voided_at": {
+      "type": "string"
+    },
+    "refunded_by": {
+      "type": "string"
+    },
+    "refunded_at": {
+      "type": "string"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "created_by_name": {
+      "type": "string"
+    },
+    "reminder_sent_at": {
+      "type": "string",
+      "description": "ISO timestamp of last reminder sent"
+    }
+  },
+  "required": [
+    "player_id",
+    "amount",
+    "description",
+    "due_date"
+  ]
+}

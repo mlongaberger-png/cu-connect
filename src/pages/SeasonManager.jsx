@@ -17,7 +17,7 @@ const YEARS = ["2024", "2025", "2026", "2027"];
 const BLANK = { name: "", year: new Date().getFullYear().toString(), term: "fall", start_date: "", end_date: "", notes: "", is_active: false, is_archived: false };
 
 export default function SeasonManager({ embedded = false }) {
-  if (!embedded) useAdminGuard();
+  useAdminGuard();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);

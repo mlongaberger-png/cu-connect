@@ -3,17 +3,34 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Clock, DollarSign, Calendar, FileText, CreditCard, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { isPast, parseISO } from "date-fns";
+
+function getEffectiveStatus(inv) {
+  if (["paid","voided","refunded"].includes(inv.status)) return inv.status;
+  if (inv.due_date && isPast(parseISO(inv.due_date + "T23:59:59"))) return "overdue";
+  if ((inv.paid_amount || 0) > 0 && (inv.paid_amount || 0) < (inv.amount || 0)) return "partial";
+  return inv.status || "pending";
+}
 
 function InvoiceRow({ inv }) {
+  const eff = getEffectiveStatus(inv);
+  const isOverdue = eff === "overdue";
+  const balance = (inv.amount || 0) - (inv.paid_amount || 0);
   return (
-    <div className={`flex items-start gap-3 p-3 rounded-xl border ${inv.status === "paid" ? "border-green-500/30 bg-green-500/5" : "border-border bg-surface"}`}>
+    <div className={`flex items-start gap-3 p-3 rounded-xl border ${
+      eff === "paid" ? "border-green-500/30 bg-green-500/5" :
+      isOverdue ? "border-red-500/30 bg-red-500/5" :
+      "border-border bg-surface"
+    }`}>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground">{inv.description}</p>
+        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+          <p className="text-sm font-medium text-foreground">{inv.description}</p>
+          {isOverdue && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 font-semibold">PAST DUE</span>}
+        </div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
           {inv.due_date && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Calendar className="w-3 h-3" /> Due {format(new Date(inv.due_date + "T00:00:00"), "MMM d, yyyy")}
+            <span className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-400 font-medium" : "text-muted-foreground"}`}>
+              <Calendar className="w-3 h-3" /> Due {new Date(inv.due_date + "T00:00:00").toLocaleDateString("en-US", {month:"short",day:"numeric",year:"numeric"})}
             </span>
           )}
           {inv.notes && (
@@ -22,11 +39,23 @@ function InvoiceRow({ inv }) {
             </span>
           )}
         </div>
+        {eff === "partial" && (
+          <div className="mt-1.5">
+            <div className="h-1.5 rounded-full bg-border overflow-hidden">
+              <div className="h-full bg-blue-400 rounded-full" style={{ width: `${Math.min(100, ((inv.paid_amount||0)/(inv.amount||1))*100)}%` }} />
+            </div>
+            <p className="text-xs text-blue-400 mt-0.5">${(inv.paid_amount/100).toFixed(2)} paid of ${(inv.amount/100).toFixed(2)}</p>
+          </div>
+        )}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
-        <span className="text-sm font-bold text-primary">${(inv.amount / 100).toFixed(2)}</span>
-        {inv.status === "paid" ? (
+        <span className="text-sm font-bold text-primary">${((inv.amount||0) / 100).toFixed(2)}</span>
+        {eff === "paid" ? (
           <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle className="w-3 h-3" /> Paid</span>
+        ) : eff === "partial" ? (
+          <span className="text-xs text-blue-400">Owed ${(balance/100).toFixed(2)}</span>
+        ) : isOverdue ? (
+          <span className="flex items-center gap-1 text-xs text-red-400"><AlertCircle className="w-3 h-3" /> Overdue</span>
         ) : (
           <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-3 h-3" /> Unpaid</span>
         )}

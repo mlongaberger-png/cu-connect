@@ -57,7 +57,7 @@ const EXPORTS = [
 ];
 
 export default function DataExport({ embedded = false }) {
-  if (!embedded) useAdminGuard();
+  useAdminGuard();
   const [exporting, setExporting] = useState(null);
   const [importFile, setImportFile] = useState(null);
   const [importType, setImportType] = useState("players");

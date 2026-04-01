@@ -11,7 +11,7 @@ import AuditLogRow from "@/components/audit/AuditLogRow";
 const CATEGORIES = ["payment", "schedule", "volunteer", "document", "user", "roster", "other"];
 
 export default function AuditLog({ embedded = false }) {
-  if (!embedded) useAdminGuard();
+  useAdminGuard();
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
 

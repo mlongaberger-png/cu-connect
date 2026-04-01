@@ -22,23 +22,48 @@ Deno.serve(async (req) => {
       const type = session.metadata?.type;
 
       if (type === 'registration') {
-        // Handle registration payment
         const submissionId = session.metadata?.submission_id;
         if (submissionId) {
           await base44.asServiceRole.entities.RegistrationSubmission.update(submissionId, { payment_status: 'paid' });
-          // Get submission to invite parent
           const subs = await base44.asServiceRole.entities.RegistrationSubmission.filter({ id: submissionId });
           if (subs.length > 0 && subs[0].parent_email) {
             await base44.asServiceRole.functions.invoke('inviteParent', { email: subs[0].parent_email });
           }
-          console.log(`Registration payment confirmed for submission: ${submissionId}`);
+          console.log(`Registration payment confirmed: ${submissionId}`);
         }
       } else {
-        // Handle regular invoice payment
-        const payments = await base44.asServiceRole.entities.Payment.filter({ stripe_session_id: session.id });
-        if (payments.length > 0) {
-          await base44.asServiceRole.entities.Payment.update(payments[0].id, { status: 'paid' });
-          console.log(`Payment marked as paid: ${session.id}`);
+        // New flow: invoice_ids in metadata
+        const invoiceIdsRaw = session.metadata?.invoice_ids;
+        if (invoiceIdsRaw) {
+          const invoiceIds = JSON.parse(invoiceIdsRaw);
+          await Promise.all(invoiceIds.map(id =>
+            base44.asServiceRole.entities.Payment.update(id, {
+              status: 'paid',
+              paid_amount_override: session.amount_total, // informational
+            })
+          ));
+          // Mark each invoice paid with its full amount
+          const invoices = await base44.asServiceRole.entities.Payment.list();
+          const myInvoices = invoices.filter(i => invoiceIds.includes(i.id));
+          await Promise.all(myInvoices.map(inv =>
+            base44.asServiceRole.entities.Payment.update(inv.id, {
+              status: 'paid',
+              paid_amount: inv.amount,
+              stripe_payment_intent_id: session.payment_intent || '',
+            })
+          ));
+          console.log(`Marked ${invoiceIds.length} invoice(s) as paid for session ${session.id}`);
+        } else {
+          // Legacy flow: find by stripe_session_id
+          const payments = await base44.asServiceRole.entities.Payment.filter({ stripe_session_id: session.id });
+          if (payments.length > 0) {
+            await base44.asServiceRole.entities.Payment.update(payments[0].id, {
+              status: 'paid',
+              paid_amount: payments[0].amount,
+              stripe_payment_intent_id: session.payment_intent || '',
+            });
+            console.log(`Payment marked paid (legacy): ${session.id}`);
+          }
         }
       }
     }

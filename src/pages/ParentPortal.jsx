@@ -157,7 +157,7 @@ export default function ParentPortal() {
     const isIframe = window.self !== window.top;
     if (isIframe) { alert("Payments can only be processed from the published app."); return; }
     setLoadingPayFor(player.id);
-    const totalAmount = unpaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    const totalAmount = unpaidInvoices.reduce((sum, inv) => sum + ((inv.amount || 0) - (inv.paid_amount || 0)), 0);
     const descriptions = unpaidInvoices.map(i => i.description).join(", ");
     const res = await base44.functions.invoke("createCheckout", {
       amount: totalAmount,
@@ -165,6 +165,7 @@ export default function ParentPortal() {
       player_id: player.id,
       player_name: `${player.first_name} ${player.last_name}`,
       team_name: player.team_name,
+      invoice_ids: unpaidInvoices.map(i => i.id),
     });
     setLoadingPayFor(null);
     if (res.data?.url) window.location.href = res.data.url;
@@ -180,12 +181,14 @@ export default function ParentPortal() {
       return `${k.first_name} ${k.last_name}: ${kidInvoices.map(i => i.description).join(", ")}`;
     }).filter(Boolean).join(" | ");
     const firstUnpaidKid = myKids.find(k => myUnpaidInvoices.some(p => p.player_id === k.id));
+    const allInvoiceIds = myUnpaidInvoices.map(i => i.id);
     const res = await base44.functions.invoke("createCheckout", {
       amount: totalAllOwed,
       description: descriptions || "All outstanding balances",
       player_id: firstUnpaidKid?.id || "",
       player_name: "Multiple Players",
       team_name: myKids.map(k => k.team_name).filter(Boolean).join(", "),
+      invoice_ids: allInvoiceIds,
     });
     setLoadingPayAll(false);
     if (res.data?.url) window.location.href = res.data.url;
