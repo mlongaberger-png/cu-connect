@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, DollarSign, Clock, AlertCircle } from "lucide-react";
+import { Plus, DollarSign, Clock, Download } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 import { useAuth } from "@/lib/AuthContext";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -24,15 +24,24 @@ function getEffectiveStatus(inv) {
   return inv.status || "pending";
 }
 
-const TABS = ["all","pending","overdue","partial","paid","voided","refunded"];
+function downloadCSV(filename, rows, headers) {
+  const csv = [headers.join(","), ...rows.map(r => headers.map(h => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
 
-export default function AdminInvoiceManager({ players, teamName }) {
+const STATUS_TABS = ["all","pending","overdue","partial","paid","voided","refunded"];
+
+export default function AdminInvoiceManager({ players, teamName, teamSportId, teamSportName }) {
   const { user } = useAuth();
   const { logAction } = useAuditLog();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSport, setFilterSport] = useState("all");
   const [sendingReminder, setSendingReminder] = useState(null);
 
   const canEdit   = ["admin","athletic_director"].includes(user?.role);
@@ -46,17 +55,38 @@ export default function AdminInvoiceManager({ players, teamName }) {
     enabled: players.length > 0,
   });
 
+  const { data: sports = [] } = useQuery({
+    queryKey: ["sports"],
+    queryFn: () => base44.entities.Sport.list(),
+  });
+
   const teamPayments = allPayments.filter(p => playerIds.includes(p.player_id));
 
-  const displayed = filterStatus === "all"
-    ? teamPayments
-    : teamPayments.filter(inv => getEffectiveStatus(inv) === filterStatus);
+  // Unique sports present in this team's invoices
+  const invoiceSports = [...new Map(
+    teamPayments.filter(p => p.sport_id).map(p => [p.sport_id, { id: p.sport_id, name: p.sport_name }])
+  ).values()];
+
+  const displayed = teamPayments.filter(inv => {
+    const statusMatch = filterStatus === "all" || getEffectiveStatus(inv) === filterStatus;
+    const sportMatch  = filterSport  === "all" || inv.sport_id === filterSport;
+    return statusMatch && sportMatch;
+  });
+
+  // Per-sport totals
+  const sportTotals = {};
+  teamPayments.filter(p => p.status !== "voided").forEach(inv => {
+    const key = inv.sport_name || "Unknown";
+    if (!sportTotals[key]) sportTotals[key] = { invoiced: 0, collected: 0 };
+    sportTotals[key].invoiced += inv.amount || 0;
+    if (inv.status === "paid") sportTotals[key].collected += inv.amount || 0;
+  });
 
   const totals = {
-    invoiced:     teamPayments.filter(i => i.status !== "voided").reduce((s, i) => s + (i.amount || 0), 0),
-    collected:    teamPayments.filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0),
-    outstanding:  teamPayments.filter(i => !["paid","voided","refunded"].includes(i.status))
-                              .reduce((s, i) => s + ((i.amount || 0) - (i.paid_amount || 0)), 0),
+    invoiced:    teamPayments.filter(i => i.status !== "voided").reduce((s, i) => s + (i.amount || 0), 0),
+    collected:   teamPayments.filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0),
+    outstanding: teamPayments.filter(i => !["paid","voided","refunded"].includes(i.status))
+                             .reduce((s, i) => s + ((i.amount || 0) - (i.paid_amount || 0)), 0),
   };
 
   const voidMutation = useMutation({
@@ -90,6 +120,28 @@ export default function AdminInvoiceManager({ players, teamName }) {
     setSendingReminder(null);
   };
 
+  const handleExport = () => {
+    const rows = displayed.map(inv => ({
+      player_name:      inv.player_name,
+      team_name:        inv.team_name,
+      sport_name:       inv.sport_name || "",
+      accounting_code:  inv.accounting_code || "",
+      description:      inv.description,
+      fee_type:         inv.fee_type || "",
+      amount:           `$${(inv.amount / 100).toFixed(2)}`,
+      paid_amount:      `$${((inv.paid_amount || 0) / 100).toFixed(2)}`,
+      status:           getEffectiveStatus(inv),
+      due_date:         inv.due_date || "",
+      parent_email:     inv.parent_email || "",
+      created_by:       inv.created_by_email || "",
+    }));
+    downloadCSV(
+      `invoices_${teamName}_${new Date().toISOString().split("T")[0]}.csv`,
+      rows,
+      ["player_name","team_name","sport_name","accounting_code","description","fee_type","amount","paid_amount","status","due_date","parent_email","created_by"]
+    );
+  };
+
   const openEdit = (inv) => { setEditingInvoice(inv); setShowForm(true); };
   const closeForm = () => { setShowForm(false); setEditingInvoice(null); };
 
@@ -99,20 +151,26 @@ export default function AdminInvoiceManager({ players, teamName }) {
       <div className="p-5 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-foreground">Invoices</h3>
-          {canCreate && (
-            <Button size="sm" onClick={() => { setEditingInvoice(null); setShowForm(true); }}
-              className="bg-primary text-primary-foreground">
-              <Plus className="w-4 h-4 mr-1" /> New Invoice
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <button onClick={handleExport}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-surface transition-colors">
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </button>
+            {canCreate && (
+              <Button size="sm" onClick={() => { setEditingInvoice(null); setShowForm(true); }}
+                className="bg-primary text-primary-foreground">
+                <Plus className="w-4 h-4 mr-1" /> New Invoice
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Summary bar */}
+        {/* Summary totals */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           {[
-            { label: "Invoiced",     val: totals.invoiced,    cls: "text-foreground" },
-            { label: "Collected",    val: totals.collected,   cls: "text-green-400" },
-            { label: "Outstanding",  val: totals.outstanding, cls: "text-primary" },
+            { label: "Invoiced",    val: totals.invoiced,    cls: "text-foreground" },
+            { label: "Collected",   val: totals.collected,   cls: "text-green-400" },
+            { label: "Outstanding", val: totals.outstanding, cls: "text-primary" },
           ].map(s => (
             <div key={s.label} className="bg-surface rounded-xl p-3 text-center">
               <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">{s.label}</p>
@@ -121,16 +179,53 @@ export default function AdminInvoiceManager({ players, teamName }) {
           ))}
         </div>
 
-        {/* Status filter tabs */}
-        <div className="flex gap-1 overflow-x-auto pb-0.5">
-          {TABS.map(t => (
-            <button key={t} onClick={() => setFilterStatus(t)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors capitalize ${
-                filterStatus === t ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"
-              }`}>
-              {t}
-            </button>
-          ))}
+        {/* Per-sport totals */}
+        {Object.keys(sportTotals).length > 1 && (
+          <div className="mb-4 rounded-xl border border-border bg-surface overflow-hidden">
+            <div className="px-3 py-2 border-b border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">By Sport / Account</p>
+            </div>
+            <div className="divide-y divide-border">
+              {Object.entries(sportTotals).map(([sportName, st]) => (
+                <div key={sportName} className="flex items-center justify-between px-3 py-2 text-sm">
+                  <span className="text-foreground font-medium">{sportName}</span>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="text-muted-foreground">Invoiced: <span className="text-foreground">${(st.invoiced / 100).toFixed(2)}</span></span>
+                    <span className="text-muted-foreground">Collected: <span className="text-green-400">${(st.collected / 100).toFixed(2)}</span></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex gap-2 flex-wrap">
+          {/* Sport filter */}
+          {invoiceSports.length > 1 && (
+            <div className="flex gap-1 overflow-x-auto">
+              <button onClick={() => setFilterSport("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterSport === "all" ? "bg-primary/20 text-primary" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
+                All Sports
+              </button>
+              {invoiceSports.map(s => (
+                <button key={s.id} onClick={() => setFilterSport(s.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterSport === s.id ? "bg-primary/20 text-primary" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Status filter */}
+          <div className="flex gap-1 overflow-x-auto">
+            {STATUS_TABS.map(t => (
+              <button key={t} onClick={() => setFilterStatus(t)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors capitalize ${filterStatus === t ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -142,7 +237,7 @@ export default function AdminInvoiceManager({ players, teamName }) {
       ) : displayed.length === 0 ? (
         <div className="p-10 text-center">
           <DollarSign className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No invoices {filterStatus !== "all" ? `with status "${filterStatus}"` : "yet"}</p>
+          <p className="text-sm text-muted-foreground">No invoices found</p>
         </div>
       ) : (
         <div className="divide-y divide-border">
@@ -157,18 +252,20 @@ export default function AdminInvoiceManager({ players, teamName }) {
               <div key={inv.id} className={`p-4 ${isOverdue ? "bg-red-500/5" : ""}`}>
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
-                    {/* Title row */}
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <p className="font-medium text-foreground text-sm">{inv.description}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${sc.cls}`}>{sc.label}</span>
                       {inv.fee_type && inv.fee_type !== "other" && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-surface border border-border text-muted-foreground capitalize">
-                          {inv.fee_type}
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-surface border border-border text-muted-foreground capitalize">{inv.fee_type}</span>
+                      )}
+                      {/* Sport / accounting badge — admin-only */}
+                      {inv.sport_name && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-mono">
+                          {inv.accounting_code || inv.sport_name}
                         </span>
                       )}
                     </div>
 
-                    {/* Meta */}
                     <p className="text-xs text-muted-foreground mb-1.5">{inv.player_name}</p>
                     <div className="flex items-center gap-3 text-xs flex-wrap">
                       {inv.due_date && (
@@ -181,7 +278,6 @@ export default function AdminInvoiceManager({ players, teamName }) {
                       {inv.notes && <span className="text-muted-foreground">{inv.notes}</span>}
                     </div>
 
-                    {/* Line items breakdown */}
                     {lineItems.length > 0 && (
                       <div className="mt-2 bg-surface rounded-lg p-2 space-y-1">
                         {lineItems.map((li, i) => (
@@ -200,7 +296,7 @@ export default function AdminInvoiceManager({ players, teamName }) {
                             )}
                             {inv.credit_amount > 0 && (
                               <div className="flex justify-between text-xs text-blue-400">
-                                <span>Credit{inv.discount_note && !inv.discount_amount ? ` (${inv.discount_note})` : ""}</span>
+                                <span>Credit</span>
                                 <span>-${(inv.credit_amount / 100).toFixed(2)}</span>
                               </div>
                             )}
@@ -210,7 +306,6 @@ export default function AdminInvoiceManager({ players, teamName }) {
                     )}
                   </div>
 
-                  {/* Amount column */}
                   <div className="shrink-0 text-right space-y-0.5">
                     <p className="text-sm font-bold text-primary">${(inv.amount / 100).toFixed(2)}</p>
                     {(inv.paid_amount || 0) > 0 && inv.status !== "paid" && (
@@ -222,7 +317,6 @@ export default function AdminInvoiceManager({ players, teamName }) {
                   </div>
                 </div>
 
-                {/* Admin action row */}
                 {canEdit && !["voided","refunded"].includes(inv.status) && (
                   <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-border/40">
                     {inv.status !== "paid" && (
@@ -236,7 +330,7 @@ export default function AdminInvoiceManager({ players, teamName }) {
                       Void
                     </button>
                     {inv.status === "paid" && (
-                      <button onClick={() => { if (confirm(`Refund invoice "${inv.description}"?`)) refundMutation.mutate(inv); }}
+                      <button onClick={() => { if (confirm(`Refund "${inv.description}"?`)) refundMutation.mutate(inv); }}
                         className="px-2.5 py-1 rounded-lg text-xs text-muted-foreground hover:text-purple-400 hover:bg-purple-500/10 transition-colors">
                         Refund
                       </button>
@@ -263,6 +357,8 @@ export default function AdminInvoiceManager({ players, teamName }) {
         <InvoiceForm
           players={players}
           teamName={teamName}
+          teamSportId={teamSportId}
+          teamSportName={teamSportName}
           editingInvoice={editingInvoice}
           onClose={closeForm}
           onSaved={() => {

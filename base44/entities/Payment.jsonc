@@ -63,6 +63,18 @@
       "type": "string",
       "description": "Reason for discount or credit"
     },
+    "sport_id": {
+      "type": "string",
+      "description": "ID of the sport/accounting account this invoice belongs to"
+    },
+    "sport_name": {
+      "type": "string",
+      "description": "Name of the sport (denormalized)"
+    },
+    "accounting_code": {
+      "type": "string",
+      "description": "Short code for the sport/account e.g. BASE, FOOT, CHEER"
+    },
     "season_id": {
       "type": "string"
     },
@@ -106,14 +118,14 @@
       "type": "string"
     },
     "reminder_sent_at": {
-      "type": "string",
-      "description": "ISO timestamp of last reminder sent"
+      "type": "string"
     }
   },
   "required": [
     "player_id",
     "amount",
     "description",
-    "due_date"
+    "due_date",
+    "sport_id"
   ]
 }

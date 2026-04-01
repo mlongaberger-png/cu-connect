@@ -62,6 +62,16 @@ Deno.serve(async (req) => {
         team_name: team_name || '',
         parent_email: user.email,
         invoice_ids: invoice_ids ? JSON.stringify(invoice_ids) : '',
+        // Sport accounting attribution
+        sport_name: (invoice_ids && invoice_ids.length === 1
+          ? (await base44.asServiceRole.entities.Payment.list()).find(i => i.id === invoice_ids[0])?.sport_name || ''
+          : ''),
+        sport_id: (invoice_ids && invoice_ids.length === 1
+          ? (await base44.asServiceRole.entities.Payment.list()).find(i => i.id === invoice_ids[0])?.sport_id || ''
+          : ''),
+        accounting_code: (invoice_ids && invoice_ids.length === 1
+          ? (await base44.asServiceRole.entities.Payment.list()).find(i => i.id === invoice_ids[0])?.accounting_code || ''
+          : ''),
       },
     });
 

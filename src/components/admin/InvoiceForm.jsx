@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +12,30 @@ import { useAuth } from "@/lib/AuthContext";
 const FEE_TYPES = ["registration", "uniforms", "tournament", "fundraising", "other"];
 const emptyLine = { name: "", quantity: 1, unit_amount: "" };
 
-export default function InvoiceForm({ players, teamName, editingInvoice, onClose, onSaved }) {
+export default function InvoiceForm({ players, teamName, teamSportId, teamSportName, editingInvoice, onClose, onSaved }) {
   const { user } = useAuth();
   const { logAction } = useAuditLog();
+  const isAdmin = ["admin", "athletic_director"].includes(user?.role);
+
+  const { data: sports = [] } = useQuery({
+    queryKey: ["sports"],
+    queryFn: () => base44.entities.Sport.list(),
+  });
+
+  // Derive selectable sports: admins see all, coaches see only their sport
+  const selectableSports = isAdmin
+    ? sports
+    : sports.filter(s => s.id === teamSportId);
 
   const [selectedPlayerIds, setSelectedPlayerIds] = useState(
     editingInvoice ? [editingInvoice.player_id] : []
   );
 
+  // Auto-default sport from team or player
+  const defaultSportId = editingInvoice?.sport_id || teamSportId || "";
+  const defaultSportName = editingInvoice?.sport_name || teamSportName || "";
+
+  const [sportId, setSportId] = useState(defaultSportId);
   const [form, setForm] = useState({
     description: editingInvoice?.description || "",
     fee_type: editingInvoice?.fee_type || "other",
@@ -38,12 +54,26 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
         }));
       } catch {}
     }
-    // If no line items, pre-fill from amount/description
     if (editingInvoice?.amount) {
       return [{ name: editingInvoice.description || "", quantity: 1, unit_amount: (editingInvoice.amount / 100).toString() }];
     }
     return [{ ...emptyLine }];
   });
+
+  // When player selection changes, auto-update sport if not already set
+  useEffect(() => {
+    if (!sportId && selectedPlayerIds.length === 1) {
+      const player = players.find(p => p.id === selectedPlayerIds[0]);
+      const team = player?.team_id;
+      // If player has sport info, try to match
+      if (player?.sport_name) {
+        const match = sports.find(s => s.name === player.sport_name);
+        if (match) setSportId(match.id);
+      }
+    }
+  }, [selectedPlayerIds, sports]);
+
+  const selectedSport = sports.find(s => s.id === sportId);
 
   const lineTotal = lineItems.reduce((s, li) =>
     s + (parseFloat(li.unit_amount || 0) * (parseInt(li.quantity) || 1)), 0);
@@ -65,6 +95,11 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
           unit_amount: Math.round(parseFloat(li.unit_amount) * 100),
         }));
 
+      const sport = sports.find(s => s.id === sportId);
+      const accountingCode = sport?.name
+        ? sport.name.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6)
+        : "";
+
       const base = {
         description: form.description,
         fee_type: form.fee_type,
@@ -75,13 +110,20 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
         credit_amount: Math.round(parseFloat(form.credit_amount || 0) * 100),
         discount_note: form.discount_note,
         line_items: JSON.stringify(linesCents),
+        sport_id: sportId,
+        sport_name: sport?.name || "",
+        accounting_code: accountingCode,
         status: "pending",
         created_by_email: user?.email,
         created_by_name: user?.full_name || user?.email,
       };
 
       if (editingInvoice) {
-        await base44.entities.Payment.update(editingInvoice.id, base);
+        // Sport cannot be changed after payment is made
+        const updatePayload = editingInvoice.status === "paid"
+          ? { ...base, sport_id: editingInvoice.sport_id, sport_name: editingInvoice.sport_name, accounting_code: editingInvoice.accounting_code }
+          : base;
+        await base44.entities.Payment.update(editingInvoice.id, updatePayload);
         return [editingInvoice.id];
       }
 
@@ -104,10 +146,11 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
       logAction({
         action: editingInvoice ? "invoice_updated" : "invoice_created",
         category: "payment",
-        description: `${editingInvoice ? "Updated" : "Created"} invoice "${form.description}" for ${selectedPlayerIds.length} player(s)`,
+        description: `${editingInvoice ? "Updated" : "Created"} invoice "${form.description}" [${selectedSport?.name || ""}] for ${selectedPlayerIds.length} player(s)`,
         target_entity: "Payment",
         target_id: ids[0],
         target_name: form.description,
+        metadata: { sport_id: sportId, sport_name: selectedSport?.name },
       });
       onSaved();
     },
@@ -117,9 +160,12 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
     e.preventDefault();
     if (!editingInvoice && selectedPlayerIds.length === 0) return alert("Select at least one player.");
     if (!form.due_date) return alert("Due date is required.");
+    if (!sportId) return alert("Please select a Deposit Account (sport).");
     if (lineItems.filter(li => li.name && li.unit_amount).length === 0) return alert("Add at least one line item.");
     saveMutation.mutate();
   };
+
+  const isPaidAndLocked = editingInvoice?.status === "paid";
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -128,6 +174,7 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
           <DialogTitle>{editingInvoice ? "Edit Invoice" : "New Invoice"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+
           {/* Player Selection */}
           <div className="space-y-1.5">
             <Label>{editingInvoice ? "Player" : "Players"}</Label>
@@ -152,6 +199,37 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
                   </label>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Deposit Account (Sport) */}
+          <div className="space-y-1.5">
+            <Label>
+              Deposit Account (Sport) *
+              <span className="ml-1.5 text-xs text-muted-foreground font-normal">— internal only, not shown to parents</span>
+            </Label>
+            {isPaidAndLocked ? (
+              <div className="px-3 py-2 rounded-md bg-surface border border-border text-sm text-muted-foreground flex items-center gap-2">
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+                  {editingInvoice.accounting_code}
+                </span>
+                {editingInvoice.sport_name}
+                <span className="ml-auto text-xs text-yellow-400">Locked after payment</span>
+              </div>
+            ) : (
+              <select
+                value={sportId}
+                onChange={e => setSportId(e.target.value)}
+                required
+                className="flex h-9 w-full rounded-md border border-input bg-surface px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">Select a sport / account...</option>
+                {selectableSports.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.icon ? `${s.icon} ` : ""}{s.name}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -241,9 +319,16 @@ export default function InvoiceForm({ players, teamName, editingInvoice, onClose
 
           {/* Total */}
           <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-            <span className="text-sm text-muted-foreground">
-              Invoice Total{selectedPlayerIds.length > 1 ? ` × ${selectedPlayerIds.length} players` : ""}
-            </span>
+            <div>
+              <span className="text-sm text-muted-foreground">
+                Invoice Total{selectedPlayerIds.length > 1 ? ` × ${selectedPlayerIds.length} players` : ""}
+              </span>
+              {selectedSport && (
+                <span className="ml-2 text-xs font-mono bg-surface px-1.5 py-0.5 rounded text-muted-foreground">
+                  {selectedSport.accounting_code || selectedSport.name?.toUpperCase().slice(0, 6)}
+                </span>
+              )}
+            </div>
             <span className="text-lg font-bold text-primary">
               ${(grandTotal * (editingInvoice ? 1 : selectedPlayerIds.length || 1)).toFixed(2)}
             </span>
