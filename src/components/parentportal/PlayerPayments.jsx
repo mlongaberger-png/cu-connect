@@ -70,7 +70,7 @@ export function PlayerPaymentCard({ player, onPay, loadingFor }) {
     queryFn: () => base44.entities.Payment.filter({ player_id: player.id }),
   });
 
-  const unpaid = payments.filter(p => p.status !== "paid");
+  const unpaid = payments.filter(p => p.status !== "paid" && p.status !== "draft" && p.status !== "voided" && p.status !== "refunded");
   const totalOwed = unpaid.reduce((sum, p) => sum + (p.amount || 0), 0);
   const allPaid = payments.length > 0 && unpaid.length === 0;
 

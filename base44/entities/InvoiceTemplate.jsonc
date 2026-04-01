@@ -1,0 +1,56 @@
+{
+  "name": "InvoiceTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name, e.g. Spring Registration"
+    },
+    "description": {
+      "type": "string",
+      "description": "Default invoice description"
+    },
+    "fee_type": {
+      "type": "string",
+      "enum": [
+        "registration",
+        "uniforms",
+        "tournament",
+        "fundraising",
+        "other"
+      ],
+      "default": "other"
+    },
+    "line_items": {
+      "type": "string",
+      "description": "JSON array of [{name, quantity, unit_amount}] in cents"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Default parent-visible notes"
+    },
+    "discount_note": {
+      "type": "string"
+    },
+    "sport_id": {
+      "type": "string",
+      "description": "Optional default sport for this template"
+    },
+    "sport_name": {
+      "type": "string"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "created_by_name": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

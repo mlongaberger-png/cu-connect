@@ -90,6 +90,7 @@
     "status": {
       "type": "string",
       "enum": [
+        "draft",
         "pending",
         "paid",
         "partial",
@@ -98,6 +99,10 @@
         "refunded"
       ],
       "default": "pending"
+    },
+    "sent_at": {
+      "type": "string",
+      "description": "ISO timestamp when invoice was sent/made visible to parents"
     },
     "voided_by": {
       "type": "string"

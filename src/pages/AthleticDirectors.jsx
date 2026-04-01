@@ -21,6 +21,7 @@ import SeasonManager from "@/pages/SeasonManager";
 import DataExport from "@/pages/DataExport";
 import LegalPages from "@/pages/LegalPages";
 import AuditLog from "@/pages/AuditLog";
+import AdminFinanceConsole from "@/components/admin/AdminFinanceConsole";
 
 const empty = { name: "", email: "", google_chat_url: "", sport_id: "", sport_name: "", phone: "", title: "Athletic Director" };
 
@@ -191,10 +192,7 @@ export default function AthleticDirectors() {
 
       {/* ── FINANCE ── */}
       {activeTab === "finance" && (
-        <div className="text-center py-16 text-muted-foreground">
-          <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Finance tools are available via the Teams page → individual team payments.</p>
-        </div>
+        <AdminFinanceConsole />
       )}
 
       {/* ── CONTENT ── */}
