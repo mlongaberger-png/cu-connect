@@ -22,6 +22,10 @@ export default function TeamDetail() {
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [showTeamForm, setShowTeamForm] = useState(false);
   const [showRosterImporter, setShowRosterImporter] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignSelected, setAssignSelected] = useState([]);
+  const [assigning, setAssigning] = useState(false);
   const [teamForm, setTeamForm] = useState({});
   const [invitedEmails, setInvitedEmails] = useState({});
   const [inviting, setInviting] = useState(null);
@@ -70,6 +74,20 @@ export default function TeamDetail() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Player.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["players"] }),
+  });
+
+  const assignPlayersMutation = useMutation({
+    mutationFn: async (playerIds) => {
+      await Promise.all(
+        playerIds.map(pid => base44.entities.Player.update(pid, { team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      setShowAssignModal(false);
+      setAssignSelected([]);
+      setAssignSearch("");
+    },
   });
 
   const updateTeamMutation = useMutation({
@@ -163,8 +181,13 @@ export default function TeamDetail() {
             </Button>
           )}
           {canManage && (
+            <Button variant="outline" onClick={() => { setAssignSelected([]); setAssignSearch(""); setShowAssignModal(true); }} className="border-border gap-1.5">
+              <UserCircle className="w-4 h-4" /> Assign Existing
+            </Button>
+          )}
+          {canManage && (
             <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-              <Plus className="w-4 h-4 mr-2" /> Add Player
+              <Plus className="w-4 h-4 mr-2" /> Add New Player
             </Button>
           )}
         </div>
@@ -290,6 +313,61 @@ export default function TeamDetail() {
 
       {/* Roster Importer */}
       <RosterImporter open={showRosterImporter} onOpenChange={setShowRosterImporter} team={team} />
+
+      {/* Assign Existing Players Modal */}
+      <Dialog open={showAssignModal} onOpenChange={setShowAssignModal}>
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
+          <DialogHeader><DialogTitle>Assign Existing Players to {team.name}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Search players..."
+              value={assignSearch}
+              onChange={e => setAssignSearch(e.target.value)}
+              className="bg-surface border-border"
+            />
+            <div className="rounded-lg border border-border bg-surface max-h-64 overflow-y-auto">
+              {allPlayers
+                .filter(p => p.team_id !== teamId && p.is_active !== false)
+                .filter(p => {
+                  const q = assignSearch.toLowerCase();
+                  return !q || `${p.first_name} ${p.last_name}`.toLowerCase().includes(q) || (p.team_name || "").toLowerCase().includes(q);
+                })
+                .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`))
+                .map(p => (
+                  <label key={p.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-card cursor-pointer border-b border-border last:border-0">
+                    <input
+                      type="checkbox"
+                      checked={assignSelected.includes(p.id)}
+                      onChange={e => setAssignSelected(prev => e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id))}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
+                      {p.team_name && <p className="text-xs text-muted-foreground">Currently: {p.team_name}</p>}
+                    </div>
+                    {p.jersey_number && <span className="text-xs text-primary font-bold">#{p.jersey_number}</span>}
+                  </label>
+                ))
+              }
+              {allPlayers.filter(p => p.team_id !== teamId && p.is_active !== false).length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">No other players found</p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">{assignSelected.length} selected</span>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowAssignModal(false)} className="border-border">Cancel</Button>
+                <Button
+                  disabled={assignSelected.length === 0 || assignPlayersMutation.isPending}
+                  onClick={() => assignPlayersMutation.mutate(assignSelected)}
+                  className="bg-primary text-primary-foreground"
+                >
+                  {assignPlayersMutation.isPending ? "Assigning..." : `Assign ${assignSelected.length > 0 ? assignSelected.length : ""} Player${assignSelected.length !== 1 ? "s" : ""}`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Player Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); resetForm(); } }}>
