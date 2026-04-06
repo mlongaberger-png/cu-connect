@@ -31,17 +31,31 @@ const typeColors = {
   other: "bg-cyan-500/20 text-cyan-400",
 };
 
+const PREF_KEY = (email) => `cu_cal_view_${email || "default"}`;
+
 export default function Schedule() {
   const { isAdmin, isAD, isCoach } = useScheduleGuard();
   const { user } = useAuth();
   const { abbr } = useOrgTimezone();
+  const isStaff = isAdmin || isAD || isCoach;
+  const isParent = !isStaff;
+
+  // Restore saved sub-view preference; parents default to month
+  const savedView = (() => { try { return localStorage.getItem(PREF_KEY(user?.email)); } catch { return null; } })();
+
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [filterTeam, setFilterTeam] = useState("all");
-  const [viewMode, setViewMode] = useState("list"); // "list" | "calendar"
-  const [calendarView, setCalendarView] = useState("month");
+  const [viewMode, setViewMode] = useState(isParent ? "calendar" : "list"); // "list" | "calendar"
+  const [calendarView, setCalendarView] = useState(savedView || "month");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showExport, setShowExport] = useState(false);
+
+  // Persist calendar sub-view preference per user
+  const handleCalendarViewChange = (view) => {
+    setCalendarView(view);
+    try { localStorage.setItem(PREF_KEY(user?.email), view); } catch {}
+  };
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" | "desc"
@@ -182,7 +196,7 @@ export default function Schedule() {
         <CalendarView
           events={filtered}
           calendarView={calendarView}
-          setCalendarView={setCalendarView}
+          setCalendarView={handleCalendarViewChange}
           onEventClick={setSelectedEvent}
         />
       )}

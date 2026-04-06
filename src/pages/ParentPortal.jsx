@@ -46,7 +46,15 @@ export default function ParentPortal() {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
-  const [calendarView, setCalendarView] = useState("month");
+
+  const PREF_KEY = `cu_cal_view_${userEmail || "default"}`;
+  const savedCalView = (() => { try { return localStorage.getItem(PREF_KEY); } catch { return null; } })();
+  const [calendarView, setCalendarView] = useState(savedCalView || "month");
+
+  const handleCalendarViewChange = (view) => {
+    setCalendarView(view);
+    try { localStorage.setItem(PREF_KEY, view); } catch {};
+  };
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showExport, setShowExport] = useState(false);
   const [filterTeam, setFilterTeam] = useState("all");
@@ -549,7 +557,7 @@ export default function ParentPortal() {
           <CalendarView
             events={(filterTeam === "all" ? myEvents : myEvents.filter(e => e.team_id === filterTeam))}
             calendarView={calendarView}
-            setCalendarView={setCalendarView}
+            setCalendarView={handleCalendarViewChange}
             onEventClick={setSelectedEvent}
           />
 
