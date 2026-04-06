@@ -16,7 +16,10 @@ const PLAYLIST_TYPES = [
   { value: "practice", label: "Practice", emoji: "🎵" },
 ];
 
-const BLANK_SONG = { title: "", artist: "", player_name: "", spotify_url: "", apple_music_url: "", youtube_url: "", artwork_url: "", event_type: "", notes: "" };
+const BLANK_SONG = {
+  title: "", artist: "", player_name: "", spotify_url: "",
+  apple_music_url: "", youtube_url: "", artwork_url: "", event_type: "", notes: ""
+};
 
 const EVENT_TYPES = [
   { value: "", label: "Auto (use playlist type)" },
@@ -45,10 +48,7 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
     onSuccess: () => { setSaved(true); setTimeout(() => setSaved(false), 2000); },
   });
 
-  const handleSave = () => {
-    updateMutation.mutate({ songs: JSON.stringify(songs) });
-  };
-
+  const handleSave = () => updateMutation.mutate({ songs: JSON.stringify(songs) });
   const addSong = () => setSongs(s => [...s, { ...BLANK_SONG }]);
   const removeSong = (i) => setSongs(s => s.filter((_, idx) => idx !== i));
   const updateSong = (i, field, value) => setSongs(s => s.map((song, idx) => idx === i ? { ...song, [field]: value } : song));
@@ -57,14 +57,13 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
   const isWalkup = playlist.type === "walkup";
 
   if (djMode) {
-    const savedPlaylist = { ...playlist, songs: JSON.stringify(songs) };
-    return <GameDayConsole playlist={savedPlaylist} onBack={() => setDjMode(false)} />;
+    return <GameDayConsole playlist={{ ...playlist, songs: JSON.stringify(songs) }} onBack={() => setDjMode(false)} />;
   }
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Button variant="ghost" size="icon" onClick={onBack} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -101,6 +100,7 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
 
         {songs.map((song, i) => (
           <div key={i} className="bg-card border border-border rounded-2xl p-4 space-y-3">
+            {/* Title + Artist row */}
             <div className="flex items-center gap-2">
               <span className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
               <div className="flex-1 grid grid-cols-2 gap-2">
@@ -132,7 +132,7 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
               )}
             </div>
 
-            {/* Walkup: player name field */}
+            {/* Walkup: player name */}
             {isWalkup && (
               <div>
                 <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Player Name</Label>
@@ -159,31 +159,83 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
               </select>
             </div>
 
-            {/* Links */}
+            {/* URLs */}
             <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <span className="text-green-400">Spotify</span> URL
+                </Label>
+                <Input
+                  value={song.spotify_url}
+                  onChange={e => updateSong(i, "spotify_url", e.target.value)}
+                  placeholder="https://open.spotify.com/..."
+                  className="mt-0.5 bg-surface border-border h-8 text-xs"
+                  disabled={!isStaff}
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <span className="text-red-400">Apple Music</span> URL
+                </Label>
+                <Input
+                  value={song.apple_music_url || ""}
+                  onChange={e => updateSong(i, "apple_music_url", e.target.value)}
+                  placeholder="https://music.apple.com/..."
+                  className="mt-0.5 bg-surface border-border h-8 text-xs"
+                  disabled={!isStaff}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <span className="text-red-400">YouTube</span> URL
+                </Label>
+                <Input
+                  value={song.youtube_url}
+                  onChange={e => updateSong(i, "youtube_url", e.target.value)}
+                  placeholder="https://youtube.com/..."
+                  className="mt-0.5 bg-surface border-border h-8 text-xs"
+                  disabled={!isStaff}
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Artwork URL</Label>
+                <Input
+                  value={song.artwork_url || ""}
+                  onChange={e => updateSong(i, "artwork_url", e.target.value)}
+                  placeholder="https://... (album art)"
+                  className="mt-0.5 bg-surface border-border h-8 text-xs"
+                  disabled={!isStaff}
+                />
+              </div>
+            </div>
+
+            {/* Quick-open links */}
             {(song.spotify_url || song.youtube_url || song.apple_music_url) && (
               <div className="flex gap-3 flex-wrap">
                 {song.spotify_url && (
                   <a href={song.spotify_url} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs text-green-400 hover:underline">
-                    <ExternalLink className="w-3 h-3" /> Open in Spotify
+                    <ExternalLink className="w-3 h-3" /> Spotify
                   </a>
                 )}
                 {song.apple_music_url && (
                   <a href={song.apple_music_url} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs text-red-400 hover:underline">
-                    <ExternalLink className="w-3 h-3" /> Open in Apple Music
+                    <ExternalLink className="w-3 h-3" /> Apple Music
                   </a>
                 )}
                 {song.youtube_url && (
                   <a href={song.youtube_url} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs text-red-400 hover:underline">
-                    <ExternalLink className="w-3 h-3" /> Open on YouTube
+                    <ExternalLink className="w-3 h-3" /> YouTube
                   </a>
                 )}
               </div>
             )}
 
+            {/* Notes */}
             {isStaff && (
               <div>
                 <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Notes</Label>
