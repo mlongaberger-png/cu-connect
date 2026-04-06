@@ -109,7 +109,9 @@ export default function ParentPortal() {
   );
 
   const myKidIds = new Set(myKids.map(k => k.id));
-  const myUnpaidInvoices = allPayments.filter(p => myKidIds.has(p.player_id) && p.status !== "paid");
+  const myUnpaidInvoices = allPayments.filter(p =>
+    myKidIds.has(p.player_id) && !["paid","draft","voided","refunded"].includes(p.status)
+  );
   const totalAllOwed = myUnpaidInvoices.reduce((sum, p) => sum + (p.amount || 0), 0);
 
   // RSVP requests for family's teams
@@ -157,41 +159,32 @@ export default function ParentPortal() {
     const isIframe = window.self !== window.top;
     if (isIframe) { alert("Payments can only be processed from the published app."); return; }
     setLoadingPayFor(player.id);
-    const totalAmount = unpaidInvoices.reduce((sum, inv) => sum + ((inv.amount || 0) - (inv.paid_amount || 0)), 0);
-    const descriptions = unpaidInvoices.map(i => i.description).join(", ");
     const res = await base44.functions.invoke("createCheckout", {
-      amount: totalAmount,
-      description: `${descriptions} – ${player.first_name} ${player.last_name} (${player.team_name})`,
+      invoice_ids: unpaidInvoices.map(i => i.id),
       player_id: player.id,
       player_name: `${player.first_name} ${player.last_name}`,
       team_name: player.team_name,
-      invoice_ids: unpaidInvoices.map(i => i.id),
     });
     setLoadingPayFor(null);
     if (res.data?.url) window.location.href = res.data.url;
+    else alert("Unable to start checkout. Please try again or contact support.");
   };
 
   const handlePayAll = async () => {
     const isIframe = window.self !== window.top;
     if (isIframe) { alert("Payments can only be processed from the published app."); return; }
+    if (myUnpaidInvoices.length === 0) return;
     setLoadingPayAll(true);
-    const descriptions = myKids.map(k => {
-      const kidInvoices = myUnpaidInvoices.filter(p => p.player_id === k.id);
-      if (!kidInvoices.length) return null;
-      return `${k.first_name} ${k.last_name}: ${kidInvoices.map(i => i.description).join(", ")}`;
-    }).filter(Boolean).join(" | ");
     const firstUnpaidKid = myKids.find(k => myUnpaidInvoices.some(p => p.player_id === k.id));
-    const allInvoiceIds = myUnpaidInvoices.map(i => i.id);
     const res = await base44.functions.invoke("createCheckout", {
-      amount: totalAllOwed,
-      description: descriptions || "All outstanding balances",
+      invoice_ids: myUnpaidInvoices.map(i => i.id),
       player_id: firstUnpaidKid?.id || "",
       player_name: "Multiple Players",
       team_name: myKids.map(k => k.team_name).filter(Boolean).join(", "),
-      invoice_ids: allInvoiceIds,
     });
     setLoadingPayAll(false);
     if (res.data?.url) window.location.href = res.data.url;
+    else alert("Unable to start checkout. Please try again or contact support.");
   };
 
   const typeColors = {

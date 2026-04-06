@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import InvoiceDetailModal from "@/components/parentportal/InvoiceDetailModal";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Clock, DollarSign, Calendar, FileText, CreditCard, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,16 +13,19 @@ function getEffectiveStatus(inv) {
   return inv.status || "pending";
 }
 
-function InvoiceRow({ inv }) {
+function InvoiceRow({ inv, onClick }) {
   const eff = getEffectiveStatus(inv);
   const isOverdue = eff === "overdue";
   const balance = (inv.amount || 0) - (inv.paid_amount || 0);
   return (
-    <div className={`flex items-start gap-3 p-3 rounded-xl border ${
-      eff === "paid" ? "border-green-500/30 bg-green-500/5" :
-      isOverdue ? "border-red-500/30 bg-red-500/5" :
-      "border-border bg-surface"
-    }`}>
+    <button
+      onClick={onClick}
+      className={`w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-all hover:opacity-80 ${
+        eff === "paid" ? "border-green-500/30 bg-green-500/5" :
+        isOverdue ? "border-red-500/30 bg-red-500/5" :
+        "border-border bg-surface"
+      }`}
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <p className="text-sm font-medium text-foreground">{inv.description}</p>
@@ -59,20 +63,23 @@ function InvoiceRow({ inv }) {
         ) : (
           <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="w-3 h-3" /> Unpaid</span>
         )}
+        <span className="text-[10px] text-muted-foreground">View details →</span>
       </div>
-    </div>
+    </button>
   );
 }
 
 export function PlayerPaymentCard({ player, onPay, loadingFor }) {
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ["payments", player.id],
     queryFn: () => base44.entities.Payment.filter({ player_id: player.id }),
   });
 
-  const unpaid = payments.filter(p => p.status !== "paid" && p.status !== "draft" && p.status !== "voided" && p.status !== "refunded");
+  const visible = payments.filter(p => p.status !== "draft");
+  const unpaid = visible.filter(p => !["paid","draft","voided","refunded"].includes(p.status));
   const totalOwed = unpaid.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const allPaid = payments.length > 0 && unpaid.length === 0;
+  const allPaid = visible.length > 0 && unpaid.length === 0;
 
   if (isLoading) {
     return (
@@ -115,7 +122,7 @@ export function PlayerPaymentCard({ player, onPay, loadingFor }) {
           </div>
         ) : (
           <div className="space-y-2 mb-4">
-            {payments.map(inv => <InvoiceRow key={inv.id} inv={inv} />)}
+            {visible.map(inv => <InvoiceRow key={inv.id} inv={inv} onClick={() => setSelectedInvoice(inv)} />)}
           </div>
         )}
 
@@ -136,6 +143,7 @@ export function PlayerPaymentCard({ player, onPay, loadingFor }) {
           </div>
         )}
       </div>
+      <InvoiceDetailModal invoice={selectedInvoice} onClose={() => setSelectedInvoice(null)} />
     </div>
   );
 }
