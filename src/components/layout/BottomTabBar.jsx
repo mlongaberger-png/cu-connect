@@ -16,11 +16,11 @@ const staffTabs = [
 ];
 
 const parentTabs = [
-  { root: "/Portal",       label: "Home",    icon: LayoutDashboard },
-  { root: "/ParentPortal", label: "My Team", icon: UserCircle },
-  { root: "/Messages",     label: "Messages",icon: MessageSquare },
-  { root: "/Sports",       label: "Sports",  icon: Trophy },
-  { root: "/Gallery",      label: "Gallery", icon: Image },
+  { root: "/Portal",   label: "Home",     icon: LayoutDashboard },
+  { root: "/Schedule", label: "Calendar", icon: Calendar },
+  { root: "/Messages", label: "Messages", icon: MessageSquare },
+  { root: "/ParentPortal", label: "My Family", icon: UserCircle },
+  { root: "/Sports",   label: "Sports",   icon: Trophy },
 ];
 
 const STORAGE_KEY = "tab_last_path";

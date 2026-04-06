@@ -1,6 +1,7 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import ParentHome from "@/components/parentportal/ParentHome";
 import { Trophy, Users, Calendar, UserCircle, ClipboardList, DollarSign } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
