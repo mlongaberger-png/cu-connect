@@ -31,6 +31,7 @@ import Gallery from "@/pages/Gallery";
 import PracticePlans from "@/pages/PracticePlans";
 import GameDayPlaylists from "@/pages/GameDayPlaylists";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import ParentCalendar from "@/pages/ParentCalendar";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -141,6 +142,7 @@ export default function AppShell() {
         <Route path="/Gallery" element={<Gallery />} />
         <Route path="/PracticePlans" element={<PracticePlans />} />
         <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
+        <Route path="/ParentCalendar" element={<ParentCalendar />} />
       </Route>
 
       {/* Public legal pages — always accessible */}

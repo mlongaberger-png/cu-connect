@@ -17,7 +17,7 @@ const staffTabs = [
 
 const parentTabs = [
   { root: "/Portal",   label: "Home",     icon: LayoutDashboard },
-  { root: "/Schedule", label: "Calendar", icon: Calendar },
+  { root: "/ParentCalendar", label: "Calendar", icon: Calendar },
   { root: "/Messages", label: "Messages", icon: MessageSquare },
   { root: "/ParentPortal", label: "My Family", icon: UserCircle },
   { root: "/Sports",   label: "Sports",   icon: Trophy },
