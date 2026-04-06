@@ -176,7 +176,10 @@ export default function InvoiceDrawer({ open, onClose, onSaved, defaultTeamId = 
     saveMutation.mutate({ asDraft });
   };
 
-  const selectableSports = isAdmin ? sports : sports.filter(s => s.id === selectedTeam?.sport_id);
+  const sortName = (a, b) => a.name.localeCompare(b.name);
+  const selectableSports = (isAdmin ? sports : sports.filter(s => s.id === selectedTeam?.sport_id)).slice().sort(sortName);
+  const sortedAccessibleTeams = [...accessibleTeams].sort(sortName);
+  const sortedTemplatePlayers = [...teamPlayers].sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`));
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
@@ -218,7 +221,7 @@ export default function InvoiceDrawer({ open, onClose, onSaved, defaultTeamId = 
             <select value={selectedTeamId} onChange={e => { setSelectedTeamId(e.target.value); setSelectedPlayerIds([]); markChanged(); }} required
               className="flex h-9 w-full rounded-md border border-input bg-surface px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
               <option value="">Select a team…</option>
-              {accessibleTeams.map(t => (
+              {sortedAccessibleTeams.map(t => (
                 <option key={t.id} value={t.id}>{t.sport_name ? `${t.sport_name} — ` : ""}{t.name}</option>
               ))}
             </select>
@@ -239,11 +242,11 @@ export default function InvoiceDrawer({ open, onClose, onSaved, defaultTeamId = 
               <div className="rounded-lg border border-input bg-surface max-h-40 overflow-y-auto p-2 space-y-0.5">
                 {teamPlayers.length === 0 ? (
                   <p className="text-xs text-muted-foreground px-2 py-2">No active players on this team.</p>
-                ) : teamPlayers.map(p => (
+                ) : sortedTemplatePlayers.map(p => (
                   <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-card cursor-pointer">
                     <input type="checkbox" checked={selectedPlayerIds.includes(p.id)}
                       onChange={() => togglePlayer(p.id)} />
-                    <span className="text-sm text-foreground">{p.first_name} {p.last_name}</span>
+                    <span className="text-sm text-foreground">{p.last_name}, {p.first_name}</span>
                     {p.jersey_number && <span className="text-xs text-muted-foreground ml-auto">#{p.jersey_number}</span>}
                   </label>
                 ))}

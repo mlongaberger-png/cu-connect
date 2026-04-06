@@ -197,7 +197,7 @@ export default function VolunteerOpportunitiesPanel({ teams, filterTeam, user, i
                 <Select value={form.team_id} onValueChange={v => setForm(f => ({ ...f, team_id: v, event_id: "" }))}>
                   <SelectTrigger><SelectValue placeholder="Select team" /></SelectTrigger>
                   <SelectContent>
-                    {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    {[...teams].sort((a, b) => a.name.localeCompare(b.name)).map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -206,7 +206,7 @@ export default function VolunteerOpportunitiesPanel({ teams, filterTeam, user, i
                 <Select value={form.role_id} onValueChange={v => setForm(f => ({ ...f, role_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                   <SelectContent>
-                    {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                    {[...roles].sort((a, b) => a.name.localeCompare(b.name)).map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

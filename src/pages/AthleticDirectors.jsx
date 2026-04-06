@@ -248,7 +248,7 @@ export default function AthleticDirectors() {
                 <SelectTrigger><SelectValue placeholder="All Sports / General" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">All Sports / General</SelectItem>
-                  {sports.map(s => <SelectItem key={s.id} value={s.id}>{s.icon} {s.name}</SelectItem>)}
+                  {[...sports].sort((a, b) => a.name.localeCompare(b.name)).map(s => <SelectItem key={s.id} value={s.id}>{s.icon} {s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

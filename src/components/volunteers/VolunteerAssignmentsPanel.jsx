@@ -210,7 +210,7 @@ export default function VolunteerAssignmentsPanel({ teams, filterTeam, user, isA
               <Select value={form.player_id} onValueChange={v => setForm(f => ({ ...f, player_id: v }))} disabled={!form.opportunity_id}>
                 <SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger>
                 <SelectContent>
-                  {oppPlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.first_name} {p.last_name}</SelectItem>)}
+                  {[...oppPlayers].sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)).map(p => <SelectItem key={p.id} value={p.id}>{p.last_name}, {p.first_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

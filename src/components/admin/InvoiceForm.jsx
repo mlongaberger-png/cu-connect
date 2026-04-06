@@ -185,7 +185,7 @@ export default function InvoiceForm({ players, teamName, teamSportId, teamSportN
               </div>
             ) : (
               <div className="rounded-lg border border-input bg-surface max-h-36 overflow-y-auto p-2 space-y-0.5">
-                {players.map(p => (
+                {[...players].sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)).map(p => (
                   <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-card cursor-pointer">
                     <input
                       type="checkbox"
@@ -194,7 +194,7 @@ export default function InvoiceForm({ players, teamName, teamSportId, teamSportN
                         e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id)
                       )}
                     />
-                    <span className="text-sm text-foreground">{p.first_name} {p.last_name}</span>
+                    <span className="text-sm text-foreground">{p.last_name}, {p.first_name}</span>
                     <span className="text-xs text-muted-foreground ml-auto">{p.team_name}</span>
                   </label>
                 ))}

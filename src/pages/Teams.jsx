@@ -50,7 +50,9 @@ export default function Teams() {
     createMutation.mutate({ ...form, sport_name: sport?.name || "" });
   };
 
-  const filteredTeams = filterSport === "all" ? teams : teams.filter((t) => t.sport_id === filterSport);
+  const sortedSports = [...sports].sort((a, b) => a.name.localeCompare(b.name));
+  const filteredTeams = (filterSport === "all" ? teams : teams.filter((t) => t.sport_id === filterSport))
+    .slice().sort((a, b) => a.name.localeCompare(b.name));
   const playerCount = (teamId) => players.filter((p) => p.team_id === teamId).length;
 
   return (
@@ -69,7 +71,7 @@ export default function Teams() {
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
                 <SelectItem value="all">All Sports</SelectItem>
-                {sports.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                {sortedSports.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -145,7 +147,7 @@ export default function Teams() {
                 <Select value={form.sport_id} onValueChange={(v) => setForm({ ...form, sport_id: v })}>
                   <SelectTrigger className="bg-surface border-border"><SelectValue placeholder="Select sport" /></SelectTrigger>
                   <SelectContent className="bg-popover border-border">
-                    {sports.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    {sortedSports.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
