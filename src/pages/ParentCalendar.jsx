@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
+import VolunteerDetailPanel from "@/components/schedule/VolunteerDetailPanel";
 import { Download } from "lucide-react";
 
 const PREF_KEY = (email) => `cu_cal_view_${email || "default"}`;
@@ -16,6 +17,7 @@ export default function ParentCalendar() {
   const savedView = (() => { try { return localStorage.getItem(PREF_KEY(userEmail)); } catch { return null; } })();
   const [calendarView, setCalendarView] = useState(savedView || "month");
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedVolunteer, setSelectedVolunteer] = useState(null);
   const [showExport, setShowExport] = useState(false);
   const [filterTeam, setFilterTeam] = useState("all");
 
@@ -36,6 +38,16 @@ export default function ParentCalendar() {
     queryKey: ["events"],
     queryFn: () => base44.entities.Event.list("-date"),
   });
+  const { data: myAssignments = [] } = useQuery({
+    queryKey: ["my-volunteer-assignments", userEmail],
+    queryFn: () => base44.entities.VolunteerAssignment.filter({ volunteer_email: userEmail }),
+    enabled: !!userEmail,
+  });
+  const { data: allOpportunities = [] } = useQuery({
+    queryKey: ["volunteer-opportunities"],
+    queryFn: () => base44.entities.VolunteerOpportunity.list(),
+    enabled: myAssignments.length > 0,
+  });
 
   const myLinkedPlayerIds = new Set(guardianLinks.map(g => g.player_id));
   const myKids = allPlayers.filter(p => myLinkedPlayerIds.has(p.id) || p.parent_email === userEmail);
@@ -45,19 +57,52 @@ export default function ParentCalendar() {
     .filter(e => myTeamIds.includes(e.team_id) && e.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  // Build volunteer calendar entries (only for active assignments)
+  const activeStatuses = new Set(["signed_up", "completed"]);
+  const volunteerEntries = myAssignments
+    .filter(a => activeStatuses.has(a.status))
+    .map(assignment => {
+      const opp = allOpportunities.find(o => o.id === assignment.opportunity_id);
+      if (!opp || !opp.date) return null;
+      return {
+        id: `vol_${assignment.id}`,
+        _isVolunteer: true,
+        _opportunityId: assignment.opportunity_id,
+        _assignmentId: assignment.id,
+        title: `Volunteer – ${opp.role_name || "Duty"}`,
+        type: "volunteer",
+        date: opp.date,
+        start_time: opp.start_time || null,
+        end_time: opp.end_time || null,
+        team_name: opp.team_name || "",
+        location: null,
+        notes: opp.notes || null,
+      };
+    })
+    .filter(Boolean);
+
   const handleCalendarViewChange = (view) => {
     setCalendarView(view);
     try { localStorage.setItem(PREF_KEY(userEmail), view); } catch {}
   };
 
-  const displayedEvents = filterTeam === "all" ? myEvents : myEvents.filter(e => e.team_id === filterTeam);
+  const handleEventClick = (entry) => {
+    if (entry._isVolunteer) {
+      setSelectedVolunteer(entry);
+    } else {
+      setSelectedEvent(entry);
+    }
+  };
+
+  const baseEvents = filterTeam === "all" ? myEvents : myEvents.filter(e => e.team_id === filterTeam);
+  const displayedEvents = [...baseEvents, ...volunteerEntries];
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
-          <p className="text-sm text-muted-foreground">Your team schedule</p>
+          <p className="text-sm text-muted-foreground">Your team schedule & volunteer duties</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {myTeams.length > 1 && (
@@ -83,7 +128,7 @@ export default function ParentCalendar() {
         events={displayedEvents}
         calendarView={calendarView}
         setCalendarView={handleCalendarViewChange}
-        onEventClick={setSelectedEvent}
+        onEventClick={handleEventClick}
       />
 
       {selectedEvent && (
@@ -91,6 +136,13 @@ export default function ParentCalendar() {
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           canEdit={false}
+        />
+      )}
+
+      {selectedVolunteer && (
+        <VolunteerDetailPanel
+          entry={selectedVolunteer}
+          onClose={() => setSelectedVolunteer(null)}
         />
       )}
 

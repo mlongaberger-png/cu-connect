@@ -97,6 +97,7 @@ module.exports = {
     'border-green-500/30', 'border-blue-500/30', 'border-orange-500/30', 'border-red-500/30',
     'border-purple-500/30', 'border-yellow-500/30',
     'bg-green-500/20', 'bg-red-500/20', 'bg-yellow-500/20', 'bg-cyan-500/20',
+    'bg-teal-500/20', 'text-teal-300', 'text-teal-400', 'bg-teal-400', 'border-teal-500/30',
     'border-green-500/50', 'border-red-500/50', 'border-yellow-500/50',
     'text-green-400', 'text-red-400', 'text-yellow-400',
     'bg-green-500/20 border-green-500/50 text-green-400',

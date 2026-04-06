@@ -11,6 +11,7 @@ const TYPE_DOT_COLORS = {
   meeting: "bg-orange-400",
   fundraiser: "bg-yellow-400",
   other: "bg-cyan-400",
+  volunteer: "bg-teal-400",
 };
 
 const TYPE_BG = {
@@ -20,6 +21,7 @@ const TYPE_BG = {
   meeting: "bg-orange-500/20 text-orange-300",
   fundraiser: "bg-yellow-500/20 text-yellow-300",
   other: "bg-cyan-500/20 text-cyan-300",
+  volunteer: "bg-teal-500/20 text-teal-300",
 };
 
 export default function CalendarView({ events, calendarView, setCalendarView, onEventClick }) {
