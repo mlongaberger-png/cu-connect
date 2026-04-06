@@ -26,11 +26,11 @@ export default function MobileChannelPicker({ sports, teams, channelId, onSelect
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-lg border border-border text-sm text-foreground"
+        className="flex items-center gap-1.5 max-w-[200px] text-foreground"
       >
-        <Hash className="w-3.5 h-3.5 text-primary" />
-        <span className="font-medium">{currentChannel?.name || "Select Channel"}</span>
-        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+        <Hash className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        <span className="text-sm font-semibold truncate">{currentChannel?.name || "Select Channel"}</span>
+        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
       </button>
     );
   }

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare, Settings2 } from "lucide-react";
+import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare, Settings2, ChevronDown } from "lucide-react";
 import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
 import { format } from "date-fns";
@@ -17,13 +17,19 @@ import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import { useAuth } from "@/lib/AuthContext";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 
-function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId }) {
+const ROLE_STYLES = {
+  staff: { border: "border-primary/50", nameCls: "text-primary", badge: "Staff" },
+  coach: { border: "border-yellow-500/50", nameCls: "text-yellow-400", badge: "Coach" },
+  parent: { border: "border-blue-500/30", nameCls: "text-foreground", badge: null },
+  me: { border: "border-primary", nameCls: "text-primary", badge: "You" },
+};
+
+function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId, senderRole }) {
   const tracked = React.useRef(false);
 
   React.useEffect(() => {
     if (isMe || tracked.current || !user?.email || !msg.id) return;
     tracked.current = true;
-    // Record a read receipt (deduplicate on server via filter-then-create)
     base44.entities.MessageReadReceipt.filter({ message_id: msg.id, reader_email: user.email })
       .then(existing => {
         if (existing.length === 0) {
@@ -38,22 +44,25 @@ function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, cha
       });
   }, [msg.id, user?.email, isMe, channelId]);
 
+  const style = isMe ? ROLE_STYLES.me : (ROLE_STYLES[senderRole] || ROLE_STYLES.parent);
+
   return (
-    <div className="flex gap-3">
-      <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-border">
+    <div className="flex gap-2.5">
+      <div className={`w-8 h-8 rounded-full overflow-hidden bg-surface flex items-center justify-center flex-shrink-0 mt-0.5 border ${style.border}`}>
         {senderAvatar
           ? <img src={senderAvatar} alt={msg.sender_name} className="w-full h-full object-cover" />
           : <span className="text-xs font-bold text-primary">{senderInitial}</span>
         }
       </div>
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">{msg.sender_name || "Unknown"}</span>
-          <span className="text-xs text-muted-foreground">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2">
+          <span className={`text-sm font-semibold ${style.nameCls}`}>{msg.sender_name || "Unknown"}</span>
+          {style.badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface border border-border text-muted-foreground uppercase tracking-wider">{style.badge}</span>}
+          <span className="text-[10px] text-muted-foreground ml-auto">
             {msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}
           </span>
         </div>
-        <p className="text-sm text-foreground/80 mt-0.5">{msg.content}</p>
+        <p className="text-sm text-foreground/80 mt-0.5 break-words">{msg.content}</p>
         {isMe && isStaff && (
           <MessageReadReceipts messageId={msg.id} channelId={channelId} isStaff={isStaff} />
         )}
@@ -323,8 +332,9 @@ export default function Messages() {
         ) : (
         <>
         {/* Channel Header */}
-        <div className="px-4 md:px-6 py-3 border-b border-border bg-card flex items-center gap-3 flex-shrink-0">
-          <div className="md:hidden">
+        <div className="px-3 md:px-6 py-2.5 border-b border-border bg-card flex items-center gap-2 flex-shrink-0">
+          {/* Mobile: compact inline channel picker */}
+          <div className="md:hidden flex-1 min-w-0">
             <MobileChannelPicker
               sports={sports}
               teams={teams}
@@ -343,16 +353,15 @@ export default function Messages() {
               <Hash className="w-4 h-4 text-primary" /> {channelName}
             </h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {canPostAttendance && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={() => setShowAttendanceDialog(true)}
-                className="border-border text-muted-foreground hover:text-foreground gap-1.5 text-xs"
+                title="Attendance"
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
               >
-                <ClipboardList className="w-3.5 h-3.5" /> Attendance
-              </Button>
+                <ClipboardList className="w-4 h-4" />
+              </button>
             )}
             <AnnouncementsPanel
               channel={channel}
@@ -364,7 +373,7 @@ export default function Messages() {
           </div>
         </div>
 
-        {/* Messages + Attendance Cards */}
+        {/* Messages + Attendance Cards */
         <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {refreshing && (
             <div className="flex justify-center py-2">
@@ -402,6 +411,8 @@ export default function Messages() {
             const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
             const isMe = msg.sender_email === user?.email;
             const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;
+            const isCoachSender = teams.some(t => t.coach_email?.toLowerCase() === msg.sender_email?.toLowerCase());
+            const senderRole = isCoachSender ? "coach" : (isStaff ? "staff" : "parent");
             return (
             <MessageRow
               key={msg.id}
@@ -412,6 +423,7 @@ export default function Messages() {
               isStaff={isStaff}
               user={user}
               channelId={channelId}
+              senderRole={senderRole}
             />
             );
           })}
