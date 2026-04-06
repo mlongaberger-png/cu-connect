@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,8 @@ const PLAYLIST_TYPES = [
 ];
 
 const BLANK_SONG = {
-  title: "", artist: "", player_name: "", spotify_url: "",
-  apple_music_url: "", youtube_url: "", artwork_url: "", event_type: "", notes: ""
+  title: "", artist: "", player_name: "", player_id: "", song_team_id: "",
+  spotify_url: "", apple_music_url: "", youtube_url: "", artwork_url: "", event_type: "", notes: ""
 };
 
 const EVENT_TYPES = [
@@ -43,12 +43,30 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
   const [saved, setSaved] = useState(false);
   const [djMode, setDjMode] = useState(false);
 
+  const { data: allTeams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list(),
+  });
+  const { data: allPlayers = [] } = useQuery({
+    queryKey: ["players"],
+    queryFn: () => base44.entities.Player.list(),
+  });
+
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.Playlist.update(playlist.id, data),
     onSuccess: () => { setSaved(true); setTimeout(() => setSaved(false), 2000); },
   });
 
-  const handleSave = () => updateMutation.mutate({ songs: JSON.stringify(songs) });
+  const handleSave = () => {
+    if (isWalkup) {
+      const invalid = songs.some(s => !s.player_id || !s.song_team_id);
+      if (invalid) {
+        alert("All walkup songs must have a team and player selected.");
+        return;
+      }
+    }
+    updateMutation.mutate({ songs: JSON.stringify(songs) });
+  };
   const addSong = () => setSongs(s => [...s, { ...BLANK_SONG }]);
   const removeSong = (i) => setSongs(s => s.filter((_, idx) => idx !== i));
   const updateSong = (i, field, value) => setSongs(s => s.map((song, idx) => idx === i ? { ...song, [field]: value } : song));
@@ -132,19 +150,52 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
               )}
             </div>
 
-            {/* Walkup: player name */}
-            {isWalkup && (
-              <div>
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Player Name</Label>
-                <Input
-                  value={song.player_name}
-                  onChange={e => updateSong(i, "player_name", e.target.value)}
-                  placeholder="Which athlete walks up to this?"
-                  className="mt-0.5 bg-surface border-border h-8 text-sm"
-                  disabled={!isStaff}
-                />
-              </div>
-            )}
+            {/* Walkup: cascading team → player dropdowns */}
+            {isWalkup && (() => {
+              const teamPlayers = allPlayers
+                .filter(p => p.team_id === song.song_team_id && p.is_active !== false)
+                .sort((a, b) => a.last_name.localeCompare(b.last_name));
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Team</Label>
+                    <select
+                      value={song.song_team_id || ""}
+                      onChange={e => {
+                        updateSong(i, "song_team_id", e.target.value);
+                        updateSong(i, "player_id", "");
+                        updateSong(i, "player_name", "");
+                      }}
+                      disabled={!isStaff}
+                      className="mt-0.5 flex h-8 w-full rounded-md border border-input bg-surface px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                    >
+                      <option value="">Select team...</option>
+                      {allTeams.sort((a, b) => a.name.localeCompare(b.name)).map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Player</Label>
+                    <select
+                      value={song.player_id || ""}
+                      onChange={e => {
+                        const player = allPlayers.find(p => p.id === e.target.value);
+                        updateSong(i, "player_id", e.target.value);
+                        updateSong(i, "player_name", player ? `${player.first_name} ${player.last_name}` : "");
+                      }}
+                      disabled={!isStaff || !song.song_team_id}
+                      className="mt-0.5 flex h-8 w-full rounded-md border border-input bg-surface px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                    >
+                      <option value="">{song.song_team_id ? "Select player..." : "Select team first"}</option>
+                      {teamPlayers.map(p => (
+                        <option key={p.id} value={p.id}>{p.last_name}, {p.first_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Event Assignment */}
             <div>
