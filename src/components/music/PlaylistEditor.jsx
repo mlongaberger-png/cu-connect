@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Plus, Trash2, ExternalLink, Music, Save, Zap } from "lucide-react";
+import VoiceRecorder from "@/components/music/VoiceRecorder";
 import GameDayConsole from "@/components/music/GameDayConsole";
 
 const PLAYLIST_TYPES = [
@@ -18,7 +19,8 @@ const PLAYLIST_TYPES = [
 
 const BLANK_SONG = {
   title: "", artist: "", player_name: "", player_id: "", song_team_id: "",
-  spotify_url: "", apple_music_url: "", youtube_url: "", artwork_url: "", event_type: "", notes: ""
+  spotify_url: "", apple_music_url: "", youtube_url: "", artwork_url: "",
+  voice_intro_url: "", event_type: "", notes: ""
 };
 
 const EVENT_TYPES = [
@@ -196,6 +198,15 @@ export default function PlaylistEditor({ playlist, teams, onBack }) {
                 </div>
               );
             })()}
+
+            {/* Voice Intro — walkup only */}
+            {isWalkup && (
+              <VoiceRecorder
+                value={song.voice_intro_url || ""}
+                onChange={url => updateSong(i, "voice_intro_url", url)}
+                disabled={!isStaff}
+              />
+            )}
 
             {/* Event Assignment */}
             <div>

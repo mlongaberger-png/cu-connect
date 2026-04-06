@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Play, Music, Mic2, Zap, Users, ChevronRight, ExternalLink } from "lucide-react";
@@ -173,6 +173,17 @@ export default function GameDayConsole({ playlist, onBack }) {
               )}
             </div>
           </div>
+          {nowPlayingSong.voice_intro_url && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { const a = new Audio(nowPlayingSong.voice_intro_url); a.play(); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary text-xs font-medium hover:bg-primary/30 transition-colors"
+              >
+                <Play className="w-3 h-3" /> 1. Play Voice Intro
+              </button>
+              <span className="text-xs text-muted-foreground">→ then trigger music below</span>
+            </div>
+          )}
           {nowPlayingSpotifyId && <SpotifyEmbedPanel spotifyId={nowPlayingSpotifyId} />}
           {!nowPlayingSpotifyId && nowPlayingSong.spotify_url && (
             <a href={nowPlayingSong.spotify_url} target="_blank" rel="noopener noreferrer"
