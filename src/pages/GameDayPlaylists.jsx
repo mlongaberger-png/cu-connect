@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Music, Trash2, ExternalLink, ChevronDown, ChevronUp, GripVertical, Play, Mic2, Zap } from "lucide-react";
+import { Plus, Music, Trash2, Play, Mic2, Zap } from "lucide-react";
+import GameDayConsole from "@/components/music/GameDayConsole";
 import PlaylistEditor from "@/components/music/PlaylistEditor";
 
 const PLAYLIST_TYPES = [
@@ -25,6 +26,7 @@ export default function GameDayPlaylists() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState(null);
+  const [djPlaylist, setDjPlaylist] = useState(null);
   const [filterTeam, setFilterTeam] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [newForm, setNewForm] = useState({ name: "", type: "pregame", team_id: "" });
@@ -72,6 +74,10 @@ export default function GameDayPlaylists() {
   });
 
   const typeConfig = (type) => PLAYLIST_TYPES.find(t => t.value === type) || PLAYLIST_TYPES[0];
+
+  if (djPlaylist) {
+    return <GameDayConsole playlist={djPlaylist} onBack={() => setDjPlaylist(null)} />;
+  }
 
   if (editingPlaylist) {
     return (
@@ -223,14 +229,25 @@ export default function GameDayPlaylists() {
                   {songs.length === 0 && <p className="text-xs text-muted-foreground pl-1">No songs added yet</p>}
                 </div>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full border-primary/30 text-primary hover:bg-primary/10 gap-2"
-                  onClick={() => setEditingPlaylist(playlist)}
-                >
-                  {isStaff ? <><Mic2 className="w-3.5 h-3.5" /> Edit Playlist</> : <><Play className="w-3.5 h-3.5" /> View Playlist</>}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 border-primary/30 text-primary hover:bg-primary/10 gap-2"
+                    onClick={() => setEditingPlaylist(playlist)}
+                  >
+                    {isStaff ? <><Mic2 className="w-3.5 h-3.5" /> Edit</> : <><Play className="w-3.5 h-3.5" /> View</>}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 gap-1.5"
+                    onClick={() => setDjPlaylist(playlist)}
+                    title="Launch DJ Console"
+                  >
+                    <Zap className="w-3.5 h-3.5" /> DJ
+                  </Button>
+                </div>
               </div>
             );
           })}
