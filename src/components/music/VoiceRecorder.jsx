@@ -4,7 +4,7 @@ import { Mic, Square, Play, Trash2, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-export default function VoiceRecorder({ value, onChange, disabled, maxSeconds = 10 }) {
+export default function VoiceRecorder({ value, onChange, disabled, maxSeconds = 3 }) {
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(maxSeconds);
@@ -21,6 +21,18 @@ export default function VoiceRecorder({ value, onChange, disabled, maxSeconds = 
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
       const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+      // Reject clips longer than maxSeconds (safety check)
+      const dur = await new Promise(res => {
+        const tmp = new Audio();
+        tmp.src = URL.createObjectURL(blob);
+        tmp.onloadedmetadata = () => res(tmp.duration);
+        tmp.onerror = () => res(0);
+      });
+      if (dur > maxSeconds + 0.5) {
+        alert(`Voice intro must be ${maxSeconds} seconds or less. Please try again.`);
+        setUploading(false);
+        return;
+      }
       setUploading(true);
       const file = new File([blob], "voice_intro.webm", { type: "audio/webm" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
