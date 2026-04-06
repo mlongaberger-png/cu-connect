@@ -11,27 +11,51 @@ Deno.serve(async (req) => {
 
     const { amount, description, player_id, player_name, team_name, invoice_ids, success_url, cancel_url } = await req.json();
 
-    // Build line items — if invoice_ids provided, fetch line details from each invoice
+    console.log('[createCheckout] invoice_ids received:', invoice_ids);
+
     let stripeLineItems = [];
-    let totalAmount = amount;
+    let totalAmount = 0;
+    let resolvedInvoices = [];
 
     if (invoice_ids && invoice_ids.length > 0) {
-      const invoices = await base44.asServiceRole.entities.Payment.list();
-      const myInvoices = invoices.filter(i => invoice_ids.includes(i.id));
-      for (const inv of myInvoices) {
+      // Fetch each invoice by ID directly to avoid pagination limits
+      const fetched = await Promise.all(
+        invoice_ids.map(id =>
+          base44.asServiceRole.entities.Payment.get(id).catch(err => {
+            console.error(`[createCheckout] Failed to fetch invoice ${id}:`, err.message);
+            return null;
+          })
+        )
+      );
+
+      resolvedInvoices = fetched.filter(Boolean);
+      console.log('[createCheckout] resolved invoices:', resolvedInvoices.map(i => ({ id: i.id, status: i.status, amount: i.amount, paid_amount: i.paid_amount })));
+
+      for (const inv of resolvedInvoices) {
+        if (['paid', 'voided', 'refunded', 'draft'].includes(inv.status)) continue;
         const balance = (inv.amount || 0) - (inv.paid_amount || 0);
         if (balance <= 0) continue;
         stripeLineItems.push({
           price_data: {
             currency: 'usd',
-            product_data: { name: inv.description + (inv.player_name ? ` — ${inv.player_name}` : '') },
+            product_data: {
+              name: inv.description + (inv.player_name ? ` — ${inv.player_name}` : ''),
+            },
             unit_amount: balance,
           },
           quantity: 1,
         });
       }
+
       totalAmount = stripeLineItems.reduce((s, li) => s + li.price_data.unit_amount, 0);
-    } else {
+
+      if (stripeLineItems.length === 0 || totalAmount <= 0) {
+        console.warn('[createCheckout] No unpaid balances found for invoice_ids:', invoice_ids);
+        return Response.json({ error: 'No unpaid or partially-paid invoices found' }, { status: 400 });
+      }
+
+    } else if (amount > 0 && description) {
+      // Legacy single-amount flow
       stripeLineItems = [{
         price_data: {
           currency: 'usd',
@@ -40,12 +64,13 @@ Deno.serve(async (req) => {
         },
         quantity: 1,
       }];
+      totalAmount = amount;
+    } else {
+      return Response.json({ error: 'No invoice_ids or amount provided' }, { status: 400 });
     }
 
-    if (stripeLineItems.length === 0 || totalAmount <= 0) {
-      return Response.json({ error: 'No payable balance found' }, { status: 400 });
-    }
-
+    // Build metadata
+    const firstInvoice = resolvedInvoices[0];
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card', 'us_bank_account'],
       payment_method_options: {
@@ -62,26 +87,25 @@ Deno.serve(async (req) => {
         team_name: team_name || '',
         parent_email: user.email,
         invoice_ids: invoice_ids ? JSON.stringify(invoice_ids) : '',
-        // Sport accounting attribution
-        sport_name: (invoice_ids && invoice_ids.length === 1
-          ? (await base44.asServiceRole.entities.Payment.list()).find(i => i.id === invoice_ids[0])?.sport_name || ''
-          : ''),
-        sport_id: (invoice_ids && invoice_ids.length === 1
-          ? (await base44.asServiceRole.entities.Payment.list()).find(i => i.id === invoice_ids[0])?.sport_id || ''
-          : ''),
-        accounting_code: (invoice_ids && invoice_ids.length === 1
-          ? (await base44.asServiceRole.entities.Payment.list()).find(i => i.id === invoice_ids[0])?.accounting_code || ''
-          : ''),
+        sport_name: firstInvoice?.sport_name || '',
+        sport_id: firstInvoice?.sport_id || '',
+        accounting_code: firstInvoice?.accounting_code || '',
+        season_id: firstInvoice?.season_id || '',
+        season_name: firstInvoice?.season_name || '',
       },
     });
 
-    // If invoice_ids provided, link the stripe session to each existing invoice
+    console.log('[createCheckout] Stripe session created:', session.id, 'total:', totalAmount);
+
+    // Link stripe session id to each invoice
     if (invoice_ids && invoice_ids.length > 0) {
-      await Promise.all(invoice_ids.map(id =>
-        base44.asServiceRole.entities.Payment.update(id, { stripe_session_id: session.id })
-      ));
+      await Promise.all(
+        invoice_ids.map(id =>
+          base44.asServiceRole.entities.Payment.update(id, { stripe_session_id: session.id })
+        )
+      );
     } else {
-      // Legacy: create a new payment record
+      // Legacy: create payment record
       await base44.asServiceRole.entities.Payment.create({
         player_id,
         player_name,
@@ -96,8 +120,9 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ url: session.url });
+
   } catch (error) {
-    console.error('Checkout error:', error.message);
+    console.error('[createCheckout] Unexpected error:', error.message, error.stack);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
