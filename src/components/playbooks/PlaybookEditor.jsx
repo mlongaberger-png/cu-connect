@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Upload, Video, BookOpen, Check, PenTool } from "lucide-react";
+import { Plus, Trash2, Upload, Video, BookOpen, Check, PenTool, FileUp, ExternalLink } from "lucide-react";
 import DiagramDrawer from "./DiagramDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,16 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
   const [addingPlay, setAddingPlay] = useState(false);
   const [uploadingDiagram, setUploadingDiagram] = useState(null);
   const [drawingPlay, setDrawingPlay] = useState(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  const handleUploadPlaybookDoc = async (file) => {
+    if (!playbook?.id) return;
+    setUploadingDoc(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.entities.Playbook.update(playbook.id, { document_url: file_url, document_name: file.name });
+    queryClient.invalidateQueries({ queryKey: ["playbooks"] });
+    setUploadingDoc(false);
+  };
 
   const { data: plays = [], refetch: refetchPlays } = useQuery({
     queryKey: ["plays", playbook?.id],
@@ -131,6 +141,13 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
             {!isNew && form.status === "published" && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 font-medium">Published</span>
             )}
+            {!isNew && (
+              <label className={`cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface text-xs font-medium transition-colors ${uploadingDoc ? "opacity-60 pointer-events-none" : "hover:bg-surface/80 text-muted-foreground hover:text-foreground"}`} title="Upload playbook document">
+                <FileUp className="w-3.5 h-3.5" />
+                {uploadingDoc ? "Uploading…" : "Upload Doc"}
+                <input type="file" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" className="hidden" onChange={e => e.target.files[0] && handleUploadPlaybookDoc(e.target.files[0])} />
+              </label>
+            )}
             <button onClick={() => onClose()} className="text-muted-foreground hover:text-foreground transition-colors text-sm">✕</button>
           </div>
         </div>
@@ -182,6 +199,20 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
         <Button onClick={handleSavePlaybook} disabled={saving || !form.name || !form.team_id} className="bg-primary text-primary-foreground w-full">
           {saving ? "Saving…" : isNew ? "Create Playbook" : "Save Changes"}
         </Button>
+
+        {/* Uploaded document */}
+        {!isNew && playbook?.document_url && (
+          <a
+            href={playbook.document_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-surface text-sm text-foreground hover:bg-surface/80 transition-colors"
+          >
+            <FileUp className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="flex-1 truncate">{playbook.document_name || "Playbook Document"}</span>
+            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          </a>
+        )}
 
         {/* Plays Section — only after playbook exists */}
         {!isNew && (

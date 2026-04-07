@@ -40,6 +40,14 @@
       "type": "boolean",
       "default": true
     },
+    "document_url": {
+      "type": "string",
+      "description": "Uploaded playbook document (PDF, image, Word, etc.)"
+    },
+    "document_name": {
+      "type": "string",
+      "description": "Original filename of the uploaded document"
+    },
     "created_by_email": {
       "type": "string"
     },
