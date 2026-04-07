@@ -1,0 +1,83 @@
+{
+  "name": "Player",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "ID of the team"
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Team name (denormalized)"
+    },
+    "sport_name": {
+      "type": "string",
+      "description": "Sport name (denormalized)"
+    },
+    "jersey_number": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Athlete profile photo URL"
+    },
+    "parent_name": {
+      "type": "string"
+    },
+    "parent_email": {
+      "type": "string",
+      "description": "Parent email for portal access"
+    },
+    "parent_phone": {
+      "type": "string"
+    },
+    "emergency_contact": {
+      "type": "string"
+    },
+    "emergency_phone": {
+      "type": "string"
+    },
+    "medical_notes": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "athlete_email": {
+      "type": "string",
+      "description": "Email of the promoted athlete user account (set after promotion)"
+    },
+    "is_promoted": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when athlete has been invited to their own account"
+    },
+    "promoted_at": {
+      "type": "string",
+      "description": "ISO timestamp of when promotion was initiated"
+    },
+    "promoted_by": {
+      "type": "string",
+      "description": "Email of parent or admin who initiated promotion"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "team_id"
+  ]
+}

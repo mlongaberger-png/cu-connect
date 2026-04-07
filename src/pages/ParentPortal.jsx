@@ -24,6 +24,7 @@ import TeamRosterView from "@/components/parentportal/TeamRosterView";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import AthleteCard from "@/components/parentportal/AthleteCard";
 import DeleteAccountModal from "@/components/parentportal/DeleteAccountModal";
+import PromoteAthleteModal from "@/components/parentportal/PromoteAthleteModal";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -61,6 +62,7 @@ export default function ParentPortal() {
   const [loadingPayFor, setLoadingPayFor] = useState(null);
   const [loadingPayAll, setLoadingPayAll] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [promotingPlayer, setPromotingPlayer] = useState(null);
 
   // Check for payment return
   useEffect(() => {
@@ -334,9 +336,17 @@ export default function ParentPortal() {
   return (
     <div className={isStandalone ? "min-h-screen bg-background overflow-x-hidden" : "overflow-x-hidden"}>
     {isStandalone && standaloneHeader}
+    {promotingPlayer && (
+      <PromoteAthleteModal
+        player={promotingPlayer}
+        currentUserEmail={userEmail}
+        onClose={() => setPromotingPlayer(null)}
+        onPromoted={() => setPromotingPlayer(null)}
+      />
+    )}
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
 
-        {/* Header */}
+      {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Parent Portal</h1>
           <p className="text-sm text-muted-foreground mt-1">Welcome back! Manage your kids' teams, documents, and payments.</p>
@@ -424,6 +434,18 @@ export default function ParentPortal() {
                   {team?.roster_published && (
                     <div className="mt-3">
                       <RosterPDFButton team={team} players={kidTeamPlayers} label="Team Roster PDF" />
+                    </div>
+                  )}
+                  {!kid.is_promoted ? (
+                    <button
+                      onClick={() => setPromotingPlayer(kid)}
+                      className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
+                    >
+                      🎓 Promote to Athlete Account
+                    </button>
+                  ) : (
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-green-400">
+                      <span>✓</span> Athlete account active ({kid.athlete_email})
                     </div>
                   )}
                   <InviteCoGuardian player={kid} currentUserEmail={userEmail} />

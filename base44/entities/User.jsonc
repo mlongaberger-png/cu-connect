@@ -1,0 +1,37 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "athletic_director",
+        "coach",
+        "parent",
+        "athlete",
+        "grandparent",
+        "user",
+        "pending"
+      ],
+      "default": "user",
+      "description": "User role in the app"
+    },
+    "setup_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the user has completed initial onboarding"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "notification_prefs": {
+      "type": "string",
+      "description": "JSON of notification preferences"
+    }
+  }
+}
