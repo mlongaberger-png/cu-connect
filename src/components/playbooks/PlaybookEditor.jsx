@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Upload, Video, ChevronDown, ChevronUp, BookOpen, Check } from "lucide-react";
+import { Plus, Trash2, Upload, Video, BookOpen, Check, PenTool } from "lucide-react";
+import DiagramDrawer from "./DiagramDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
   const [newPlay, setNewPlay] = useState({ title: "", description: "", film_clip_url: "", film_clip_label: "" });
   const [addingPlay, setAddingPlay] = useState(false);
   const [uploadingDiagram, setUploadingDiagram] = useState(null);
+  const [drawingPlay, setDrawingPlay] = useState(null);
 
   const { data: plays = [], refetch: refetchPlays } = useQuery({
     queryKey: ["plays", playbook?.id],
@@ -103,6 +105,14 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
   reviews.forEach(r => { reviewCountByPlay[r.play_id] = (reviewCountByPlay[r.play_id] || 0) + 1; });
 
   return (
+    <>
+    {drawingPlay && (
+      <DiagramDrawer
+        play={drawingPlay}
+        onSave={(url) => { setDrawingPlay(null); refetchPlays(); }}
+        onClose={() => setDrawingPlay(null)}
+      />
+    )}
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center overflow-y-auto py-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-2xl mx-4 p-6 space-y-5" onClick={e => e.stopPropagation()}>
 
@@ -235,6 +245,13 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => setDrawingPlay(play)}
+                        className="p-1.5 rounded hover:bg-card transition-colors text-muted-foreground hover:text-primary"
+                        title="Draw diagram"
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                      </button>
                       <label className="cursor-pointer p-1.5 rounded hover:bg-card transition-colors text-muted-foreground hover:text-foreground" title="Upload diagram">
                         {uploadingDiagram === play.id ? <span className="text-xs">…</span> : <Upload className="w-3.5 h-3.5" />}
                         <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => e.target.files[0] && handleUploadDiagram(play.id, e.target.files[0])} />
@@ -256,5 +273,6 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
         )}
       </div>
     </div>
+    </>
   );
 }
