@@ -1,0 +1,81 @@
+{
+  "name": "PlaybookSubmission",
+  "type": "object",
+  "properties": {
+    "assignment_id": {
+      "type": "string"
+    },
+    "playbook_id": {
+      "type": "string"
+    },
+    "playbook_name": {
+      "type": "string"
+    },
+    "player_id": {
+      "type": "string"
+    },
+    "player_name": {
+      "type": "string"
+    },
+    "player_email": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "assigned",
+        "in_progress",
+        "submitted",
+        "approved",
+        "returned"
+      ],
+      "default": "assigned"
+    },
+    "time_viewed_seconds": {
+      "type": "number",
+      "default": 0,
+      "description": "Total active seconds spent viewing the playbook"
+    },
+    "sections_accessed": {
+      "type": "string",
+      "description": "JSON array of category names the athlete opened"
+    },
+    "plays_reviewed": {
+      "type": "string",
+      "description": "JSON array of play IDs the athlete opened"
+    },
+    "athlete_notes": {
+      "type": "string"
+    },
+    "submitted_at": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "returned_at": {
+      "type": "string"
+    },
+    "returned_by": {
+      "type": "string"
+    },
+    "coach_feedback": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "assignment_id",
+    "player_id",
+    "playbook_id"
+  ]
+}

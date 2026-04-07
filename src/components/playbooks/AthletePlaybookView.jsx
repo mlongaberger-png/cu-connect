@@ -1,14 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, Circle, Video, ChevronRight, ArrowLeft, ExternalLink, FileText } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle, Video, ChevronRight, ArrowLeft, ExternalLink, FileText, Send, RotateCcw } from "lucide-react";
 
 const CATEGORIES = ["Offense", "Defense", "Special Teams", "General"];
 
-export default function AthletePlaybookView({ playbook, player, userEmail }) {
+export default function AthletePlaybookView({ playbook, player, userEmail, submission, onSubmissionUpdated }) {
   const queryClient = useQueryClient();
   const [activeCategory, setActiveCategory] = useState("General");
   const [selectedPlay, setSelectedPlay] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [athleteNotes, setAthleteNotes] = useState("");
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
+
+  // Engagement time tracking
+  const activeSecsRef = useRef(submission?.time_viewed_seconds || 0);
+  const intervalRef = useRef(null);
+  const lastFlushRef = useRef(Date.now());
+  const sectionsSeenRef = useRef(new Set((() => { try { return JSON.parse(submission?.sections_accessed || "[]"); } catch { return []; } })()));
+  const playsSeenRef = useRef(new Set((() => { try { return JSON.parse(submission?.plays_reviewed || "[]"); } catch { return []; } })()));
+
+  useEffect(() => {
+    if (!submission?.id || ["submitted","approved"].includes(submission?.status)) return;
+    const tick = () => { activeSecsRef.current += 1; };
+    intervalRef.current = setInterval(tick, 1000);
+
+    // Flush every 30s or on visibility change
+    const flush = async () => {
+      if (!submission?.id) return;
+      await base44.entities.PlaybookSubmission.update(submission.id, {
+        time_viewed_seconds: activeSecsRef.current,
+        status: submission.status === "assigned" ? "in_progress" : submission.status,
+        sections_accessed: JSON.stringify([...sectionsSeenRef.current]),
+        plays_reviewed: JSON.stringify([...playsSeenRef.current]),
+      });
+      onSubmissionUpdated?.();
+    };
+
+    const flushInterval = setInterval(flush, 30000);
+    const handleVisibility = () => { if (document.hidden) { clearInterval(intervalRef.current); } else { intervalRef.current = setInterval(tick, 1000); } };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(intervalRef.current);
+      clearInterval(flushInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      flush();
+    };
+  }, [submission?.id]);
 
   const { data: plays = [] } = useQuery({
     queryKey: ["plays", playbook.id],
@@ -65,6 +104,25 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
 
   const categoryPlays = visiblePlays.filter(p => p.category === activeCategory);
   const totalReviewed = visiblePlays.filter(p => reviewedIds.has(p.id)).length;
+
+  const trackCategory = (cat) => { sectionsSeenRef.current.add(cat); setActiveCategory(cat); };
+  const trackPlay = (play) => { playsSeenRef.current.add(play.id); setSelectedPlay(play); };
+
+  const handleSubmitAssignment = async () => {
+    if (!submission?.id) return;
+    setSubmitting(true);
+    await base44.entities.PlaybookSubmission.update(submission.id, {
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+      athlete_notes: athleteNotes.trim() || null,
+      time_viewed_seconds: activeSecsRef.current,
+      sections_accessed: JSON.stringify([...sectionsSeenRef.current]),
+      plays_reviewed: JSON.stringify([...playsSeenRef.current]),
+    });
+    setSubmitting(false);
+    setShowSubmitForm(false);
+    onSubmissionUpdated?.();
+  };
 
   if (selectedPlay) {
     const isReviewed = reviewedIds.has(selectedPlay.id);
@@ -190,6 +248,29 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
         {playbook.season && <p className="text-xs text-muted-foreground mt-1.5">{playbook.season}</p>}
       </div>
 
+      {/* Assignment status banners */}
+      {submission && submission.status === "returned" && (
+        <div className="flex items-start gap-2 px-4 py-2.5 rounded-xl border bg-red-500/10 border-red-500/30">
+          <RotateCcw className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold text-red-400 text-sm">Assignment returned for revision.</span>
+            {submission.coach_feedback && <p className="text-xs text-red-300 mt-0.5">{submission.coach_feedback}</p>}
+          </div>
+        </div>
+      )}
+      {submission && submission.status === "approved" && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-green-500/10 border-green-500/30">
+          <CheckCircle2 className="w-4 h-4 text-green-400" />
+          <span className="font-semibold text-green-400 text-sm">Assignment approved by coach</span>
+        </div>
+      )}
+      {submission && submission.status === "submitted" && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-purple-500/10 border-purple-500/30">
+          <Send className="w-4 h-4 text-purple-400" />
+          <span className="text-purple-400 text-sm">Submitted — awaiting coach review</span>
+        </div>
+      )}
+
       {/* Category tabs */}
       <div className="flex gap-1 bg-surface rounded-lg p-1 overflow-x-auto">
         {CATEGORIES.map(cat => {
@@ -198,7 +279,7 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
           return (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => trackCategory(cat)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all ${activeCategory === cat ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               {cat} ({count})
@@ -215,7 +296,7 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
           return (
             <button
               key={play.id}
-              onClick={() => setSelectedPlay(play)}
+              onClick={() => trackPlay(play)}
               className="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border hover:border-primary/30 transition-colors text-left"
             >
               {isReviewed
@@ -234,6 +315,41 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
           );
         })}
       </div>
+
+      {/* Submit for review */}
+      {submission && ["assigned","in_progress","returned"].includes(submission.status) && (
+        <div className="pt-2 border-t border-border">
+          {!showSubmitForm ? (
+            <button
+              onClick={() => setShowSubmitForm(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-primary/40 bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
+            >
+              <Send className="w-4 h-4" /> Mark as Completed & Submit
+            </button>
+          ) : (
+            <div className="space-y-3 bg-surface rounded-2xl p-4 border border-border">
+              <p className="text-sm font-semibold text-foreground">Submit for Coach Review</p>
+              <textarea
+                value={athleteNotes}
+                onChange={e => setAthleteNotes(e.target.value)}
+                placeholder="Any notes for your coach? (optional)"
+                rows={2}
+                className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setShowSubmitForm(false)} className="flex-1 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                <button
+                  onClick={handleSubmitAssignment}
+                  disabled={submitting}
+                  className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
+                >
+                  <Send className="w-3.5 h-3.5" />{submitting ? "Submitting…" : "Submit"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

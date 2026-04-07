@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
-import { BookOpen, Plus, Pencil, Trash2, Users, Eye, BarChart2, ArrowLeft, Upload } from "lucide-react";
+import { BookOpen, Plus, Pencil, Trash2, Users, Eye, BarChart2, ArrowLeft, Upload, ClipboardList } from "lucide-react";
 import UploadPlaybookModal from "@/components/playbooks/UploadPlaybookModal";
+import AssignmentCreatorDialog from "@/components/playbooks/AssignmentCreatorDialog";
+import CoachAssignmentDashboard from "@/components/playbooks/CoachAssignmentDashboard";
+import AthleteAssignmentsTab from "@/components/playbooks/AthleteAssignmentsTab";
 import { Button } from "@/components/ui/button";
 import PlaybookEditor from "@/components/playbooks/PlaybookEditor";
 import AthletePlaybookView from "@/components/playbooks/AthletePlaybookView";
@@ -17,9 +20,12 @@ export default function Playbooks() {
   const isParent = role === "parent" || role === "user";
 
   const [editingPlaybook, setEditingPlaybook] = useState(null);
-  const [uploadingPlaybook, setUploadingPlaybook] = useState(false); // null = closed, {} = new, playbook = edit
+  const [uploadingPlaybook, setUploadingPlaybook] = useState(false);
   const [viewingPlaybook, setViewingPlaybook] = useState(null);
   const [viewingStats, setViewingStats] = useState(null);
+  const [assigningPlaybook, setAssigningPlaybook] = useState(null);
+  const [activeTab, setActiveTab] = useState("playbooks");
+  const [openSubmission, setOpenSubmission] = useState(null);
 
   const { data: playbooks = [] } = useQuery({
     queryKey: ["playbooks"],
@@ -114,10 +120,16 @@ export default function Playbooks() {
     const kid = myKids.find(k => k.team_id === viewingPlaybook.team_id) || myKids[0];
     return (
       <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
-        <button onClick={() => setViewingPlaybook(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => { setViewingPlaybook(null); setOpenSubmission(null); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Playbooks
         </button>
-        <AthletePlaybookView playbook={viewingPlaybook} player={kid} userEmail={user?.email} />
+        <AthletePlaybookView
+          playbook={viewingPlaybook}
+          player={kid}
+          userEmail={user?.email}
+          submission={openSubmission}
+          onSubmissionUpdated={() => queryClient.invalidateQueries({ queryKey: ["my-submissions", kid?.id] })}
+        />
       </div>
     );
   }
@@ -145,8 +157,38 @@ export default function Playbooks() {
         )}
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-surface rounded-xl p-1">
+        <button
+          onClick={() => setActiveTab("playbooks")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "playbooks" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <BookOpen className="w-4 h-4" /> Playbooks
+        </button>
+        <button
+          onClick={() => setActiveTab("assignments")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "assignments" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <ClipboardList className="w-4 h-4" /> Assignments
+        </button>
+      </div>
+
+      {/* Assignments tab */}
+      {activeTab === "assignments" && (
+        isStaff
+          ? <CoachAssignmentDashboard user={user} />
+          : <AthleteAssignmentsTab
+              player={myKids[0]}
+              userEmail={user?.email}
+              onOpenAssignment={(sub) => {
+                const pb = visiblePlaybooks.find(p => p.id === sub.playbook_id);
+                if (pb) { setOpenSubmission(sub); setViewingPlaybook(pb); }
+              }}
+            />
+      )}
+
       {/* Playbook grid */}
-      {visiblePlaybooks.length === 0 ? (
+      {activeTab === "playbooks" && visiblePlaybooks.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-2xl border border-border">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground mb-4">
@@ -198,6 +240,9 @@ export default function Playbooks() {
                   </Button>
                   {isStaff && (
                     <>
+                      <Button size="sm" variant="outline" onClick={() => setAssigningPlaybook(pb)} className="gap-1 border-primary/30 text-primary hover:bg-primary/10 text-xs">
+                        <ClipboardList className="w-3.5 h-3.5" /> Assign
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditingPlaybook(pb)} className="gap-1 border-border text-xs">
                         <Pencil className="w-3.5 h-3.5" /> Edit
                       </Button>
@@ -214,6 +259,18 @@ export default function Playbooks() {
             );
           })}
         </div>
+      )}
+
+      {/* Assign dialog */}
+      {assigningPlaybook && (
+        <AssignmentCreatorDialog
+          playbook={assigningPlaybook}
+          teams={teams}
+          players={allPlayers}
+          user={user}
+          onClose={() => setAssigningPlaybook(null)}
+          onCreated={() => { setAssigningPlaybook(null); setActiveTab("assignments"); }}
+        />
       )}
 
       {/* Upload modal */}
