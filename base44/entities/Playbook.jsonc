@@ -1,0 +1,54 @@
+{
+  "name": "Playbook",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "e.g. Offensive Playbook \u2013 Varsity"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "sport_id": {
+      "type": "string"
+    },
+    "sport_name": {
+      "type": "string"
+    },
+    "season": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "default": "draft"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "JSON array of player IDs, position group names, or 'all'"
+    },
+    "parent_visible": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "created_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "team_id"
+  ]
+}

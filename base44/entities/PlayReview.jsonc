@@ -1,0 +1,30 @@
+{
+  "name": "PlayReview",
+  "type": "object",
+  "properties": {
+    "play_id": {
+      "type": "string"
+    },
+    "playbook_id": {
+      "type": "string"
+    },
+    "player_id": {
+      "type": "string"
+    },
+    "player_name": {
+      "type": "string"
+    },
+    "reviewed_by_email": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "description": "ISO timestamp"
+    }
+  },
+  "required": [
+    "play_id",
+    "player_id",
+    "reviewed_by_email"
+  ]
+}
