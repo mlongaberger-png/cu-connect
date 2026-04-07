@@ -398,14 +398,21 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             {isGameDay && (
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">GameChanger</p>
-                <a
-                  href="https://gc.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => {
+                    // Attempt deep link; fall back to web after 600ms
+                    const fallback = setTimeout(() => {
+                      window.open("https://gc.com", "_blank");
+                    }, 600);
+                    window.location.href = "gamechanger://";
+                    // If the app opens, clear the fallback when the page hides
+                    const clear = () => { clearTimeout(fallback); window.removeEventListener("blur", clear); };
+                    window.addEventListener("blur", clear);
+                  }}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 text-sm font-medium hover:bg-green-500/20 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Watch Live on GameChanger
-                </a>
+                </button>
               </div>
             )}
 
