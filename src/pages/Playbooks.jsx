@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
-import { BookOpen, Plus, Pencil, Trash2, Users, Eye, BarChart2, ArrowLeft } from "lucide-react";
+import { BookOpen, Plus, Pencil, Trash2, Users, Eye, BarChart2, ArrowLeft, Upload } from "lucide-react";
+import UploadPlaybookModal from "@/components/playbooks/UploadPlaybookModal";
 import { Button } from "@/components/ui/button";
 import PlaybookEditor from "@/components/playbooks/PlaybookEditor";
 import AthletePlaybookView from "@/components/playbooks/AthletePlaybookView";
@@ -15,7 +16,8 @@ export default function Playbooks() {
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const isParent = role === "parent" || role === "user";
 
-  const [editingPlaybook, setEditingPlaybook] = useState(null); // null = closed, {} = new, playbook = edit
+  const [editingPlaybook, setEditingPlaybook] = useState(null);
+  const [uploadingPlaybook, setUploadingPlaybook] = useState(false); // null = closed, {} = new, playbook = edit
   const [viewingPlaybook, setViewingPlaybook] = useState(null);
   const [viewingStats, setViewingStats] = useState(null);
 
@@ -132,9 +134,14 @@ export default function Playbooks() {
           </p>
         </div>
         {isStaff && (
-          <Button onClick={() => setEditingPlaybook({})} className="bg-primary text-primary-foreground gap-1">
-            <Plus className="w-4 h-4" /> New Playbook
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setUploadingPlaybook(true)} className="gap-1 border-border text-sm">
+              <Upload className="w-4 h-4" /> Upload File
+            </Button>
+            <Button onClick={() => setEditingPlaybook({})} className="bg-primary text-primary-foreground gap-1">
+              <Plus className="w-4 h-4" /> New Playbook
+            </Button>
+          </div>
         )}
       </div>
 
@@ -142,9 +149,19 @@ export default function Playbooks() {
       {visiblePlaybooks.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-2xl border border-border">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             {isStaff ? "No playbooks yet. Create your first one!" : "No playbooks assigned yet."}
           </p>
+          {isStaff && (
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button variant="outline" onClick={() => setUploadingPlaybook(true)} className="gap-1.5 border-border">
+                <Upload className="w-4 h-4" /> Upload Playbook File
+              </Button>
+              <Button onClick={() => setEditingPlaybook({})} className="bg-primary text-primary-foreground gap-1.5">
+                <Plus className="w-4 h-4" /> Build from Scratch
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -199,6 +216,19 @@ export default function Playbooks() {
         </div>
       )}
 
+      {/* Upload modal */}
+      {uploadingPlaybook && (
+        <UploadPlaybookModal
+          teams={teams}
+          user={user}
+          onClose={() => setUploadingPlaybook(false)}
+          onCreated={() => {
+            queryClient.invalidateQueries({ queryKey: ["playbooks"] });
+            setUploadingPlaybook(false);
+          }}
+        />
+      )}
+
       {/* Editor modal */}
       {editingPlaybook !== null && (
         <PlaybookEditor
@@ -207,7 +237,7 @@ export default function Playbooks() {
           user={user}
           onClose={(created) => {
             setEditingPlaybook(null);
-            if (created?.id) setEditingPlaybook(created); // re-open to add plays
+            if (created?.id) setEditingPlaybook(created);
           }}
         />
       )}

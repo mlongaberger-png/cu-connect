@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, Circle, Video, ChevronRight, ArrowLeft } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle, Video, ChevronRight, ArrowLeft, ExternalLink, FileText } from "lucide-react";
 
 const CATEGORIES = ["Offense", "Defense", "Special Teams", "General"];
 
@@ -22,6 +22,23 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
   });
 
   const reviewedIds = new Set(reviews.map(r => r.play_id));
+
+  // Uploaded-doc playbook detection
+  const isUploadedDoc = !!playbook.document_url && plays.length === 0;
+  const DOC_PLAY_ID = `doc_${playbook.id}`;
+  const docReviewed = reviews.some(r => r.play_id === DOC_PLAY_ID);
+
+  const handleMarkDocReviewed = async () => {
+    await base44.entities.PlayReview.create({
+      play_id: DOC_PLAY_ID,
+      playbook_id: playbook.id,
+      player_id: player?.id,
+      player_name: player ? `${player.first_name} ${player.last_name}` : "",
+      reviewed_by_email: userEmail,
+      reviewed_at: new Date().toISOString(),
+    });
+    queryClient.invalidateQueries({ queryKey: ["my-reviews", playbook.id, player?.id] });
+  };
 
   const markReviewedMutation = useMutation({
     mutationFn: (play) => base44.entities.PlayReview.create({
@@ -101,6 +118,56 @@ export default function AthletePlaybookView({ playbook, player, userEmail }) {
               <Video className="w-4 h-4" /> {selectedPlay.film_clip_label || "Watch Film Clip"}
             </a>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isUploadedDoc) {
+    // Parse multi-file descriptions
+    let extraFiles = [];
+    if (playbook.description?.startsWith("__files__")) {
+      try { extraFiles = JSON.parse(playbook.description.replace("__files__", "")); } catch {}
+    }
+    const allFiles = extraFiles.length > 0 ? extraFiles : [{ name: playbook.document_name || "Playbook", url: playbook.document_url }];
+
+    return (
+      <div className="space-y-4">
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">{playbook.name}</h3>
+              {playbook.season && <p className="text-xs text-muted-foreground mt-0.5">{playbook.season}</p>}
+            </div>
+            {docReviewed ? (
+              <span className="flex items-center gap-1 text-green-400 text-xs font-medium">
+                <CheckCircle2 className="w-4 h-4" /> Reviewed
+              </span>
+            ) : (
+              <button
+                onClick={handleMarkDocReviewed}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Mark Reviewed
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {allFiles.map((f, i) => (
+              <a
+                key={i}
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface hover:border-primary/40 transition-colors"
+              >
+                <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                <span className="text-sm text-foreground flex-1 truncate">{f.name || `File ${i + 1}`}</span>
+                <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     );
