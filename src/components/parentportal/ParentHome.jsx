@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Calendar, Clock, MapPin, Megaphone, CreditCard,
   FileText, ChevronRight, DollarSign, AlertCircle,
-  MessageSquare, UserCircle, Trophy
+  MessageSquare, UserCircle, Trophy, HandHeart
 } from "lucide-react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { format, isPast, parseISO } from "date-fns";
@@ -82,6 +82,27 @@ export default function ParentHome() {
   });
   const openRsvps = attendanceRequests.filter(r => myTeamIds.includes(r.team_id) && !r.is_locked);
 
+  const mySportIds = [...new Set(myTeams.map(t => t.sport_id).filter(Boolean))];
+  const { data: volunteerOpportunities = [] } = useQuery({
+    queryKey: ["volunteer-opps-home", mySportIds.join(",")],
+    queryFn: () => base44.entities.VolunteerOpportunity.list(),
+    enabled: mySportIds.length > 0,
+  });
+  const { data: volunteerAssignments = [] } = useQuery({
+    queryKey: ["volunteer-assignments-home", userEmail],
+    queryFn: () => base44.entities.VolunteerAssignment.filter({ volunteer_email: userEmail }),
+    enabled: !!userEmail,
+  });
+  const assignedOppIds = new Set(volunteerAssignments.map(a => a.opportunity_id));
+  const openVolunteerOpps = volunteerOpportunities.filter(opp => {
+    if (!opp.is_active) return false;
+    const relevantSport = !opp.sport_id || mySportIds.includes(opp.sport_id);
+    const relevantTeam = !opp.team_id || myTeamIds.includes(opp.team_id);
+    const notFull = (opp.filled_spots || 0) < (opp.total_spots || 1);
+    const notAssigned = !assignedOppIds.has(opp.id);
+    return relevantSport && relevantTeam && notFull && notAssigned;
+  });
+
   if (myKids.length === 0) {
     return (
       <div className="p-6 text-center space-y-4">
@@ -110,7 +131,7 @@ export default function ParentHome() {
       </div>
 
       {/* Action alerts */}
-      {(totalOwed > 0 || sigRequests.length > 0 || openRsvps.length > 0) && (
+      {(totalOwed > 0 || sigRequests.length > 0 || openRsvps.length > 0 || openVolunteerOpps.length > 0) && (
         <div className="space-y-2">
           {totalOwed > 0 && (
             <button
@@ -133,6 +154,21 @@ export default function ParentHome() {
               <FileText className="w-4 h-4 text-yellow-400 shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">{sigRequests.length} document{sigRequests.length !== 1 ? "s" : ""} need your signature</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+          )}
+          {openVolunteerOpps.length > 0 && (
+            <button
+              onClick={() => navigate("/Volunteers")}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-teal-500/10 border border-teal-500/30 hover:bg-teal-500/15 transition-colors text-left"
+            >
+              <HandHeart className="w-4 h-4 text-teal-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">{openVolunteerOpps.length} volunteer shift{openVolunteerOpps.length !== 1 ? "s" : ""} need filling</p>
+                <p className="text-xs text-muted-foreground">
+                  {[...new Set(openVolunteerOpps.map(o => o.sport_name).filter(Boolean))].join(", ") || "Your team"}
+                </p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
