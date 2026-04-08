@@ -85,28 +85,29 @@ export default function AthleticDirectors() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Admin Console</h1>
         <p className="text-sm text-muted-foreground mt-1">Manage all aspects of Cornerstone United</p>
       </div>
 
       {/* Main Tabs */}
-      <div className="flex gap-1 bg-surface rounded-xl p-1 overflow-x-auto">
+      <div className="flex flex-wrap gap-1 bg-surface rounded-xl p-1">
         {TABS.map(tab => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden text-xs">{tab.label}</span>
             </button>
           );
         })}
@@ -174,7 +175,7 @@ export default function AthleticDirectors() {
       {/* ── REGISTRATIONS ── */}
       {activeTab === "registrations" && (
         <div className="space-y-5">
-          <div className="flex gap-1 w-fit">
+          <div className="flex flex-wrap gap-1.5">
             {[
               { id: "athletes", label: "Athlete Registrations" },
               { id: "leadership", label: "Leadership Applications" },
@@ -215,7 +216,7 @@ export default function AthleticDirectors() {
       {/* ── SETTINGS ── */}
       {activeTab === "settings" && (
         <div className="space-y-5">
-          <div className="flex gap-1 w-fit">
+          <div className="flex flex-wrap gap-1.5">
             {[
               { id: "seasons", label: "Season Manager" },
               { id: "data", label: "Import / Export" },
