@@ -7,10 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown, CalendarIcon } from "lucide-react";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, parse, isValid } from "date-fns";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import BulkEventImporter from "@/components/schedule/BulkEventImporter";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
@@ -62,10 +59,7 @@ export default function Schedule() {
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" | "desc"
-  const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
-  const [startEdited, setStartEdited] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [dateInput, setDateInput] = useState(""); // mm/dd/yy text
+  const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   const [notifyTeam, setNotifyTeam] = useState(true);
   const queryClient = useQueryClient();
 
@@ -102,38 +96,6 @@ export default function Schedule() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setSelectedEvent(null); },
   });
 
-  const handleArrivalTimeChange = (val) => {
-    setForm(f => ({
-      ...f,
-      arrival_time: val,
-      start_time: (!startEdited && val) ? val : f.start_time,
-    }));
-  };
-
-  const handleStartTimeChange = (val) => {
-    setStartEdited(true);
-    setForm(f => ({ ...f, start_time: val }));
-  };
-
-  const handleDateSelect = (date) => {
-    if (!date) return;
-    const iso = format(date, "yyyy-MM-dd");
-    setForm(f => ({ ...f, date: iso }));
-    setDateInput(format(date, "MM/dd/yy"));
-    setDatePickerOpen(false);
-  };
-
-  const handleDateInputChange = (val) => {
-    setDateInput(val);
-    const parsed = parse(val, "MM/dd/yy", new Date());
-    const parsed2 = parse(val, "MM/dd/yyyy", new Date());
-    if (isValid(parsed) && parsed.getFullYear() > 2000) {
-      setForm(f => ({ ...f, date: format(parsed, "yyyy-MM-dd") }));
-    } else if (isValid(parsed2)) {
-      setForm(f => ({ ...f, date: format(parsed2, "yyyy-MM-dd") }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const team = teams.find(t => t.id === form.team_id);
@@ -162,9 +124,7 @@ export default function Schedule() {
       queryClient.invalidateQueries({ queryKey: ["messages", form.team_id] });
     }
     setNotifyTeam(true);
-    setStartEdited(false);
-    setDateInput("");
-    setForm({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
+    setForm({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   };
 
   // Coaches only see events for their teams; ADs and admins see all
@@ -388,49 +348,10 @@ export default function Schedule() {
                 </Select>
               </div>
             </div>
-            {/* Date field with calendar picker */}
-            <div>
-              <Label>Date</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  placeholder="mm/dd/yy"
-                  value={dateInput}
-                  onChange={e => handleDateInputChange(e.target.value)}
-                  className="bg-surface border-border flex-1"
-                  required
-                />
-                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="flex items-center justify-center w-10 h-9 rounded-md border border-input bg-surface text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors flex-shrink-0">
-                      <CalendarIcon className="w-4 h-4" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-card border-border z-50" align="end">
-                    <CalendarPicker
-                      mode="single"
-                      selected={form.date ? new Date(form.date + "T12:00:00") : undefined}
-                      onSelect={handleDateSelect}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            {/* Time fields */}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs">Arrival Time</Label>
-                <Input type="time" value={form.arrival_time} onChange={e => handleArrivalTimeChange(e.target.value)} className="bg-surface border-border mt-0.5 h-9 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">Game Start</Label>
-                <Input type="time" value={form.start_time} onChange={e => handleStartTimeChange(e.target.value)} className="bg-surface border-border mt-0.5 h-9 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">End Time</Label>
-                <Input type="time" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} className="bg-surface border-border mt-0.5 h-9 text-sm" />
-              </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div><Label>Date</Label><Input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="bg-surface border-border" required /></div>
+              <div><Label>Start</Label><Input type="time" value={form.start_time} onChange={e => setForm({...form, start_time: e.target.value})} className="bg-surface border-border" /></div>
+              <div><Label>End</Label><Input type="time" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} className="bg-surface border-border" /></div>
             </div>
             <div><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="bg-surface border-border" /></div>
             {(form.type === "game" || form.type === "tournament") && <div><Label>Opponent</Label><Input value={form.opponent} onChange={e => setForm({...form, opponent: e.target.value})} className="bg-surface border-border" /></div>}
