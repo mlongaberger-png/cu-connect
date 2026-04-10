@@ -13,10 +13,10 @@ import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
 import { format } from "date-fns";
 import MessagesSidebar from "@/components/messages/MessagesSidebar";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
-import AttendanceCard from "@/components/attendance/AttendanceCard";
 import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
 import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import ChannelList from "@/components/messages/ChannelList";
+import EventMessageCard from "@/components/messages/EventMessageCard";
 import { useAuth } from "@/lib/AuthContext";
 
 // ─── Read/unread helpers ───────────────────────────────────────────────────
@@ -162,12 +162,7 @@ export default function Messages() {
     }
   }, [isParent, guardianLinks, allPlayers, teams, parentChannelReady, user?.email]);
 
-  const { data: attendanceRequests = [] } = useQuery({
-    queryKey: ["attendance-requests", channelId],
-    queryFn: () => base44.entities.AttendanceRequest.filter({ channel_id: channelId }, "-created_date", 10),
-    enabled: isTeamChannel,
-    refetchInterval: 10000,
-  });
+
 
   const myCoachTeams = role === "coach"
     ? teams.filter(t => t.coach_email && t.coach_email.toLowerCase() === (user?.email || "").toLowerCase())
@@ -266,12 +261,9 @@ export default function Messages() {
 
       {/* Scrollable messages */}
       <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
-        {/* Inline RSVP cards for parents only */}
-        {isParent && isTeamChannel && attendanceRequests.filter(r => !r.is_locked).map(req => (
-          <AttendanceCard key={req.id} request={req} isStaff={false} currentUser={user} myPlayers={myPlayers} allPlayers={allPlayers} />
-        ))}
 
-        {sortedMessages.length === 0 && attendanceRequests.length === 0 && (
+
+        {sortedMessages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
             <MessageSquare className="w-12 h-12 text-muted-foreground mb-3" />
             <p className="text-muted-foreground">No messages yet in #{channelName}</p>
@@ -280,6 +272,27 @@ export default function Messages() {
         )}
 
         {sortedMessages.map((msg) => {
+          // Event messages with an attendance_request_id render as interactive cards
+          if (msg.attendance_request_id) {
+            return (
+              <div key={msg.id} className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] font-bold text-primary">{(msg.sender_name || "?")[0].toUpperCase()}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-primary">{msg.sender_name || "Staff"}</span>
+                  <span className="text-[10px] text-muted-foreground">{msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}</span>
+                </div>
+                <div className="pl-8">
+                  <EventMessageCard
+                    attendanceRequestId={msg.attendance_request_id}
+                    currentUser={user}
+                    isStaff={isStaff}
+                  />
+                </div>
+              </div>
+            );
+          }
           const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
           const isMe = msg.sender_email === user?.email;
           const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;

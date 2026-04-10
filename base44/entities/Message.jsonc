@@ -1,0 +1,48 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "content": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "org",
+        "sport",
+        "team"
+      ],
+      "description": "Message channel scope"
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "ID of the sport or team (or 'org' for org-wide)"
+    },
+    "channel_name": {
+      "type": "string",
+      "description": "Display name of the channel"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "sender_email": {
+      "type": "string"
+    },
+    "sender_avatar": {
+      "type": "string",
+      "description": "Profile photo URL of the sender at time of sending"
+    },
+    "attendance_request_id": {
+      "type": "string",
+      "description": "Linked AttendanceRequest ID \u2014 renders message as an interactive event card"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "Linked Event ID"
+    }
+  },
+  "required": [
+    "content",
+    "channel"
+  ]
+}

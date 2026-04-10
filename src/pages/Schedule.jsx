@@ -137,19 +137,9 @@ export default function Schedule() {
       }
       if (form.location) parts.push(`📍 ${form.location}`);
       if (form.notes) parts.push(form.notes);
-      parts.push(`See the Schedule or Calendar for full details.`);
-      await base44.entities.Message.create({
-        content: parts.join(" · "),
-        channel: "team",
-        channel_id: form.team_id,
-        channel_name: team.name,
-        sender_name: user?.full_name || "Staff",
-        sender_email: user?.email || "",
-        sender_avatar: user?.avatar_url || "",
-      });
-      // Also create an AttendanceRequest so RSVP buttons appear in the team chat
+      // Create attendance request first so we can link it to the message
       const rsvpLabel = `${form.title}${form.start_time ? ` – ${formatTime12h(form.start_time)}` : ""}`;
-      await base44.entities.AttendanceRequest.create({
+      const attendanceReq = await base44.entities.AttendanceRequest.create({
         team_id: form.team_id,
         team_name: team.name,
         event_id: created.id,
@@ -160,6 +150,17 @@ export default function Schedule() {
         created_by_name: user?.full_name || "Staff",
         created_by_email: user?.email || "",
         channel_id: form.team_id,
+      });
+      await base44.entities.Message.create({
+        content: parts.join(" · "),
+        channel: "team",
+        channel_id: form.team_id,
+        channel_name: team.name,
+        sender_name: user?.full_name || "Staff",
+        sender_email: user?.email || "",
+        sender_avatar: user?.avatar_url || "",
+        attendance_request_id: attendanceReq.id,
+        event_id: created.id,
       });
       queryClient.invalidateQueries({ queryKey: ["messages", form.team_id] });
       queryClient.invalidateQueries({ queryKey: ["attendance-requests", form.team_id] });
