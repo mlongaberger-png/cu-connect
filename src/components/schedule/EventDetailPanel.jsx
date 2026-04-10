@@ -16,6 +16,7 @@ const getGoogleMapsUrl = (location) => `https://www.google.com/maps/search/?api=
 const getAppleMapsUrl = (location) => `https://maps.apple.com/?q=${encodeURIComponent(location)}`;
 
 const EVENT_TYPES = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
+const EVENT_TYPE_LABELS = { practice: "Practice", game: "Game", tournament: "Tournament", meeting: "Meeting", fundraiser: "Fundraiser", other: "Other" };
 const TOURNAMENT_ROUNDS = ["Pool Play", "Round of 16", "Quarterfinals", "Semifinals", "Finals", "Championship"];
 
 const typeColors = {
@@ -181,9 +182,9 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
           <div className="flex items-center gap-2 flex-wrap">
             {editing ? (
               <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v, tournament_round: v !== "tournament" ? "" : f.tournament_round }))}>
-                <SelectTrigger className="h-7 text-xs bg-surface border-border w-36"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 text-xs bg-surface border-border w-36"><SelectValue>{EVENT_TYPE_LABELS[form.type] || form.type}</SelectValue></SelectTrigger>
                 <SelectContent className="bg-popover border-border">
-                  {EVENT_TYPES.map(t => <SelectItem key={t} value={t} className="capitalize text-xs">{t}</SelectItem>)}
+                  {EVENT_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs">{EVENT_TYPE_LABELS[t]}</SelectItem>)}
                 </SelectContent>
               </Select>
             ) : (

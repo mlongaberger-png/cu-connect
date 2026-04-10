@@ -25,6 +25,7 @@ import usePullToRefresh from "@/hooks/usePullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
 
 const eventTypes = ["practice", "game", "tournament", "meeting", "fundraiser", "other"];
+const eventTypeLabels = { practice: "Practice", game: "Game", tournament: "Tournament", meeting: "Meeting", fundraiser: "Fundraiser", other: "Other" };
 const typeColors = {
   practice: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   game: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -357,9 +358,9 @@ export default function Schedule() {
               <div>
                 <Label>Type</Label>
                 <Select value={form.type} onValueChange={v => setForm({...form, type: v})}>
-                  <SelectTrigger className="bg-surface border-border"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-surface border-border"><SelectValue>{eventTypeLabels[form.type] || form.type}</SelectValue></SelectTrigger>
                   <SelectContent className="bg-popover border-border">
-                    {eventTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                    {eventTypes.map(t => <SelectItem key={t} value={t}>{eventTypeLabels[t]}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
