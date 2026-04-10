@@ -4,18 +4,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare, Settings2, ChevronDown } from "lucide-react";
+import { Send, MessageSquare, Hash, ClipboardList, MessagesSquare, Settings2, X, ChevronRight } from "lucide-react";
 import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
 import { format } from "date-fns";
 import MessagesSidebar from "@/components/messages/MessagesSidebar";
-import MobileChannelPicker from "@/components/messages/MobileChannelPicker";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
 import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import { useAuth } from "@/lib/AuthContext";
-import usePullToRefresh from "@/hooks/usePullToRefresh";
 
 const ROLE_STYLES = {
   staff: { border: "border-primary/50", nameCls: "text-primary", badge: "Staff" },
@@ -55,7 +53,7 @@ function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, cha
         }
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <span className={`text-sm font-semibold ${style.nameCls}`}>{msg.sender_name || "Unknown"}</span>
           {style.badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface border border-border text-muted-foreground uppercase tracking-wider">{style.badge}</span>}
           <span className="text-[10px] text-muted-foreground ml-auto">
@@ -84,17 +82,14 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState("");
   const [starredIds, setStarredIds] = useState([]);
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("channels"); // "channels" | "direct" | "rooms"
+  const [activeTab, setActiveTab] = useState("channels");
   const [dmContact, setDmContact] = useState(null);
+  const [showMobileChannels, setShowMobileChannels] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
+  const inputRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const refreshing = usePullToRefresh(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["messages", channelId] });
-  }, messagesScrollRef);
-
-  // Current channel team (if it's a team channel)
   const isTeamChannel = channel === "team";
 
   useEffect(() => {
@@ -112,20 +107,10 @@ export default function Messages() {
     refetchInterval: 5000,
   });
 
-  const { data: sports = [] } = useQuery({
-    queryKey: ["sports"],
-    queryFn: () => base44.entities.Sport.list(),
-  });
-  const { data: teams = [] } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => base44.entities.Team.list(),
-  });
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ["players"],
-    queryFn: () => base44.entities.Player.list(),
-  });
+  const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list() });
+  const { data: teams = [] } = useQuery({ queryKey: ["teams"], queryFn: () => base44.entities.Team.list() });
+  const { data: allPlayers = [] } = useQuery({ queryKey: ["players"], queryFn: () => base44.entities.Player.list() });
 
-  // Fetch parents for DM (staff only)
   const { data: allUsers = [] } = useQuery({
     queryKey: ["all-users-dm"],
     queryFn: () => base44.entities.User.list(),
@@ -133,12 +118,18 @@ export default function Messages() {
   });
   const parentUsers = allUsers.filter(u => ["parent", "user"].includes(u.role));
 
-  // For parents: fetch guardian links to scope their teams
   const { data: guardianLinks = [] } = useQuery({
     queryKey: ["guardian-links-messages"],
     queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
     enabled: isParent && !!user?.email,
   });
+
+  const myFilterTeamIds = useMemo(() => {
+    if (!isParent) return null;
+    const linkedIds = new Set(guardianLinks.map(g => g.player_id));
+    const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
+    return [...new Set(myKids.map(k => k.team_id))];
+  }, [isParent, guardianLinks, allPlayers, user?.email]);
 
   useEffect(() => {
     if (!isParent || parentChannelReady || teams.length === 0) return;
@@ -156,7 +147,6 @@ export default function Messages() {
     }
   }, [isParent, guardianLinks, allPlayers, teams, parentChannelReady, user?.email]);
 
-  // Attendance requests for current channel
   const { data: attendanceRequests = [] } = useQuery({
     queryKey: ["attendance-requests", channelId],
     queryFn: () => base44.entities.AttendanceRequest.filter({ channel_id: channelId }, "-created_date", 10),
@@ -164,7 +154,6 @@ export default function Messages() {
     refetchInterval: 10000,
   });
 
-  // For coaches: determine which teams they coach
   const myCoachTeams = role === "coach"
     ? teams.filter(t => t.coach_email && t.coach_email.toLowerCase() === (user?.email || "").toLowerCase())
     : teams;
@@ -203,20 +192,20 @@ export default function Messages() {
       sender_email: user?.email || "",
       sender_avatar: user?.avatar_url || "",
     });
+    setNewMessage("");
   };
 
   const selectChannel = (type, id, name) => {
     setChannel(type);
     setChannelId(id);
     setChannelName(name);
+    setShowMobileChannels(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  // Merge and sort messages + attendance requests chronologically
   const sortedMessages = [...messages].reverse();
-
   const currentTeam = teams.find(t => t.id === channelId);
 
-  // Coaches to show as DM options for parents
   const myCoachContacts = useMemo(() => {
     if (!isParent) return [];
     const linkedIds = new Set(guardianLinks.map(g => g.player_id));
@@ -228,35 +217,28 @@ export default function Messages() {
   }, [isParent, guardianLinks, allPlayers, teams, user?.email]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Tab bar (channels vs direct messages) */}
+    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
+
+      {/* ── Desktop Sidebar ── */}
       <div className="hidden md:flex flex-col w-64 bg-card border-r border-border flex-shrink-0">
         <div className="flex border-b border-border">
-          <button
-            onClick={() => setActiveTab("channels")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
-          >
+          <button onClick={() => setActiveTab("channels")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
             <Hash className="w-3.5 h-3.5" /> Channels
           </button>
-          <button
-            onClick={() => setActiveTab("direct")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "direct" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
-          >
+          <button onClick={() => setActiveTab("direct")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "direct" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
             <MessagesSquare className="w-3.5 h-3.5" /> Direct
           </button>
           {(role === "admin" || role === "athletic_director") && (
-            <button
-              onClick={() => setActiveTab("rooms")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "rooms" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
-              title="Manage Rooms"
-            >
+            <button onClick={() => setActiveTab("rooms")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "rooms" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
               <Settings2 className="w-3.5 h-3.5" /> Rooms
             </button>
           )}
         </div>
 
         {activeTab === "channels" ? (
-          /* Sidebar — desktop only */
           <MessagesSidebar
             channelId={channelId}
             onSelectChannel={selectChannel}
@@ -264,31 +246,20 @@ export default function Messages() {
             teams={teams}
             userRole={role}
             userEmail={user?.email}
-            filterTeamIds={isParent ? (() => {
-              const linkedIds = new Set(guardianLinks.map(g => g.player_id));
-              const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
-              return [...new Set(myKids.map(k => k.team_id))];
-            })() : null}
+            filterTeamIds={myFilterTeamIds}
           />
         ) : activeTab === "rooms" ? (
-          <div className="flex-1 overflow-y-auto">
-            <MessageRoomManager currentUser={user} />
-          </div>
+          <div className="flex-1 overflow-y-auto"><MessageRoomManager currentUser={user} /></div>
         ) : (
-          /* Direct Messages list */
           <div className="flex-1 overflow-y-auto p-2">
             {isStaff && (
               <>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2">Parents</p>
                 {parentUsers.length === 0 && <p className="text-xs text-muted-foreground px-2">No parents found</p>}
                 {parentUsers.map(u => (
-                  <button
-                    key={u.id}
+                  <button key={u.id}
                     onClick={() => setDmContact({ email: u.email, name: u.full_name || u.email, role: u.role })}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${
-                      dmContact?.email === u.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"
-                    }`}
-                  >
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === u.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}>
                     <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                       {(u.full_name || u.email)[0].toUpperCase()}
                     </div>
@@ -302,13 +273,9 @@ export default function Messages() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2">Coaches</p>
                 {myCoachContacts.length === 0 && <p className="text-xs text-muted-foreground px-2">No coaches found</p>}
                 {myCoachContacts.map((c, i) => (
-                  <button
-                    key={i}
+                  <button key={i}
                     onClick={() => setDmContact(c)}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${
-                      dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"
-                    }`}
-                  >
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}>
                     <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
                       {(c.name || c.email)[0].toUpperCase()}
                     </div>
@@ -322,131 +289,127 @@ export default function Messages() {
             )}
           </div>
         )}
-        </div>
+      </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* DM panel takes over when in direct tab and contact selected */}
+      {/* ── Chat Area ── */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {activeTab === "direct" ? (
           <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
         ) : (
-        <>
-        {/* Channel Header */}
-        <div className="px-3 md:px-6 py-2.5 border-b border-border bg-card flex items-center gap-2 flex-shrink-0">
-          {/* Mobile: compact inline channel picker */}
-          <div className="md:hidden flex-1 min-w-0">
-            <MobileChannelPicker
-              sports={sports}
-              teams={teams}
-              channelId={channelId}
-              onSelectChannel={selectChannel}
-              starredIds={starredIds}
-              filterTeamIds={isParent ? (() => {
-                const linkedIds = new Set(guardianLinks.map(g => g.player_id));
-                const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
-                return [...new Set(myKids.map(k => k.team_id))];
-              })() : null}
-            />
-          </div>
-          <div className="hidden md:flex items-center gap-2 flex-1">
-            <h3 className="font-semibold text-foreground flex items-center gap-2">
-              <Hash className="w-4 h-4 text-primary" /> {channelName}
-            </h3>
-          </div>
-          <div className="flex items-center gap-1">
-            {canPostAttendance && (
+          <>
+            {/* Header */}
+            <div className="px-3 py-2.5 border-b border-border bg-card flex items-center gap-2 flex-shrink-0 min-h-[48px]">
+              {/* Mobile: channel button */}
               <button
-                onClick={() => setShowAttendanceDialog(true)}
-                title="Attendance"
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
+                onClick={() => setShowMobileChannels(true)}
+                className="md:hidden flex items-center gap-1.5 min-w-0 flex-1 text-left"
               >
-                <ClipboardList className="w-4 h-4" />
+                <Hash className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="font-semibold text-foreground text-sm truncate">{channelName}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 rotate-90" />
               </button>
-            )}
-            <AnnouncementsPanel
-              channel={channel}
-              channelId={channelId}
-              channelName={channelName}
-              sports={sports}
-              teams={teams}
-            />
-          </div>
-        </div>
 
-        {/* Messages + Attendance Cards */}
-        <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-          {refreshing && (
-            <div className="flex justify-center py-2">
-              <div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" />
+              {/* Desktop: static channel name */}
+              <div className="hidden md:flex items-center gap-2 flex-1 min-w-0">
+                <Hash className="w-4 h-4 text-primary flex-shrink-0" />
+                <h3 className="font-semibold text-foreground truncate">{channelName}</h3>
+              </div>
+
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {canPostAttendance && (
+                  <button onClick={() => setShowAttendanceDialog(true)} title="Attendance"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors">
+                    <ClipboardList className="w-4 h-4" />
+                  </button>
+                )}
+                <AnnouncementsPanel channel={channel} channelId={channelId} channelName={channelName} sports={sports} teams={teams} />
+              </div>
             </div>
-          )}
-          {/* Pinned attendance requests at top of team channel */}
-          {isTeamChannel && attendanceRequests.length > 0 && (
-            <div className="space-y-3 pb-2 border-b border-border">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <ClipboardList className="w-3.5 h-3.5 text-primary" /> Attendance
-              </p>
-              {attendanceRequests.map(req => (
-                <AttendanceCard
-                  key={req.id}
-                  request={req}
-                  isStaff={isStaff}
-                  currentUser={user}
-                  myPlayers={[]} // staff don't RSVP
-                  allPlayers={allPlayers}
+
+            {/* Messages — scrollable area */}
+            <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
+              {isTeamChannel && attendanceRequests.length > 0 && (
+                <div className="space-y-3 pb-2 border-b border-border">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5 text-primary" /> Attendance
+                  </p>
+                  {attendanceRequests.map(req => (
+                    <AttendanceCard key={req.id} request={req} isStaff={isStaff} currentUser={user} myPlayers={[]} allPlayers={allPlayers} />
+                  ))}
+                </div>
+              )}
+
+              {sortedMessages.length === 0 && attendanceRequests.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-center py-16">
+                  <MessageSquare className="w-12 h-12 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No messages yet in #{channelName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Send the first message</p>
+                </div>
+              )}
+
+              {sortedMessages.map((msg) => {
+                const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
+                const isMe = msg.sender_email === user?.email;
+                const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;
+                const isCoachSender = teams.some(t => t.coach_email?.toLowerCase() === msg.sender_email?.toLowerCase());
+                const senderRole = isCoachSender ? "coach" : (isStaff ? "staff" : "parent");
+                return (
+                  <MessageRow key={msg.id} msg={msg} isMe={isMe} senderAvatar={senderAvatar}
+                    senderInitial={senderInitial} isStaff={isStaff} user={user}
+                    channelId={channelId} senderRole={senderRole} />
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Fixed input bar */}
+            <form onSubmit={handleSend} className="flex-shrink-0 px-3 py-3 border-t border-border bg-card safe-area-bottom">
+              <div className="flex gap-2 items-center">
+                <Input
+                  ref={inputRef}
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder={`Message #${channelName}…`}
+                  className="bg-surface border-border text-foreground flex-1"
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(e); }}
                 />
-              ))}
-            </div>
-          )}
-
-          {sortedMessages.length === 0 && attendanceRequests.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <MessageSquare className="w-12 h-12 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No messages yet in #{channelName}</p>
-              <p className="text-xs text-muted-foreground mt-1">Send the first message</p>
-            </div>
-          )}
-
-          {sortedMessages.map((msg) => {
-            const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
-            const isMe = msg.sender_email === user?.email;
-            const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;
-            const isCoachSender = teams.some(t => t.coach_email?.toLowerCase() === msg.sender_email?.toLowerCase());
-            const senderRole = isCoachSender ? "coach" : (isStaff ? "staff" : "parent");
-            return (
-            <MessageRow
-              key={msg.id}
-              msg={msg}
-              isMe={isMe}
-              senderAvatar={senderAvatar}
-              senderInitial={senderInitial}
-              isStaff={isStaff}
-              user={user}
-              channelId={channelId}
-              senderRole={senderRole}
-            />
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <form onSubmit={handleSend} className="p-4 border-t border-border bg-card flex-shrink-0">
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={`Message #${channelName}...`}
-              className="bg-surface border-border text-foreground"
-            />
-            <Button type="submit" size="icon" className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0">
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
-        </>
+                <Button type="submit" size="icon" disabled={!newMessage.trim()}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0 w-10 h-10">
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </form>
+          </>
         )}
       </div>
+
+      {/* ── Mobile Channel Sheet (bottom slide-in) ── */}
+      {showMobileChannels && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowMobileChannels(false)} />
+          {/* Sheet */}
+          <div className="relative bg-card border-t border-border rounded-t-2xl max-h-[70vh] flex flex-col z-10">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+              <p className="font-semibold text-foreground text-sm">Channels</p>
+              <button onClick={() => setShowMobileChannels(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <MessagesSidebar
+                channelId={channelId}
+                onSelectChannel={selectChannel}
+                sports={sports}
+                teams={teams}
+                userRole={role}
+                userEmail={user?.email}
+                filterTeamIds={myFilterTeamIds}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Attendance Dialog */}
       {showAttendanceDialog && (
