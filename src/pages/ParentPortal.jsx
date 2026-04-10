@@ -197,6 +197,16 @@ export default function ParentPortal() {
     else alert("Unable to start checkout. Please try again or contact support.");
   };
 
+  // Eligibility: age >= 13 OR team name contains Junior High / JV / Varsity
+  const isEligibleForPromotion = (kid, team) => {
+    if (kid.date_of_birth) {
+      const age = Math.floor((new Date() - new Date(kid.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000));
+      if (age >= 13) return true;
+    }
+    const teamName = (team?.name || "").toLowerCase();
+    return ["junior high", "jv", "varsity"].some(kw => teamName.includes(kw));
+  };
+
   const typeColors = {
     practice: "bg-blue-500/20 text-blue-400",
     game: "bg-green-500/20 text-green-400",
@@ -437,12 +447,18 @@ export default function ParentPortal() {
                     </div>
                   )}
                   {!kid.is_promoted ? (
-                    <button
-                      onClick={() => setPromotingPlayer(kid)}
-                      className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
-                    >
-                      🎓 Promote to Athlete Account
-                    </button>
+                    isEligibleForPromotion(kid, teams.find(t => t.id === kid.team_id)) ? (
+                      <button
+                        onClick={() => setPromotingPlayer(kid)}
+                        className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
+                      >
+                        🎓 Promote to Athlete Account
+                      </button>
+                    ) : (
+                      <p className="mt-3 text-xs text-muted-foreground text-center">
+                        Athlete accounts available at age 13 or for JV/Varsity athletes.
+                      </p>
+                    )
                   ) : (
                     <div className="mt-3 flex items-center gap-1.5 text-xs text-green-400">
                       <span>✓</span> Athlete account active ({kid.athlete_email})
