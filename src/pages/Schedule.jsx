@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { format as formatDateFns, parse } from "date-fns";
 import BulkEventImporter from "@/components/schedule/BulkEventImporter";
+import SuggestionsInput from "@/components/schedule/SuggestionsInput";
+import TimePickerPopup from "@/components/schedule/TimePickerPopup";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import CalendarView from "@/components/schedule/CalendarView";
@@ -66,6 +68,19 @@ export default function Schedule() {
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "" });
   const [notifyTeam, setNotifyTeam] = useState(true);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  // Build suggestions from existing events
+  const locationSuggestions = React.useMemo(() => {
+    const counts = {};
+    events.forEach(e => { if (e.location) counts[e.location] = (counts[e.location] || 0) + 1; });
+    return Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([v]) => v);
+  }, [events]);
+
+  const opponentSuggestions = React.useMemo(() => {
+    const counts = {};
+    events.forEach(e => { if (e.opponent) counts[e.opponent] = (counts[e.opponent] || 0) + 1; });
+    return Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([v]) => v);
+  }, [events]);
   const queryClient = useQueryClient();
 
   const refreshing = usePullToRefresh(async () => {
@@ -403,19 +418,51 @@ export default function Schedule() {
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>Arrival</Label>
-                <Input type="time" value={form.arrival_time || ""} onChange={e => setForm({...form, arrival_time: e.target.value})} className="bg-surface border-border mt-1" />
+                <TimePickerPopup
+                  value={form.arrival_time || ""}
+                  onChange={v => setForm(f => ({ ...f, arrival_time: v, start_time: f.start_time || v }))}
+                  placeholder="Arrival"
+                />
               </div>
               <div>
                 <Label>Start</Label>
-                <Input type="time" value={form.start_time} onChange={e => setForm({...form, start_time: e.target.value})} className="bg-surface border-border mt-1" />
+                <TimePickerPopup
+                  value={form.start_time}
+                  onChange={v => setForm(f => ({ ...f, start_time: v }))}
+                  placeholder="Start"
+                />
               </div>
               <div>
                 <Label>End</Label>
-                <Input type="time" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} className="bg-surface border-border mt-1" />
+                <TimePickerPopup
+                  value={form.end_time}
+                  onChange={v => setForm(f => ({ ...f, end_time: v }))}
+                  placeholder="End"
+                />
               </div>
             </div>
-            <div><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="bg-surface border-border" /></div>
-            {(form.type === "game" || form.type === "tournament") && <div><Label>Opponent</Label><Input value={form.opponent} onChange={e => setForm({...form, opponent: e.target.value})} className="bg-surface border-border" /></div>}
+            <div>
+              <Label>Location</Label>
+              <SuggestionsInput
+                value={form.location}
+                onChange={v => setForm(f => ({ ...f, location: v }))}
+                suggestions={locationSuggestions}
+                placeholder="Location"
+                className="bg-surface border-border mt-1"
+              />
+            </div>
+            {(form.type === "game" || form.type === "tournament") && (
+              <div>
+                <Label>Opponent</Label>
+                <SuggestionsInput
+                  value={form.opponent}
+                  onChange={v => setForm(f => ({ ...f, opponent: v }))}
+                  suggestions={opponentSuggestions}
+                  placeholder="Opponent"
+                  className="bg-surface border-border mt-1"
+                />
+              </div>
+            )}
             {form.type === "tournament" && (
               <div>
                 <Label>Tournament Round</Label>
