@@ -145,67 +145,73 @@ export default function TeamDetail() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <Link to="/Teams" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-2">
-            <ArrowLeft className="w-4 h-4" /> Back to Teams
-          </Link>
-          <h1 className="text-2xl font-bold text-foreground">{team.name}</h1>
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <span className="text-sm text-primary">{team.sport_name}</span>
-            {team.age_group && <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{team.age_group}</span>}
-            {team.season && <span className="text-xs text-muted-foreground capitalize">{team.season} {team.year}</span>}
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
+      {/* Back + Team Header */}
+      <div>
+        <Link to="/Teams" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-3">
+          <ArrowLeft className="w-4 h-4" /> Back to Teams
+        </Link>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-foreground leading-tight truncate">{team.name}</h1>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {team.sport_name && <span className="text-sm text-primary font-medium">{team.sport_name}</span>}
+              {team.age_group && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{team.age_group}</span>}
+              {team.season && <span className="text-xs text-muted-foreground capitalize">{team.season}{team.year ? ` ${team.year}` : ""}</span>}
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <RosterPDFButton team={team} players={players} label="Download Roster PDF" />
           {canManage && (
-            <Button
-              variant="outline"
-              onClick={() => updateTeamMutation.mutate({ id: teamId, data: { roster_published: !team.roster_published } })}
-              className={`border-border gap-1.5 ${team.roster_published ? "text-green-400 border-green-500/30" : "text-muted-foreground"}`}
-            >
-              {team.roster_published ? <><Eye className="w-4 h-4" /> Roster Published</> : <><EyeOff className="w-4 h-4" /> Publish Roster</>}
-            </Button>
-          )}
-          {canManage && (
-            <Button variant="outline" onClick={handleEditTeam} className="border-border">
-              <Settings className="w-4 h-4 mr-2" /> Edit Team
-            </Button>
-          )}
-          {canManage && (
-            <Button variant="outline" onClick={() => setShowRosterImporter(true)} className="border-border gap-1.5">
-              <FileUp className="w-4 h-4" /> Import Roster
-            </Button>
-          )}
-          {canManage && (
-            <Button variant="outline" onClick={() => { setAssignSelected([]); setAssignSearch(""); setShowAssignModal(true); }} className="border-border gap-1.5">
-              <UserCircle className="w-4 h-4" /> Assign Existing
-            </Button>
-          )}
-          {canManage && (
-            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-              <Plus className="w-4 h-4 mr-2" /> Add New Player
+            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground flex-shrink-0 h-9">
+              <Plus className="w-4 h-4" /><span className="hidden sm:inline ml-1">Add Player</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Coach Info */}
+      {/* Admin Action Bar */}
+      {canManage && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <RosterPDFButton team={team} players={players} label="Download PDF" />
+          <Button
+            variant="outline" size="sm"
+            onClick={() => updateTeamMutation.mutate({ id: teamId, data: { roster_published: !team.roster_published } })}
+            className={`flex-shrink-0 gap-1.5 text-xs ${team.roster_published ? "text-green-400 border-green-500/30" : "text-muted-foreground border-border"}`}
+          >
+            {team.roster_published ? <><Eye className="w-3.5 h-3.5" /> Published</> : <><EyeOff className="w-3.5 h-3.5" /> Publish</>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowRosterImporter(true)} className="flex-shrink-0 border-border text-xs gap-1.5">
+            <FileUp className="w-3.5 h-3.5" /> Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setAssignSelected([]); setAssignSearch(""); setShowAssignModal(true); }} className="flex-shrink-0 border-border text-xs gap-1.5">
+            <UserCircle className="w-3.5 h-3.5" /> Assign
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleEditTeam} className="flex-shrink-0 border-border text-xs gap-1.5">
+            <Settings className="w-3.5 h-3.5" /> Edit Team
+          </Button>
+        </div>
+      )}
+
+      {/* Coaching Staff */}
       {team.head_coach && (
-        <div className="bg-card rounded-2xl border border-border p-5">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Coaching Staff</h3>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <UserCircle className="w-6 h-6 text-primary" />
+        <div className="bg-card rounded-2xl border border-border p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Coaching Staff</p>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <UserCircle className="w-5 h-5 text-primary" />
             </div>
-            <div>
-              <p className="font-semibold text-foreground">{team.head_coach}</p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                {team.coach_email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {team.coach_email}</span>}
-                {team.coach_phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {team.coach_phone}</span>}
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground text-sm">{team.head_coach}</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                {team.coach_email && (
+                  <a href={`mailto:${team.coach_email}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                    <Mail className="w-3 h-3" /><span className="truncate max-w-[180px]">{team.coach_email}</span>
+                  </a>
+                )}
+                {team.coach_phone && (
+                  <a href={`tel:${team.coach_phone}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                    <Phone className="w-3 h-3" />{team.coach_phone}
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -214,66 +220,105 @@ export default function TeamDetail() {
 
       {/* Roster */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <div className="p-5 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground">Roster ({players.length})</h3>
+        <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
+          <h3 className="font-semibold text-foreground">Roster <span className="text-muted-foreground font-normal text-sm">({players.length})</span></h3>
         </div>
         {players.length === 0 ? (
           <div className="p-10 text-center">
             <UserCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No players on this roster yet</p>
+            <p className="text-muted-foreground text-sm">No players on this roster yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">#</TableHead>
-                  <TableHead className="text-muted-foreground">Name</TableHead>
-                  <TableHead className="text-muted-foreground">Position</TableHead>
-                  <TableHead className="text-muted-foreground">Parent</TableHead>
-                  <TableHead className="text-muted-foreground">Contact</TableHead>
-                  <TableHead className="text-muted-foreground w-32">Portal Access</TableHead>
-                  <TableHead className="text-muted-foreground w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map(p => (
-                  <TableRow key={p.id} className="border-border hover:bg-surface">
-                    <TableCell className="font-bold text-primary">{p.jersey_number || "-"}</TableCell>
-                    <TableCell className="font-medium text-foreground">{p.first_name} {p.last_name}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.position || "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.parent_name || "-"}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{p.parent_email || p.parent_phone || "-"}</TableCell>
-                    <TableCell>
-                      {p.parent_email ? (
-                        invitedEmails[p.id] ? (
-                          <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle className="w-3.5 h-3.5" /> Invited</span>
-                        ) : (
-                          <Button variant="ghost" size="sm" onClick={() => handleInviteParent(p)} disabled={inviting === p.id} className="h-7 text-xs text-primary hover:text-primary/80 px-2">
-                            <Send className="w-3 h-3 mr-1" />{inviting === p.id ? "Sending..." : "Invite"}
-                          </Button>
-                        )
+          <>
+            {/* Mobile / Tablet: card list */}
+            <div className="lg:hidden divide-y divide-border">
+              {players.map(p => (
+                <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {p.photo_url
+                      ? <img src={p.photo_url} alt={p.first_name} className="w-full h-full object-cover" />
+                      : <span className="text-xs font-bold text-primary">{p.jersey_number || (p.first_name?.[0] || "?")}</span>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground text-sm">{p.first_name} {p.last_name}</p>
+                    <div className="flex gap-2 mt-0.5 flex-wrap">
+                      {p.position && <span className="text-xs text-muted-foreground">{p.position}</span>}
+                      {p.parent_name && <span className="text-xs text-muted-foreground truncate">· {p.parent_name}</span>}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center gap-1">
+                    {p.parent_email && (
+                      invitedEmails[p.id] ? (
+                        <span className="text-xs text-green-400 flex items-center gap-0.5"><CheckCircle className="w-3 h-3" /></span>
                       ) : (
-                        <span className="text-xs text-muted-foreground">No email</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                     {canManage && (
-                       <div className="flex items-center gap-1">
-                         <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                           <Pencil className="w-4 h-4" />
-                         </Button>
-                         <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
-                           <Trash2 className="w-4 h-4" />
-                         </Button>
-                       </div>
-                     )}
-                    </TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => handleInviteParent(p)} disabled={inviting === p.id} className="h-8 w-8 text-primary">
+                          <Send className="w-3.5 h-3.5" />
+                        </Button>
+                      )
+                    )}
+                    {canManage && (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground w-10">#</TableHead>
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Position</TableHead>
+                    <TableHead className="text-muted-foreground">Parent</TableHead>
+                    <TableHead className="text-muted-foreground">Contact</TableHead>
+                    <TableHead className="text-muted-foreground w-28">Portal</TableHead>
+                    <TableHead className="w-16"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {players.map(p => (
+                    <TableRow key={p.id} className="border-border hover:bg-surface">
+                      <TableCell className="font-bold text-primary">{p.jersey_number || "-"}</TableCell>
+                      <TableCell className="font-medium text-foreground">{p.first_name} {p.last_name}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{p.position || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{p.parent_name || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{p.parent_email || p.parent_phone || "-"}</TableCell>
+                      <TableCell>
+                        {p.parent_email ? (
+                          invitedEmails[p.id] ? (
+                            <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle className="w-3.5 h-3.5" /> Invited</span>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={() => handleInviteParent(p)} disabled={inviting === p.id} className="h-7 text-xs text-primary px-2">
+                              <Send className="w-3 h-3 mr-1" />{inviting === p.id ? "Sending..." : "Invite"}
+                            </Button>
+                          )
+                        ) : <span className="text-xs text-muted-foreground">No email</span>}
+                      </TableCell>
+                      <TableCell>
+                        {canManage && (
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 
