@@ -60,6 +60,7 @@ export default function Schedule() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" | "desc"
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
+  const [notifyTeam, setNotifyTeam] = useState(true);
   const queryClient = useQueryClient();
 
   const refreshing = usePullToRefresh(async () => {
@@ -95,10 +96,35 @@ export default function Schedule() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setSelectedEvent(null); },
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const team = teams.find(t => t.id === form.team_id);
-    createMutation.mutate({ ...form, team_name: team?.name || "", sport_name: team?.sport_name || "" });
+    const eventData = { ...form, team_name: team?.name || "", sport_name: team?.sport_name || "" };
+    const created = await base44.entities.Event.create(eventData);
+    queryClient.invalidateQueries({ queryKey: ["events"] });
+    setShowForm(false);
+
+    // Post team message notification if checkbox is checked and team is selected
+    if (notifyTeam && form.team_id && team) {
+      const parts = [];
+      parts.push(`📅 New event: **${form.title}**`);
+      if (form.date) parts.push(`Date: ${form.date}${form.start_time ? ` at ${formatTime12h(form.start_time)}` : ""}`);
+      if (form.location) parts.push(`📍 ${form.location}`);
+      if (form.notes) parts.push(form.notes);
+      parts.push(`View details in the Schedule or Calendar.`);
+      await base44.entities.Message.create({
+        content: parts.join(" · "),
+        channel: "team",
+        channel_id: form.team_id,
+        channel_name: team.name,
+        sender_name: user?.full_name || "Staff",
+        sender_email: user?.email || "",
+        sender_avatar: user?.avatar_url || "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["messages", form.team_id] });
+    }
+    setNotifyTeam(true);
+    setForm({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
   };
 
   // Coaches only see events for their teams; ADs and admins see all
@@ -341,6 +367,20 @@ export default function Schedule() {
               </div>
             )}
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="bg-surface border-border" /></div>
+            {form.team_id && (
+              <div className="flex items-center gap-2 p-3 bg-surface rounded-xl border border-border">
+                <input
+                  type="checkbox"
+                  id="notify-team"
+                  checked={notifyTeam}
+                  onChange={e => setNotifyTeam(e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <label htmlFor="notify-team" className="text-sm text-foreground cursor-pointer">
+                  Notify team via Messages
+                </label>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-border">Cancel</Button>
               <Button type="submit" className="bg-primary text-primary-foreground">Create Event</Button>

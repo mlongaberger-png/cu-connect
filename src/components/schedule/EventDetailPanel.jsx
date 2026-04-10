@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
+import { useQuery } from "@tanstack/react-query";
 import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2, Navigation, ExternalLink, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,43 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   const [rsvpCreated, setRsvpCreated] = useState(false);
   const [sendingNotif, setSendingNotif] = useState(null);
   const [notifSent, setNotifSent] = useState(null);
+  const [rsvpLoading, setRsvpLoading] = useState(null);
+
+  // Fetch attendance request for this event (for parent RSVP)
+  const { data: eventAttendanceRequests = [] } = useQuery({
+    queryKey: ["attendance-requests-event", event?.id],
+    queryFn: () => base44.entities.AttendanceRequest.filter({ event_id: event.id }),
+    enabled: !!event?.id && !canEdit,
+  });
+  const attendanceReq = eventAttendanceRequests[0] || null;
+
+  // Parent's current RSVP response
+  const { data: myResponses = [], refetch: refetchRsvp } = useQuery({
+    queryKey: ["my-rsvp-event", attendanceReq?.id, user?.email],
+    queryFn: () => base44.entities.AttendanceResponse.filter({ request_id: attendanceReq.id, responder_email: user.email }),
+    enabled: !!attendanceReq?.id && !!user?.email && !canEdit,
+  });
+  const myResponse = myResponses[0] || null;
+
+  const handleParentRsvp = async (status) => {
+    if (!attendanceReq || !user?.email) return;
+    setRsvpLoading(status);
+    if (myResponse) {
+      await base44.entities.AttendanceResponse.update(myResponse.id, { status });
+    } else {
+      await base44.entities.AttendanceResponse.create({
+        request_id: attendanceReq.id,
+        team_id: attendanceReq.team_id,
+        channel_id: attendanceReq.channel_id,
+        responder_email: user.email,
+        responder_name: user.full_name || user.email,
+        status,
+      });
+    }
+    await refetchRsvp();
+    setRsvpLoading(null);
+    queryClient.invalidateQueries({ queryKey: ["attendance-requests"] });
+  };
 
   if (!event) return null;
 
@@ -355,6 +393,32 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
               )}
             </div>
           </>
+        )}
+
+        {/* Parent RSVP (non-staff only, when attendance request exists) */}
+        {!canEdit && !editing && attendanceReq && !attendanceReq.is_locked && (
+          <div className="pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Your RSVP</p>
+            <div className="flex gap-2">
+              {[{ status: "going", label: "✓ Going", active: "bg-green-500/20 border-green-500/40 text-green-400" },
+                { status: "not_going", label: "✗ Not Going", active: "bg-red-500/20 border-red-500/40 text-red-400" },
+                { status: "maybe", label: "~ Maybe", active: "bg-yellow-500/20 border-yellow-500/40 text-yellow-400" }]
+                .map(opt => (
+                  <button
+                    key={opt.status}
+                    onClick={() => handleParentRsvp(opt.status)}
+                    disabled={rsvpLoading !== null}
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                      myResponse?.status === opt.status
+                        ? opt.active
+                        : "bg-surface border-border text-muted-foreground hover:text-foreground"
+                    } ${rsvpLoading === opt.status ? "opacity-60" : ""}`}
+                  >
+                    {rsvpLoading === opt.status ? "..." : opt.label}
+                  </button>
+                ))}
+            </div>
+          </div>
         )}
 
         {/* Actions */}
