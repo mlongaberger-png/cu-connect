@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateICSContent, downloadICS } from "@/utils/calendarExport";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
+import EventAttendanceSummary from "./EventAttendanceSummary";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -436,10 +437,15 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
           </div>
         ) : (
           <div className="pt-2 border-t border-border space-y-3">
+            {/* Attendance summary (staff only) */}
+            {canEdit && event.team_id && (
+              <EventAttendanceSummary event={event} />
+            )}
+
             {/* RSVP creation (staff only, team events only) */}
             {canEdit && event.team_id && (
               <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Parent RSVP</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Request RSVP</p>
                 {rsvpCreated ? (
                   <div className="flex items-center gap-2 text-green-400 text-sm">
                     <CheckCircle2 className="w-4 h-4" /> RSVP request sent to parents
