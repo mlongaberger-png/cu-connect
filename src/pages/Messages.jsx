@@ -139,6 +139,12 @@ export default function Messages() {
     return [...new Set(myKids.map(k => k.team_id))];
   }, [isParent, guardianLinks, allPlayers, user?.email]);
 
+  const myPlayers = useMemo(() => {
+    if (!isParent) return [];
+    const linkedIds = new Set(guardianLinks.map(g => g.player_id));
+    return allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
+  }, [isParent, guardianLinks, allPlayers, user?.email]);
+
   // Auto-set parent's first team channel on load
   useEffect(() => {
     if (!isParent || parentChannelReady || teams.length === 0) return;
@@ -260,16 +266,10 @@ export default function Messages() {
 
       {/* Scrollable messages */}
       <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
-        {isTeamChannel && attendanceRequests.length > 0 && (
-          <div className="space-y-3 pb-2 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <ClipboardList className="w-3.5 h-3.5 text-primary" /> Attendance
-            </p>
-            {attendanceRequests.map(req => (
-              <AttendanceCard key={req.id} request={req} isStaff={isStaff} currentUser={user} myPlayers={[]} allPlayers={allPlayers} />
-            ))}
-          </div>
-        )}
+        {/* Inline RSVP cards for parents only */}
+        {isParent && isTeamChannel && attendanceRequests.filter(r => !r.is_locked).map(req => (
+          <AttendanceCard key={req.id} request={req} isStaff={false} currentUser={user} myPlayers={myPlayers} allPlayers={allPlayers} />
+        ))}
 
         {sortedMessages.length === 0 && attendanceRequests.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
