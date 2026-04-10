@@ -68,6 +68,16 @@ export default function Schedule() {
   const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "" });
   const [notifyTeam, setNotifyTeam] = useState(true);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const refreshing = usePullToRefresh(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["events"] });
+  });
+
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["events"],
+    queryFn: () => base44.entities.Event.list("-date"),
+  });
 
   // Build suggestions from existing events
   const locationSuggestions = React.useMemo(() => {
@@ -81,16 +91,6 @@ export default function Schedule() {
     events.forEach(e => { if (e.opponent) counts[e.opponent] = (counts[e.opponent] || 0) + 1; });
     return Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([v]) => v);
   }, [events]);
-  const queryClient = useQueryClient();
-
-  const refreshing = usePullToRefresh(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["events"] });
-  });
-
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ["events"],
-    queryFn: () => base44.entities.Event.list("-date"),
-  });
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
