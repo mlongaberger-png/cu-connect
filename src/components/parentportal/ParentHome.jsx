@@ -247,7 +247,7 @@ export default function ParentHome() {
             <Calendar className="w-4 h-4 text-primary" /> Upcoming Events
           </h2>
           <button
-            onClick={() => navigate("/Schedule")}
+            onClick={() => navigate("/ParentCalendar")}
             className="text-xs text-primary hover:underline flex items-center gap-1"
           >
             Full Calendar <ChevronRight className="w-3 h-3" />
