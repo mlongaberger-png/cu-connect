@@ -10,6 +10,7 @@ import { generateICSContent, downloadICS } from "@/utils/calendarExport";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import RsvpBreakdown from "@/components/schedule/RsvpBreakdown";
 import { useQueryClient } from "@tanstack/react-query";
 
 const getGoogleMapsUrl = (location) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
@@ -437,26 +438,11 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
           </div>
         ) : (
           <div className="pt-2 border-t border-border space-y-3">
-            {/* RSVP creation (staff only, team events only) */}
+            {/* RSVP breakdown (staff only, team events only) */}
             {canEdit && event.team_id && (
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Parent RSVP</p>
-                {rsvpCreated ? (
-                  <div className="flex items-center gap-2 text-green-400 text-sm">
-                    <CheckCircle2 className="w-4 h-4" /> RSVP request sent to parents
-                  </div>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-primary/30 text-primary hover:bg-primary/10 text-sm gap-1.5"
-                    onClick={handleCreateRsvp}
-                    disabled={creatingRsvp}
-                  >
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    {creatingRsvp ? "Creating..." : "Request RSVP from Parents"}
-                  </Button>
-                )}
+                <RsvpBreakdown event={event} user={user} />
               </div>
             )}
             {/* GameChanger */}
