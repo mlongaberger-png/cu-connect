@@ -107,11 +107,13 @@ export default function Schedule() {
     // Post team message notification if checkbox is checked and team is selected
     if (notifyTeam && form.team_id && team) {
       const parts = [];
-      parts.push(`📅 New event: **${form.title}**`);
-      if (form.date) parts.push(`Date: ${form.date}${form.start_time ? ` at ${formatTime12h(form.start_time)}` : ""}`);
+      const typeLabel = form.type ? form.type.charAt(0).toUpperCase() + form.type.slice(1) : "Event";
+      parts.push(`📅 New ${typeLabel}: ${form.title}`);
+      if (form.opponent) parts.push(`vs ${form.opponent}`);
+      if (form.date) parts.push(form.date + (form.start_time ? ` at ${formatTime12h(form.start_time)}` : ""));
       if (form.location) parts.push(`📍 ${form.location}`);
       if (form.notes) parts.push(form.notes);
-      parts.push(`View details in the Schedule or Calendar.`);
+      parts.push(`See the Schedule or Calendar for full details.`);
       await base44.entities.Message.create({
         content: parts.join(" · "),
         channel: "team",
@@ -121,10 +123,25 @@ export default function Schedule() {
         sender_email: user?.email || "",
         sender_avatar: user?.avatar_url || "",
       });
+      // Also create an AttendanceRequest so RSVP buttons appear in the team chat
+      const rsvpLabel = `${form.title}${form.start_time ? ` – ${formatTime12h(form.start_time)}` : ""}`;
+      await base44.entities.AttendanceRequest.create({
+        team_id: form.team_id,
+        team_name: team.name,
+        event_id: created.id,
+        label: rsvpLabel,
+        event_type: ["game", "tournament", "meeting"].includes(form.type) ? form.type : "other",
+        event_date: form.date,
+        event_time: form.start_time || "",
+        created_by_name: user?.full_name || "Staff",
+        created_by_email: user?.email || "",
+        channel_id: form.team_id,
+      });
       queryClient.invalidateQueries({ queryKey: ["messages", form.team_id] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-requests", form.team_id] });
     }
     setNotifyTeam(true);
-    setForm({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
+    setForm({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "" });
   };
 
   // Coaches only see events for their teams; ADs and admins see all
