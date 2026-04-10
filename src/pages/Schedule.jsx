@@ -7,7 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { format as formatDateFns, parse } from "date-fns";
 import BulkEventImporter from "@/components/schedule/BulkEventImporter";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
@@ -59,8 +62,9 @@ export default function Schedule() {
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" | "desc"
-  const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "" });
+  const [form, setForm] = useState({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "" });
   const [notifyTeam, setNotifyTeam] = useState(true);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const refreshing = usePullToRefresh(async () => {
@@ -110,7 +114,11 @@ export default function Schedule() {
       const typeLabel = form.type ? form.type.charAt(0).toUpperCase() + form.type.slice(1) : "Event";
       parts.push(`📅 New ${typeLabel}: ${form.title}`);
       if (form.opponent) parts.push(`vs ${form.opponent}`);
-      if (form.date) parts.push(form.date + (form.start_time ? ` at ${formatTime12h(form.start_time)}` : ""));
+      if (form.date) {
+        let timeStr = form.start_time ? ` at ${formatTime12h(form.start_time)}` : "";
+        if (form.arrival_time) timeStr += ` (arrive ${formatTime12h(form.arrival_time)})`;
+        parts.push(form.date + timeStr);
+      }
       if (form.location) parts.push(`📍 ${form.location}`);
       if (form.notes) parts.push(form.notes);
       parts.push(`See the Schedule or Calendar for full details.`);
@@ -365,10 +373,45 @@ export default function Schedule() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div><Label>Date</Label><Input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="bg-surface border-border" required /></div>
-              <div><Label>Start</Label><Input type="time" value={form.start_time} onChange={e => setForm({...form, start_time: e.target.value})} className="bg-surface border-border" /></div>
-              <div><Label>End</Label><Input type="time" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} className="bg-surface border-border" /></div>
+            {/* Date picker */}
+            <div>
+              <Label>Date</Label>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="w-full flex items-center justify-between h-9 px-3 rounded-md border border-input bg-surface text-sm text-left mt-1">
+                    <span className={form.date ? "text-foreground" : "text-muted-foreground"}>
+                      {form.date ? formatDateFns(new Date(form.date + "T12:00:00"), "MM/dd/yyyy") : "mm/dd/yyyy"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card border-border z-50" align="start">
+                  <CalendarPicker
+                    mode="single"
+                    selected={form.date ? new Date(form.date + "T12:00:00") : undefined}
+                    onSelect={(d) => {
+                      if (d) setForm(f => ({ ...f, date: formatDateFns(d, "yyyy-MM-dd") }));
+                      setDatePickerOpen(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            {/* Time fields */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Arrival</Label>
+                <Input type="time" value={form.arrival_time || ""} onChange={e => setForm({...form, arrival_time: e.target.value})} className="bg-surface border-border mt-1" />
+              </div>
+              <div>
+                <Label>Start</Label>
+                <Input type="time" value={form.start_time} onChange={e => setForm({...form, start_time: e.target.value})} className="bg-surface border-border mt-1" />
+              </div>
+              <div>
+                <Label>End</Label>
+                <Input type="time" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} className="bg-surface border-border mt-1" />
+              </div>
             </div>
             <div><Label>Location</Label><Input value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="bg-surface border-border" /></div>
             {(form.type === "game" || form.type === "tournament") && <div><Label>Opponent</Label><Input value={form.opponent} onChange={e => setForm({...form, opponent: e.target.value})} className="bg-surface border-border" /></div>}
@@ -384,8 +427,7 @@ export default function Schedule() {
               </div>
             )}
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="bg-surface border-border" /></div>
-            {form.team_id && (
-              <div className="flex items-center gap-2 p-3 bg-surface rounded-xl border border-border">
+            <div className="flex items-center gap-2 p-3 bg-surface rounded-xl border border-border">
                 <input
                   type="checkbox"
                   id="notify-team"
@@ -393,11 +435,10 @@ export default function Schedule() {
                   onChange={e => setNotifyTeam(e.target.checked)}
                   className="w-4 h-4 accent-primary"
                 />
-                <label htmlFor="notify-team" className="text-sm text-foreground cursor-pointer">
-                  Notify team via Messages
+                <label htmlFor="notify-team" className="text-sm text-foreground cursor-pointer flex items-center gap-2">
+                  <span className="text-base">✔</span> Notify team via Messages
                 </label>
               </div>
-            )}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-border">Cancel</Button>
               <Button type="submit" className="bg-primary text-primary-foreground">Create Event</Button>
