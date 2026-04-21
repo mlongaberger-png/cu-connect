@@ -25,17 +25,20 @@ import AttendanceCard from "@/components/attendance/AttendanceCard";
 import AthleteCard from "@/components/parentportal/AthleteCard";
 import DeleteAccountModal from "@/components/parentportal/DeleteAccountModal";
 import PromoteAthleteModal from "@/components/parentportal/PromoteAthleteModal";
+import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
   { id: "athlete-cards", label: "Athlete Cards", icon: UserCircle },
-  { id: "schedule", label: "Schedule", icon: Calendar },
+  { id: "schedule", label: "Schedule", icon: Calendar, permission: "view_calendar" },
   { id: "documents", label: "Documents", icon: FileText },
-  { id: "payments", label: "Payments", icon: CreditCard },
-  { id: "messages", label: "Messages", icon: MessageSquare },
+  { id: "payments", label: "Payments", icon: CreditCard, permission: "financial_contributor" },
+  { id: "messages", label: "Messages", icon: MessageSquare, permission: "view_messages" },
   { id: "volunteers", label: "Volunteers", icon: Users },
 ];
-const GRANDPARENT_TABS = ["overview", "schedule"];
+
+// Tabs always visible to grandparents regardless of permissions
+const GRANDPARENT_ALWAYS_VISIBLE = ["overview"];
 
 export default function ParentPortal() {
   const location = useLocation();
@@ -43,7 +46,7 @@ export default function ParentPortal() {
   const { user, isLoadingAuth } = useAuth();
   const userEmail = user?.email;
   const isGrandparent = user?.role === "grandparent";
-  const TABS = ALL_TABS.filter(t => !isGrandparent || GRANDPARENT_TABS.includes(t.id));
+  const isRestrictedFamily = isGrandparent; // extend to other limited roles if needed
 
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
@@ -76,6 +79,19 @@ export default function ParentPortal() {
     queryKey: ["my-guardian-links", userEmail, playerLinked],
     queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
     enabled: !!userEmail,
+  });
+
+  // Aggregate permissions from all guardian links (for restricted family members)
+  const myPermissions = new Set(
+    myGuardianLinks.flatMap(g => g.permissions || [])
+  );
+
+  // Derive visible tabs based on role + permissions
+  const TABS = ALL_TABS.filter(tab => {
+    if (!isRestrictedFamily) return true; // full parents/staff see everything
+    if (GRANDPARENT_ALWAYS_VISIBLE.includes(tab.id)) return true;
+    if (!tab.permission) return false; // tabs with no permission key are hidden for restricted users
+    return myPermissions.has(tab.permission);
   });
 
   const { data: players = [] } = useQuery({
@@ -387,6 +403,26 @@ export default function ParentPortal() {
       {activeTab === "overview" && (
         <div className="space-y-6">
 
+          {/* Restricted access notice for family members */}
+          {isRestrictedFamily && (
+            <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-2xl p-4">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Family Member Access</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  You have access to: {myPermissions.size === 0 ? "Overview only" : [...myPermissions].map(p => ({
+                    view_calendar: "Calendar",
+                    view_messages: "Messages",
+                    financial_contributor: "Payments",
+                  }[p] || p)).join(", ")}.
+                  Contact the primary parent to update your permissions.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Family Analytics Stats */}
           <FamilyDashboardStats
             upcomingEvents={myUpcomingEvents}
@@ -464,11 +500,16 @@ export default function ParentPortal() {
                       <span>✓</span> Athlete account active ({kid.athlete_email})
                     </div>
                   )}
-                  <InviteCoGuardian player={kid} currentUserEmail={userEmail} />
+                  {!isRestrictedFamily && <InviteCoGuardian player={kid} currentUserEmail={userEmail} />}
                 </div>
               );
             })}
           </div>
+
+          {/* Family Access Manager — full parents only */}
+          {!isRestrictedFamily && myKids.length > 0 && (
+            <FamilyAccessManager players={myKids} currentUserEmail={userEmail} />
+          )}
 
           {/* Upcoming Events */}
           <div className="bg-card rounded-2xl border border-border p-6">

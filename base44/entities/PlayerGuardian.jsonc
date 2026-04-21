@@ -1,0 +1,46 @@
+{
+  "name": "PlayerGuardian",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string",
+      "description": "ID of the player"
+    },
+    "player_name": {
+      "type": "string",
+      "description": "Player full name (denormalized)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the guardian/parent user account"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User ID of the guardian (set after they log in)"
+    },
+    "relationship": {
+      "type": "string",
+      "description": "e.g. Mother, Father, Guardian",
+      "default": "Guardian"
+    },
+    "invited_by": {
+      "type": "string",
+      "description": "Email of who created this link (admin or co-parent)"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of granted permissions: view_calendar, view_messages, financial_contributor",
+      "default": [
+        "view_calendar",
+        "view_messages"
+      ]
+    }
+  },
+  "required": [
+    "player_id",
+    "user_email"
+  ]
+}

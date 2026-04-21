@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import MyChildrenPanel from "@/components/parentportal/MyChildrenPanel";
+import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
 import { Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -294,6 +295,19 @@ export default function AccountSettings() {
           </CardHeader>
           <CardContent>
             <MyChildrenPanel userEmail={user?.email} userName={user?.full_name} linkedPlayers={linkedPlayers} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Family Access — parents only (not grandparents themselves) */}
+      {user?.role === "parent" && linkedPlayers.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> My Family</CardTitle>
+            <CardDescription>Invite grandparents or other family members and control exactly what they can access.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FamilyAccessManager players={linkedPlayers} currentUserEmail={user?.email} />
           </CardContent>
         </Card>
       )}
