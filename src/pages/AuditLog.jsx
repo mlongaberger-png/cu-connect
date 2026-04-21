@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
-import { Shield, Search, Filter } from "lucide-react";
+import { Shield, Search, Filter, Flag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import AuditLogRow from "@/components/audit/AuditLogRow";
+import MessageModerationPanel from "@/components/admin/MessageModerationPanel";
 
 const CATEGORIES = ["payment", "schedule", "volunteer", "document", "user", "roster", "other"];
 
@@ -14,6 +15,7 @@ export default function AuditLog({ embedded = false }) {
   useAdminGuard();
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
+  const [activeTab, setActiveTab] = useState("audit");
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["audit-logs"],
@@ -34,11 +36,30 @@ export default function AuditLog({ embedded = false }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" /> Audit Trail
+            <Shield className="w-6 h-6 text-primary" /> Admin Moderation
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Read-only log of all system activity</p>
+          <p className="text-sm text-muted-foreground mt-1">Audit trail & messaging safety controls</p>
         </div>
       </div>
+
+      {/* Tab Toggle */}
+      <div className="flex gap-1 bg-surface rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setActiveTab("audit")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === "audit" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Shield className="w-3.5 h-3.5" /> Audit Trail
+        </button>
+        <button
+          onClick={() => setActiveTab("moderation")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === "moderation" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Flag className="w-3.5 h-3.5" /> Message Reports
+        </button>
+      </div>
+
+      {activeTab === "moderation" && <MessageModerationPanel />}
+      {activeTab !== "moderation" && <>
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
@@ -88,6 +109,7 @@ export default function AuditLog({ embedded = false }) {
       <p className="text-xs text-muted-foreground text-center">
         Showing {filtered.length} of {logs.length} total entries · Admin-only view
       </p>
+      </>}
     </div>
   );
 }

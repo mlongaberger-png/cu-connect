@@ -17,6 +17,8 @@ import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDial
 import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import ChannelList from "@/components/messages/ChannelList";
 import EventMessageCard from "@/components/messages/EventMessageCard";
+import MessagingTermsGate from "@/components/messages/MessagingTermsGate";
+import MessageActions from "@/components/messages/MessageActions";
 import { useAuth } from "@/lib/AuthContext";
 
 // ─── Read/unread helpers ───────────────────────────────────────────────────
@@ -32,7 +34,7 @@ const ROLE_STYLES = {
   me:     { border: "border-primary",        nameCls: "text-primary",    badge: "You" },
 };
 
-function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId, senderRole }) {
+function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId, channelName, senderRole, onBlock }) {
   const tracked = React.useRef(false);
 
   React.useEffect(() => {
@@ -55,7 +57,7 @@ function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, cha
   const style = isMe ? ROLE_STYLES.me : (ROLE_STYLES[senderRole] || ROLE_STYLES.parent);
 
   return (
-    <div className="flex gap-2.5">
+    <div className="flex gap-2.5 group">
       <div className={`w-8 h-8 rounded-full overflow-hidden bg-surface flex items-center justify-center flex-shrink-0 mt-0.5 border ${style.border}`}>
         {senderAvatar
           ? <img src={senderAvatar} alt={msg.sender_name} className="w-full h-full object-cover" />
@@ -72,6 +74,13 @@ function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, cha
           <span className="text-[10px] text-muted-foreground ml-auto">
             {msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}
           </span>
+          <MessageActions
+            msg={msg}
+            currentUser={user}
+            channelId={channelId}
+            channelName={channelName}
+            onBlock={onBlock}
+          />
         </div>
         <p className="text-sm text-foreground/80 mt-0.5 break-words">{msg.content}</p>
         {isMe && isStaff && (
@@ -100,6 +109,7 @@ export default function Messages() {
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("channels");
   const [dmContact, setDmContact] = useState(null);
+  const [locallyBlockedEmails, setLocallyBlockedEmails] = useState(new Set());
 
   const messagesEndRef = useRef(null);
   const messagesScrollRef = useRef(null);
@@ -125,6 +135,19 @@ export default function Messages() {
     enabled: isStaff,
   });
   const parentUsers = allUsers.filter(u => ["parent", "user"].includes(u.role));
+
+  // Fetch blocked users for the current user
+  const { data: blockedUsers = [] } = useQuery({
+    queryKey: ["blocked-users", user?.email],
+    queryFn: () => base44.entities.BlockedUser.filter({ blocker_email: user?.email }),
+    enabled: !!user?.email,
+  });
+  const blockedEmailsFromDB = new Set(blockedUsers.map(b => b.blocked_email));
+  const allBlockedEmails = new Set([...blockedEmailsFromDB, ...locallyBlockedEmails]);
+
+  const handleBlockUser = (email) => {
+    setLocallyBlockedEmails(prev => new Set([...prev, email]));
+  };
 
   const { data: guardianLinks = [] } = useQuery({
     queryKey: ["guardian-links-messages"],
@@ -220,7 +243,7 @@ export default function Messages() {
     setTimeout(() => inputRef.current?.focus(), 150);
   };
 
-  const sortedMessages = [...messages].reverse();
+  const sortedMessages = [...messages].reverse().filter(m => !allBlockedEmails.has(m.sender_email));
   const currentTeam = teams.find(t => t.id === channelId);
 
   const myCoachContacts = useMemo(() => {
@@ -301,7 +324,8 @@ export default function Messages() {
           return (
             <MessageRow key={msg.id} msg={msg} isMe={isMe} senderAvatar={senderAvatar}
               senderInitial={senderInitial} isStaff={isStaff} user={user}
-              channelId={channelId} senderRole={senderRole} />
+              channelId={channelId} channelName={channelName} senderRole={senderRole}
+              onBlock={handleBlockUser} />
           );
         })}
         <div ref={messagesEndRef} />
@@ -370,6 +394,7 @@ export default function Messages() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
+    <MessagingTermsGate>
     <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
 
       {/* ── Desktop sidebar ── */}
@@ -453,5 +478,6 @@ export default function Messages() {
         />
       )}
     </div>
+    </MessagingTermsGate>
   );
 }
