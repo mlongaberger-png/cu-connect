@@ -19,6 +19,7 @@ export default function PlayerDocuments({ player }) {
   const qc = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const { data: docs = [] } = useQuery({
     queryKey: ["player-docs", player.id],
@@ -66,18 +67,53 @@ export default function PlayerDocuments({ player }) {
         )}
         {docs.map(doc => {
           const label = DOC_TYPES.find(d => d.value === doc.doc_type)?.label || doc.doc_type;
+          const isConfirming = confirmDeleteId === doc.id;
           return (
-            <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-surface">
-              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
-              <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{label}</p>
-                <p className="text-xs text-muted-foreground truncate">{doc.file_name}</p>
+            <div key={doc.id} className="rounded-xl bg-surface border border-border overflow-hidden">
+              <div className="flex items-center gap-3 p-3">
+                <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{doc.file_name}</p>
+                </div>
+                <a
+                  href={doc.file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-medium text-primary hover:underline shrink-0 px-2 py-1"
+                >
+                  View
+                </a>
+                <button
+                  onClick={() => setConfirmDeleteId(doc.id)}
+                  className="ml-2 p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                  title="Delete document"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-              <a href={doc.file_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline shrink-0">View</a>
-              <button onClick={() => deleteMutation.mutate(doc.id)} className="text-muted-foreground hover:text-destructive">
-                <Trash2 className="w-4 h-4" />
-              </button>
+
+              {/* Inline confirmation */}
+              {isConfirming && (
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-destructive/10 border-t border-destructive/20">
+                  <p className="text-xs text-destructive font-medium">Delete this document?</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => { deleteMutation.mutate(doc.id); setConfirmDeleteId(null); }}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors font-medium"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
