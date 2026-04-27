@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, Clock, User, Phone, Mail, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import RegistrationTypesPanel from "./RegistrationTypesPanel";
 
 const statusConfig = {
   pending: { label: "Pending", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", icon: Clock },
@@ -129,7 +130,15 @@ export default function RegistrationsTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
+      {/* Sport Registration Types */}
+      <RegistrationTypesPanel />
+
+      {/* Divider */}
+      <div className="border-t border-border pt-4">
+        <h3 className="font-semibold text-foreground mb-4">Submitted Applications</h3>
+      </div>
+
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
         {[
