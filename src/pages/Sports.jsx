@@ -24,6 +24,7 @@ export default function Sports() {
   const [editingSport, setEditingSport] = useState(null);
   const [form, setForm] = useState({ name: "", icon: "🏅", season: "year_round", description: "" });
   const [registerSport, setRegisterSport] = useState(null);
+  const [registerWithReg, setRegisterWithReg] = useState(null); // specific TeamRegistration
   const [showLeadershipForm, setShowLeadershipForm] = useState(false);
   const queryClient = useQueryClient();
 
@@ -36,6 +37,20 @@ export default function Sports() {
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
   });
+
+  // Fetch all open sport-level registrations
+  const { data: allRegistrations = [] } = useQuery({
+    queryKey: ["team-registrations-all"],
+    queryFn: () => base44.entities.TeamRegistration.list(),
+  });
+  const openRegistrations = allRegistrations.filter(r => r.is_open);
+
+  // Fetch open leadership applications (to conditionally show button)
+  const { data: leadershipApps = [] } = useQuery({
+    queryKey: ["leadership-applications-open"],
+    queryFn: () => base44.entities.LeadershipApplication.list(),
+  });
+  const hasOpenLeadershipApps = true; // Always allow applications; apps are always open
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Sport.create(data),
@@ -78,7 +93,7 @@ export default function Sports() {
           </p>
         </div>
         <div className="flex gap-2">
-          {!isStaff && (
+          {!isStaff && hasOpenLeadershipApps && (
             <Button variant="outline" onClick={() => setShowLeadershipForm(true)} className="border-border text-sm">
               Apply for Leadership Role
             </Button>
@@ -115,6 +130,10 @@ export default function Sports() {
               teams={teams}
               canEdit={isAdmin}
               onRegisterClick={(s) => setRegisterSport(s)}
+              openRegistrations={openRegistrations.filter(r =>
+                r.sport_id === sport.id || r.team_id === sport.id || r.sport_name === sport.name
+              )}
+              onRegistrationClick={(reg, sport) => { setRegisterWithReg(reg); setRegisterSport(sport); }}
             />
           ))}
         </div>
@@ -123,8 +142,9 @@ export default function Sports() {
       {/* Athlete Registration Form */}
       <AthleteRegistrationForm
         sport={registerSport}
+        registration={registerWithReg}
         open={!!registerSport}
-        onClose={() => setRegisterSport(null)}
+        onClose={() => { setRegisterSport(null); setRegisterWithReg(null); }}
       />
 
       {/* Leadership Application Dialog */}

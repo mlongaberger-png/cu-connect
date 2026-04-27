@@ -18,7 +18,7 @@ const empty = {
   team_id: "", notes: ""
 };
 
-export default function AthleteRegistrationForm({ sport, open, onClose }) {
+export default function AthleteRegistrationForm({ sport, registration, open, onClose }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ ...empty, parent_name: user?.full_name || "", parent_email: user?.email || "" });
@@ -46,9 +46,9 @@ export default function AthleteRegistrationForm({ sport, open, onClose }) {
     e.preventDefault();
     submitMutation.mutate({
       ...form,
-      registration_id: `reg_${Date.now()}`,
-      team_name: selectedTeam?.name || "",
-      sport_name: sport?.name || "",
+      registration_id: registration?.id || `reg_${Date.now()}`,
+      team_name: selectedTeam?.name || registration?.team_name || "",
+      sport_name: sport?.name || registration?.sport_name || "",
       sport_id: sport?.id || "",
       status: "pending",
       payment_status: "free"
@@ -66,9 +66,14 @@ export default function AthleteRegistrationForm({ sport, open, onClose }) {
       <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {sport?.icon} Register for {sport?.name}
+            {sport?.icon} {registration ? registration.title : `Register for ${sport?.name}`}
           </DialogTitle>
         </DialogHeader>
+        {registration?.description && (
+          <div className="bg-surface border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground">
+            {registration.description}
+          </div>
+        )}
 
         {submitted ? (
           <div className="text-center py-8 space-y-3">

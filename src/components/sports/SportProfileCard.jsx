@@ -8,7 +8,7 @@ import { Pencil, Check, X, Users, Trophy, Image } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-export default function SportProfileCard({ sport, teams, canEdit, onRegisterClick }) {
+export default function SportProfileCard({ sport, teams, canEdit, onRegisterClick, openRegistrations = [], onRegistrationClick }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...sport });
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -130,7 +130,7 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
           {sport.age_groups && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-muted-foreground">{sport.age_groups}</span>
           )}
-          {sport.registration_open && (
+          {(sport.registration_open || openRegistrations.length > 0) && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
               Registration Open
             </span>
@@ -170,8 +170,23 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
           </div>
         )}
 
-        {/* Register button */}
-        {sport.registration_open && !canEdit && (
+        {/* Open registration CTAs (from admin-created registration types) */}
+        {!canEdit && openRegistrations.length > 0 && (
+          <div className="space-y-2 pt-1">
+            {openRegistrations.map(reg => (
+              <Button
+                key={reg.id}
+                onClick={() => onRegistrationClick ? onRegistrationClick(reg, sport) : onRegisterClick(sport)}
+                className="w-full bg-primary text-primary-foreground font-semibold"
+              >
+                Register — {reg.title}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Fallback: sport-level open flag with no specific registration forms */}
+        {!canEdit && openRegistrations.length === 0 && sport.registration_open && (
           <Button onClick={() => onRegisterClick(sport)} className="w-full bg-primary text-primary-foreground mt-2">
             Register an Athlete
           </Button>
