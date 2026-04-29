@@ -6,18 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
 import RosterPDFButton from "@/components/roster/RosterPDFButton";
 import RosterImporter from "@/components/roster/RosterImporter";
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
+import TeamComplianceTab from "@/components/teams/TeamComplianceTab";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function TeamDetail() {
   const { isAdmin, isAD } = useAdminOrADGuard();
+  const { user } = useAuth();
+  const isCoach = user?.role === "coach";
   const canManage = isAdmin || isAD;
+  const canViewCompliance = canManage || isCoach;
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get("id");
+  const [activeTab, setActiveTab] = useState("roster");
   const [showForm, setShowForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [showTeamForm, setShowTeamForm] = useState(false);
@@ -191,7 +197,42 @@ export default function TeamDetail() {
         </div>
       )}
 
-      {/* Coaching Staff */}
+      {/* Tab bar */}
+      {canViewCompliance && (
+        <div className="flex border-b border-border -mx-4 md:-mx-6 px-4 md:px-6">
+          <button
+            onClick={() => setActiveTab("roster")}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "roster" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          >
+            <Users className="w-4 h-4" /> Roster
+          </button>
+          {canViewCompliance && (
+            <button
+              onClick={() => setActiveTab("compliance")}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "compliance" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            >
+              <ShieldCheck className="w-4 h-4" /> Compliance
+            </button>
+          )}
+          {canManage && (
+            <button
+              onClick={() => setActiveTab("invoices")}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "invoices" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            >
+              <DollarSign className="w-4 h-4" /> Invoices
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Compliance Tab */}
+      {activeTab === "compliance" && canViewCompliance && (
+        <TeamComplianceTab team={team} players={players} />
+      )}
+
+      {/* Roster tab content */}
+      {activeTab === "roster" && (<>
+
       {team.head_coach && (
         <div className="bg-card rounded-2xl border border-border p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Coaching Staff</p>
@@ -322,8 +363,12 @@ export default function TeamDetail() {
         )}
       </div>
 
-      {/* Invoices */}
-      <AdminInvoiceManager players={players} teamName={team?.name || ""} />
+      </>)}
+
+      {/* Invoices Tab */}
+      {activeTab === "invoices" && canManage && (
+        <AdminInvoiceManager players={players} teamName={team?.name || ""} />
+      )}
 
       {/* Edit Team Dialog */}
       <Dialog open={showTeamForm} onOpenChange={setShowTeamForm}>
