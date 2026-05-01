@@ -108,26 +108,20 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
         <div ref={endRef} />
       </div>
 
-      {/* Input — staff always can send; parents can reply if there are existing messages */}
-      {(isStaff || sorted.length > 0) ? (
-        <form onSubmit={handleSend} className="p-4 border-t border-border bg-card flex-shrink-0">
-          <div className="flex gap-2">
-            <Input
-              value={newMsg}
-              onChange={e => setNewMsg(e.target.value)}
-              placeholder={isStaff ? `Message ${contact.name || contact.email}…` : "Reply to your coach…"}
-              className="bg-surface border-border text-foreground"
-            />
-            <Button type="submit" size="icon" className="bg-primary text-primary-foreground flex-shrink-0">
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="p-4 border-t border-border bg-card flex-shrink-0 text-center text-xs text-muted-foreground">
-          Your coach will message you here.
+      {/* Input — always visible */}
+      <form onSubmit={handleSend} className="p-4 border-t border-border bg-card flex-shrink-0">
+        <div className="flex gap-2">
+          <Input
+            value={newMsg}
+            onChange={e => setNewMsg(e.target.value)}
+            placeholder={isStaff ? `Message ${contact.name || contact.email}…` : "Message your coach…"}
+            className="bg-surface border-border text-foreground"
+          />
+          <Button type="submit" size="icon" className="bg-primary text-primary-foreground flex-shrink-0">
+            <Send className="w-4 h-4" />
+          </Button>
         </div>
-      )}
+      </form>
     </div>
   );
 }
