@@ -33,10 +33,13 @@ Deno.serve(async (req) => {
       let weather;
       try {
         weather = await base44.asServiceRole.integrations.Core.InvokeLLM({
-          prompt: `Get the weather forecast for ${event.location} on ${tomorrowStr}. 
-            Assess if conditions are concerning for an outdoor sports event (outdoor game/practice/tournament).
-            Return the forecast data and whether parents should be warned.`,
+          prompt: `Get the current weather forecast specifically for this exact location: "${event.location}" on ${tomorrowStr}.
+            IMPORTANT: Use the exact location string provided. Do NOT substitute or assume a different city.
+            Search for the weather at "${event.location}" — this may be a specific address, field name, or city in Oklahoma or surrounding states.
+            Assess if conditions are concerning for an outdoor sports event (game/practice/tournament).
+            Return the actual forecast data for that specific location and whether parents should be warned.`,
           add_context_from_internet: true,
+          model: "gemini_3_flash",
           response_json_schema: {
             type: "object",
             properties: {
