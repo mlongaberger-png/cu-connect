@@ -93,9 +93,9 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(true);
       let currentUser = await base44.auth.me();
 
-      // If the user has the default "user" role, try to auto-upgrade to "parent"
-      // (happens when a parent accepts an invite — Base44 sets "user" by default)
-      if (currentUser?.role === 'user') {
+      // If the user has a 'user' or 'pending' role, try to auto-upgrade to "parent"
+      // (happens when a parent's guardian links have been set up after they sign in)
+      if (currentUser?.role === 'user' || currentUser?.role === 'pending') {
         try {
           const res = await base44.functions.invoke('autoUpgradeParentRole', {});
           if (res?.data?.upgraded) {

@@ -102,8 +102,8 @@ export default function AppShell() {
     );
   }
 
-  // All authenticated users land on Dashboard; unknown/pending role → PendingAccess
-  const homeRoute = role && role !== "pending" ? "/Portal" : null;
+  // All authenticated users land on Portal; unknown/pending/user role → PendingAccess
+  const homeRoute = role && role !== "pending" && role !== "user" ? "/Portal" : null;
 
   // Unknown / missing role → PendingAccess
   if (!homeRoute) {

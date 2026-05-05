@@ -62,17 +62,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Invite via Base44 (sends magic-link email for account setup)
-      await base44.users.inviteUser(accessReq.parent_email, 'user');
+      // Invite via Base44 directly as 'parent' — no intermediate 'user' role
+      await base44.users.inviteUser(accessReq.parent_email, 'parent');
 
-      // If user account already exists, pre-set role to parent
+      // If user account already exists, ensure role is parent
       try {
         const existingUsers = await base44.asServiceRole.entities.User.filter({ email: accessReq.parent_email });
         if (existingUsers.length > 0) {
           await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
         }
       } catch (roleErr) {
-        console.warn('Could not pre-set parent role:', roleErr.message);
+        console.warn('Could not set parent role on existing user:', roleErr.message);
       }
 
       await base44.asServiceRole.entities.AccessRequest.update(request_id, {

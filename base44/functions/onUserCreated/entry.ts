@@ -25,6 +25,14 @@ Deno.serve(async (req) => {
           await base44.asServiceRole.entities.PlayerGuardian.update(link.id, { user_id: userId });
         }
       }
+    } else {
+      // No guardian links yet — set role to 'pending' so they land on the PendingAccess page
+      const currentUser = await base44.asServiceRole.entities.User.filter({ id: userId });
+      const role = currentUser[0]?.role;
+      if (!role || role === 'user') {
+        await base44.asServiceRole.entities.User.update(userId, { role: 'pending' });
+        console.log(`Set role=pending for new user ${userEmail} (no guardian links found)`);
+      }
     }
 
     return Response.json({ ok: true });

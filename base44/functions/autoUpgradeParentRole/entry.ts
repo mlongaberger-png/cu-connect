@@ -8,8 +8,8 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ upgraded: false, error: 'Not authenticated' }, { status: 401 });
 
-    // Only act on plain "user" role
-    if (user.role !== 'user') {
+    // Only act on 'user' or 'pending' roles — these are the pre-approval states
+    if (user.role !== 'user' && user.role !== 'pending') {
       return Response.json({ upgraded: false, role: user.role });
     }
 
