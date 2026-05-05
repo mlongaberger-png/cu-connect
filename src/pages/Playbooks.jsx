@@ -111,7 +111,7 @@ export default function Playbooks() {
   };
 
   if (viewingStats) return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+    <div className="p-3 md:p-6 max-w-3xl mx-auto">
       <StatsView playbook={viewingStats} />
     </div>
   );
@@ -119,7 +119,7 @@ export default function Playbooks() {
   if (viewingPlaybook) {
     const kid = myKids.find(k => k.team_id === viewingPlaybook.team_id) || myKids[0];
     return (
-      <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+      <div className="p-3 md:p-6 max-w-3xl mx-auto space-y-4">
         <button onClick={() => { setViewingPlaybook(null); setOpenSubmission(null); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Playbooks
         </button>
@@ -135,23 +135,23 @@ export default function Playbooks() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-3 md:p-6 max-w-4xl mx-auto space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-primary" /> Playbooks
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" /> Playbooks
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {isStaff ? "Create and manage team playbooks" : "Your team's assigned playbooks"}
           </p>
         </div>
         {isStaff && (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setUploadingPlaybook(true)} className="gap-1 border-border text-sm">
-              <Upload className="w-4 h-4" /> Upload File
+            <Button variant="outline" onClick={() => setUploadingPlaybook(true)} className="gap-1 border-border text-sm h-9 px-3">
+              <Upload className="w-4 h-4" /> <span className="hidden sm:inline">Upload File</span><span className="sm:hidden">Upload</span>
             </Button>
-            <Button onClick={() => setEditingPlaybook({})} className="bg-primary text-primary-foreground gap-1">
-              <Plus className="w-4 h-4" /> New Playbook
+            <Button onClick={() => setEditingPlaybook({})} className="bg-primary text-primary-foreground gap-1 h-9 px-3">
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Playbook</span><span className="sm:hidden">New</span>
             </Button>
           </div>
         )}
@@ -161,13 +161,13 @@ export default function Playbooks() {
       <div className="flex gap-1 bg-surface rounded-xl p-1">
         <button
           onClick={() => setActiveTab("playbooks")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "playbooks" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "playbooks" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           <BookOpen className="w-4 h-4" /> Playbooks
         </button>
         <button
           onClick={() => setActiveTab("assignments")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "assignments" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "assignments" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           <ClipboardList className="w-4 h-4" /> Assignments
         </button>
@@ -234,20 +234,20 @@ export default function Playbooks() {
                     size="sm"
                     variant="outline"
                     onClick={() => setViewingPlaybook(pb)}
-                    className="gap-1 border-border text-xs"
+                    className="gap-1 border-border text-xs flex-1 sm:flex-none"
                   >
                     <Eye className="w-3.5 h-3.5" /> View Plays
                   </Button>
                   {isStaff && (
                     <>
-                      <Button size="sm" variant="outline" onClick={() => setAssigningPlaybook(pb)} className="gap-1 border-primary/30 text-primary hover:bg-primary/10 text-xs">
+                      <Button size="sm" variant="outline" onClick={() => setAssigningPlaybook(pb)} className="gap-1 border-primary/30 text-primary hover:bg-primary/10 text-xs flex-1 sm:flex-none">
                         <ClipboardList className="w-3.5 h-3.5" /> Assign
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditingPlaybook(pb)} className="gap-1 border-border text-xs">
-                        <Pencil className="w-3.5 h-3.5" /> Edit
+                        <Pencil className="w-3.5 h-3.5" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setViewingStats(pb)} className="gap-1 border-border text-xs">
-                        <BarChart2 className="w-3.5 h-3.5" /> Progress
+                        <BarChart2 className="w-3.5 h-3.5" />
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleDeletePlaybook(pb.id)} className="gap-1 border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs">
                         <Trash2 className="w-3.5 h-3.5" />
