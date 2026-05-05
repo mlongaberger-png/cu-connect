@@ -116,6 +116,9 @@ export default function Messages() {
   const inputRef = useRef(null);
   const queryClient = useQueryClient();
 
+  // iOS keyboard fix: track whether input is focused to prevent blur on re-renders
+  const inputFocused = useRef(false);
+
   const isTeamChannel = channel === "team";
 
   // ── Data fetching ─────────────────────────────────────────────────────────
@@ -209,8 +212,9 @@ export default function Messages() {
     }
   );
 
-  // Scroll to bottom when messages load
+  // Scroll to bottom when messages load — but don't steal focus from input
   useEffect(() => {
+    if (inputFocused.current) return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -283,7 +287,14 @@ export default function Messages() {
       </div>
 
       {/* Scrollable messages */}
-      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
+      <div
+        ref={messagesScrollRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain"
+        onMouseDown={(e) => {
+          // Prevent the message area from stealing focus from the input on iOS
+          if (inputFocused.current) e.preventDefault();
+        }}
+      >
 
 
         {sortedMessages.length === 0 && (
@@ -341,6 +352,8 @@ export default function Messages() {
             placeholder={`Message #${channelName}…`}
             className="bg-surface border-border text-foreground flex-1"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(e); }}
+            onFocus={() => { inputFocused.current = true; }}
+            onBlur={() => { inputFocused.current = false; }}
           />
           <Button type="submit" size="icon" disabled={!newMessage.trim()}
             className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0 w-10 h-10">

@@ -14,6 +14,7 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
   const queryClient = useQueryClient();
   const [newMsg, setNewMsg] = useState("");
   const endRef = useRef(null);
+  const inputFocused = useRef(false);
 
   const threadId = currentUser?.email && contact?.email
     ? makeThreadId(currentUser.email, contact.email)
@@ -29,6 +30,7 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
   const sorted = [...messages].reverse();
 
   useEffect(() => {
+    if (inputFocused.current) return;
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -78,7 +80,12 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+      <div
+        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
+        onMouseDown={(e) => {
+          if (inputFocused.current) e.preventDefault();
+        }}
+      >
         {sorted.length === 0 && (
           <div className="text-center text-muted-foreground text-sm py-10">
             No messages yet. {isStaff ? "Send a message to start the conversation." : "Your coach will message you here."}
@@ -112,11 +119,13 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
       <form onSubmit={handleSend} className="p-4 border-t border-border bg-card flex-shrink-0">
         <div className="flex gap-2">
           <Input
-            value={newMsg}
-            onChange={e => setNewMsg(e.target.value)}
-            placeholder={isStaff ? `Message ${contact.name || contact.email}…` : "Message your coach…"}
-            className="bg-surface border-border text-foreground"
-          />
+              value={newMsg}
+              onChange={e => setNewMsg(e.target.value)}
+              placeholder={isStaff ? `Message ${contact.name || contact.email}…` : "Message your coach…"}
+              className="bg-surface border-border text-foreground"
+              onFocus={() => { inputFocused.current = true; }}
+              onBlur={() => { inputFocused.current = false; }}
+            />
           <Button type="submit" size="icon" className="bg-primary text-primary-foreground flex-shrink-0">
             <Send className="w-4 h-4" />
           </Button>
