@@ -1,0 +1,56 @@
+{
+  "name": "AccessRequest",
+  "type": "object",
+  "properties": {
+    "parent_name": {
+      "type": "string",
+      "description": "Full name of the parent"
+    },
+    "parent_email": {
+      "type": "string",
+      "description": "Email address for login"
+    },
+    "parent_phone": {
+      "type": "string",
+      "description": "Optional phone number"
+    },
+    "child_names": {
+      "type": "string",
+      "description": "Comma-separated list of child names"
+    },
+    "sport_interest": {
+      "type": "string",
+      "description": "Sport or team they are interested in"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any additional notes from the parent"
+    },
+    "alternate_email": {
+      "type": "string",
+      "description": "Apple private relay email or other alternate login email"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "Admin email who reviewed this request"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "description": "ISO timestamp of review"
+    }
+  },
+  "required": [
+    "parent_name",
+    "parent_email",
+    "child_names"
+  ]
+}

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2 } from "lucide-react";
+import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2, Link2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
@@ -33,7 +33,7 @@ export default function ParentAccountsTab() {
     queryFn: () => base44.entities.Player.list(),
   });
 
-  const parentUsers = users.filter(u => u.role === "parent" || u.role === "user" || !u.role);
+  const parentUsers = users.filter(u => u.role === "parent" || u.role === "user" || u.role === "pending" || !u.role);
   const filtered = parentUsers.filter(u => {
     const q = search.toLowerCase();
     return (u.full_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
@@ -63,9 +63,31 @@ export default function ParentAccountsTab() {
     onError: (e) => toast({ title: "Update failed", description: e.message, variant: "destructive" }),
   });
 
+  const [appleRelayEmail, setAppleRelayEmail] = useState("");
+  const [linkingRelay, setLinkingRelay] = useState(false);
+
   const openEdit = (user) => {
     setEditingUser(user);
     setEditForm({ full_name: user.full_name || "", role: user.role || "parent" });
+    setAppleRelayEmail("");
+  };
+
+  const handleLinkRelayEmail = async () => {
+    if (!appleRelayEmail.trim() || !editingUser) return;
+    setLinkingRelay(true);
+    const res = await base44.functions.invoke("linkRelayEmail", {
+      primary_email: editingUser.email,
+      relay_email: appleRelayEmail.trim(),
+    });
+    setLinkingRelay(false);
+    if (res.data?.success) {
+      queryClient.invalidateQueries({ queryKey: ["playerGuardians"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setAppleRelayEmail("");
+      toast({ title: "Apple relay email linked", description: `${res.data.links_created} guardian link(s) created for ${appleRelayEmail.trim()}` });
+    } else {
+      toast({ title: "Link failed", description: res.data?.error || "Something went wrong.", variant: "destructive" });
+    }
   };
 
   return (
@@ -199,6 +221,21 @@ export default function ParentAccountsTab() {
                   </div>
                 ) : <div className="text-xs text-muted-foreground p-3 rounded-lg bg-surface border border-border">No players linked to this account yet.</div>;
               })()}
+              <div className="space-y-2 p-3 rounded-lg bg-surface border border-border">
+                <p className="text-xs font-medium text-foreground flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5 text-primary" /> Link Apple ID / Relay Email</p>
+                <p className="text-xs text-muted-foreground">If this parent uses Sign in with Apple with "Hide My Email", enter their private relay address so they gain access automatically.</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="abc123@privaterelay.appleid.com"
+                    value={appleRelayEmail}
+                    onChange={e => setAppleRelayEmail(e.target.value)}
+                    className="font-mono text-xs h-8"
+                  />
+                  <Button size="sm" variant="outline" onClick={handleLinkRelayEmail} disabled={!appleRelayEmail.trim() || linkingRelay} className="shrink-0 h-8">
+                    {linkingRelay ? "Linking…" : "Link"}
+                  </Button>
+                </div>
+              </div>
               <div className="flex items-start gap-2 text-xs text-muted-foreground p-3 rounded-lg bg-surface border border-border">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-yellow-400" />
                 Password changes must be initiated by the parent via "Forgot Password" on the login page.

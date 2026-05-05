@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, Clock, User, Mail, Phone, Users, Trophy, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -13,6 +15,7 @@ export default function AccessRequestsPanel() {
   const { toast } = useToast();
   const [reviewingReq, setReviewingReq] = useState(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
+  const [alternateEmail, setAlternateEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState("pending");
 
@@ -32,6 +35,7 @@ export default function AccessRequestsPanel() {
   const openReview = (req) => {
     setReviewingReq(req);
     setSelectedPlayerIds([]);
+    setAlternateEmail(req.alternate_email || "");
   };
 
   const togglePlayer = (pid) => {
@@ -46,6 +50,7 @@ export default function AccessRequestsPanel() {
       request_id: reviewingReq.id,
       action,
       player_ids: action === "approve" ? selectedPlayerIds : [],
+      alternate_email: alternateEmail.trim() || undefined,
     });
     setSubmitting(false);
 
@@ -150,6 +155,23 @@ export default function AccessRequestsPanel() {
                 <div className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /><span>Children: <span className="font-medium">{reviewingReq.child_names}</span></span></div>
                 {reviewingReq.sport_interest && <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-primary" /><span>{reviewingReq.sport_interest}</span></div>}
                 {reviewingReq.notes && <div className="flex items-start gap-2"><FileText className="w-4 h-4 text-primary mt-0.5" /><span className="text-muted-foreground">{reviewingReq.notes}</span></div>}
+              </div>
+
+              {/* Apple ID / Alternate Email */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <span>Apple ID / Alternate Login Email</span>
+                  <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  If the parent uses Sign in with Apple, their portal account will use a private relay email (e.g. <span className="font-mono">abc123@privaterelay.appleid.com</span>). Enter it here so they get access automatically when they sign in.
+                </p>
+                <Input
+                  placeholder="abc123@privaterelay.appleid.com"
+                  value={alternateEmail}
+                  onChange={e => setAlternateEmail(e.target.value)}
+                  className="font-mono text-sm"
+                />
               </div>
 
               {/* Link to Players */}

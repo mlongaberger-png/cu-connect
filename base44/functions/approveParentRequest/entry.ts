@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { request_id, action, player_ids } = await req.json();
+    const { request_id, action, player_ids, alternate_email } = await req.json();
     if (!request_id || !action) {
       return Response.json({ error: 'request_id and action are required.' }, { status: 400 });
     }
@@ -39,41 +39,58 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
-      // Create PlayerGuardian links FIRST — so when they log in, the role auto-sets via automation
+      // Save alternate email on the request record if provided
+      if (alternate_email) {
+        await base44.asServiceRole.entities.AccessRequest.update(request_id, { alternate_email });
+      }
+
+      // Emails to create guardian links for: primary + optional Apple relay
+      const emailsToLink = [accessReq.parent_email];
+      if (alternate_email && alternate_email !== accessReq.parent_email) {
+        emailsToLink.push(alternate_email);
+      }
+
+      // Create PlayerGuardian links FIRST — for ALL relevant emails
+      // so when they log in (via any email), the role auto-sets via automation
       if (player_ids && player_ids.length > 0) {
         for (const pid of player_ids) {
           const playerList = await base44.asServiceRole.entities.Player.filter({ id: pid });
           const player = playerList[0];
           if (!player) continue;
 
-          const existing = await base44.asServiceRole.entities.PlayerGuardian.filter({
-            player_id: pid,
-            user_email: accessReq.parent_email,
-          });
-          if (existing.length === 0) {
-            await base44.asServiceRole.entities.PlayerGuardian.create({
+          for (const linkEmail of emailsToLink) {
+            const existing = await base44.asServiceRole.entities.PlayerGuardian.filter({
               player_id: pid,
-              player_name: `${player.first_name} ${player.last_name}`,
-              user_email: accessReq.parent_email,
-              relationship: 'Guardian',
-              invited_by: user.email,
+              user_email: linkEmail,
             });
+            if (existing.length === 0) {
+              await base44.asServiceRole.entities.PlayerGuardian.create({
+                player_id: pid,
+                player_name: `${player.first_name} ${player.last_name}`,
+                user_email: linkEmail,
+                relationship: 'Guardian',
+                invited_by: user.email,
+              });
+            }
           }
+        }
+      }
+
+      // If user accounts already exist for any of the emails, ensure role = parent
+      for (const linkEmail of emailsToLink) {
+        try {
+          const existingUsers = await base44.asServiceRole.entities.User.filter({ email: linkEmail });
+          if (existingUsers.length > 0) {
+            await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
+            console.log(`Set role=parent for existing user: ${linkEmail}`);
+          }
+        } catch (roleErr) {
+          console.warn(`Could not set parent role for ${linkEmail}:`, roleErr.message);
         }
       }
 
       // Invite via Base44 directly as 'parent' — no intermediate 'user' role
       await base44.users.inviteUser(accessReq.parent_email, 'parent');
-
-      // If user account already exists, ensure role is parent
-      try {
-        const existingUsers = await base44.asServiceRole.entities.User.filter({ email: accessReq.parent_email });
-        if (existingUsers.length > 0) {
-          await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
-        }
-      } catch (roleErr) {
-        console.warn('Could not set parent role on existing user:', roleErr.message);
-      }
 
       await base44.asServiceRole.entities.AccessRequest.update(request_id, {
         status: 'approved',
@@ -81,8 +98,11 @@ Deno.serve(async (req) => {
         reviewed_at: new Date().toISOString(),
       });
 
-      // Send friendly approval email with clear next steps (no "forgot password" confusion)
-      const appUrl = 'https://app.base44.com/app/69bae2515552e76ca1fbd6a0/Portal';
+      // Send friendly approval email with clear next steps
+      const appleNote = alternate_email
+        ? `\nNOTE: If you use "Sign in with Apple" and hide your email, your portal account will use your Apple private relay address (${alternate_email}). That has been linked to your account, so you can sign in either way.\n`
+        : '\nIMPORTANT: If you plan to use "Sign in with Apple," please contact your administrator so they can link your Apple private relay email to your account.\n';
+
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: accessReq.parent_email,
         subject: '🎉 Welcome to Cornerstone United – Your Portal Access Is Ready!',
@@ -99,7 +119,7 @@ Once logged in, you can:
 • Access team documents
 
 IMPORTANT: Make sure to sign in with this email address: ${accessReq.parent_email}
-
+${appleNote}
 If you don't receive the account setup email within a few minutes, check your spam folder.
 
 Welcome aboard!
