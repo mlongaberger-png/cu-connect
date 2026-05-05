@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, UserCircle, Mail, Edit2, Users, AlertCircle } from "lucide-react";
+import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
@@ -18,6 +18,7 @@ export default function ParentAccountsTab() {
   const [search, setSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [deletingUser, setDeletingUser] = useState(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -40,6 +41,17 @@ export default function ParentAccountsTab() {
 
   const getLinkedPlayers = (email) =>
     guardians.filter(g => g.user_email === email).map(g => players.find(p => p.id === g.player_id)).filter(Boolean);
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, email }) => base44.functions.invoke("adminDeleteAccount", { target_user_id: id, target_email: email }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["playerGuardians"] });
+      toast({ title: "Account deleted successfully" });
+      setDeletingUser(null);
+    },
+    onError: (e) => toast({ title: "Delete failed", description: e.message, variant: "destructive" }),
+  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
@@ -107,11 +119,47 @@ export default function ParentAccountsTab() {
                 <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
                   <Edit2 className="w-4 h-4" />
                 </Button>
+                <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => setDeletingUser(user)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete Parent Account</DialogTitle></DialogHeader>
+          {deletingUser && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete the account for <span className="font-semibold text-foreground">{deletingUser.full_name || deletingUser.email}</span>?
+              </p>
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs space-y-1">
+                <p className="font-semibold">This will permanently:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Remove their account access</li>
+                  <li>Delete all player guardian links</li>
+                  <li>Remove their push notification subscriptions</li>
+                </ul>
+                <p className="mt-1">Financial records are retained per compliance policy.</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingUser(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMutation.mutate({ id: deletingUser.id, email: deletingUser.email })}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete Account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
         <DialogContent>
