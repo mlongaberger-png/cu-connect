@@ -50,14 +50,49 @@ export default function NotificationBell() {
   const loadNotifications = async () => {
     if (!user) return;
     try {
+      // 1. Determine which teams this user's athletes belong to
+      const guardians = await base44.entities.PlayerGuardian.filter({ user_email: user.email });
+      const playerIds = guardians.map(g => g.player_id).filter(Boolean);
+
+      let allowedTeamIds = new Set();
+      let allowedSportIds = new Set();
+
+      if (playerIds.length > 0) {
+        // Fetch all players for this user's guardianships to get team IDs
+        const playerFetches = await Promise.all(
+          playerIds.map(pid => base44.entities.Player.filter({ id: pid }))
+        );
+        playerFetches.flat().forEach(p => {
+          if (p.team_id) allowedTeamIds.add(p.team_id);
+        });
+      }
+
+      const isStaff = user.role === "admin" || user.role === "coach" || user.role === "athletic_director";
+
       const [announcements, events] = await Promise.all([
-        base44.entities.Announcement.list("-created_date", 10),
-        base44.entities.Event.list("-date", 10),
+        base44.entities.Announcement.list("-created_date", 30),
+        base44.entities.Event.list("-date", 20),
       ]);
 
       const now = new Date();
+
+      // Filter announcements: show org-wide ones always, team/sport ones only if relevant
+      const filteredAnnouncements = isStaff
+        ? announcements
+        : announcements.filter(a => {
+            if (a.target === "org") return true;
+            if (a.target === "team") return allowedTeamIds.has(a.target_id);
+            if (a.target === "sport") return allowedSportIds.has(a.target_id);
+            return false;
+          });
+
+      // Filter events: only show events for allowed teams (or all for staff)
+      const filteredEvents = isStaff
+        ? events
+        : events.filter(e => !e.team_id || allowedTeamIds.has(e.team_id));
+
       const items = [
-        ...announcements.map(a => ({
+        ...filteredAnnouncements.slice(0, 10).map(a => ({
           id: `ann-${a.id}`,
           type: "announcement",
           title: a.title,
@@ -66,7 +101,7 @@ export default function NotificationBell() {
           priority: a.priority,
           link: "/Portal",
         })),
-        ...events
+        ...filteredEvents
           .filter(e => new Date(e.date) >= now)
           .slice(0, 5)
           .map(e => ({

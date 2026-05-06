@@ -58,27 +58,21 @@ Deno.serve(async (req) => {
     const players = await base44.asServiceRole.entities.Player.filter({ team_id: teamId, is_active: true });
     const parentEmails = [...new Set(players.map(p => p.parent_email).filter(Boolean))];
 
-    // 4. Send push notifications to parents
-    const pushSubs = await base44.asServiceRole.entities.PushSubscription.filter({ is_active: true });
-    const teamParentEmails = new Set(parentEmails);
-    const targetSubs = pushSubs.filter(s => teamParentEmails.has(s.user_email));
-
     console.log(`Score reported: ${headline}`);
-    console.log(`Team: ${teamName} | Players: ${players.length} | Parent emails: ${parentEmails.length} | Push subs: ${targetSubs.length}`);
+    console.log(`Team: ${teamName} | Players: ${players.length} | Parent emails: ${parentEmails.length}`);
 
-    // 5. Send push notifications via the existing sendPushNotification function
-    for (const sub of targetSubs) {
+    // 4. Send push notifications — team_id enforces parent-team association at the push layer
+    if (parentEmails.length > 0) {
       try {
         await base44.asServiceRole.functions.invoke('sendPushNotification', {
-          endpoint: sub.endpoint,
-          p256dh_key: sub.p256dh_key,
-          auth_key: sub.auth_key,
+          user_emails: parentEmails,
           title: headline,
           body: body || "Check the app for details.",
           url: "/Dashboard",
+          team_id: teamId,
         });
       } catch (e) {
-        console.warn(`Push failed for ${sub.user_email}: ${e.message}`);
+        console.warn(`Push failed: ${e.message}`);
       }
     }
 

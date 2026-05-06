@@ -101,19 +101,15 @@ Deno.serve(async (req) => {
         parentEmails = [...new Set(players.map(p => p.parent_email).filter(Boolean))];
       }
 
-      // Send push notifications
-      const pushSubs = await base44.asServiceRole.entities.PushSubscription.filter({ is_active: true });
-      const targetSubs = pushSubs.filter(s => parentEmails.includes(s.user_email));
-
-      for (const sub of targetSubs) {
+      // Send push notifications — team_id filter ensures only relevant parents receive it
+      if (parentEmails.length > 0) {
         try {
           await base44.asServiceRole.functions.invoke('sendPushNotification', {
-            endpoint: sub.endpoint,
-            p256dh_key: sub.p256dh_key,
-            auth_key: sub.auth_key,
+            user_emails: parentEmails,
             title: headline,
             body: body,
             url: "/Schedule",
+            team_id: event.team_id || undefined,
           });
         } catch (e) {
           console.warn(`Push failed: ${e.message}`);
