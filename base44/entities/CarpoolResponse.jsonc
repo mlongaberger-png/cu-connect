@@ -1,0 +1,35 @@
+{
+  "name": "CarpoolResponse",
+  "type": "object",
+  "properties": {
+    "carpool_request_id": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "responder_name": {
+      "type": "string"
+    },
+    "responder_email": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Message to the requester"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "offered",
+        "accepted",
+        "declined"
+      ],
+      "default": "offered"
+    }
+  },
+  "required": [
+    "carpool_request_id",
+    "responder_email"
+  ]
+}

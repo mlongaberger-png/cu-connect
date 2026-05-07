@@ -25,9 +25,9 @@ export default function TopBar({ onMenuToggle, title }) {
             <Menu className="w-5 h-5" />
           </Button>
           <img
-            src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/1cdeb1496_file_0000000089d071f8be26c9f306ac7ce1.png"
+            src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/fa10ad88f_IMG_20260126_085559_639.webp"
             alt="CU"
-            className="lg:hidden w-8 h-8 object-contain"
+            className="lg:hidden w-8 h-8 object-contain rounded-full"
           />
           <h2 className="text-lg font-semibold text-foreground hidden lg:block">{title}</h2>
         </div>

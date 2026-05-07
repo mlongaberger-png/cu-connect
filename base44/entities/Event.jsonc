@@ -1,0 +1,99 @@
+{
+  "name": "Event",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "practice",
+        "game",
+        "tournament",
+        "meeting",
+        "fundraiser",
+        "other"
+      ],
+      "description": "Type of event"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "sport_name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Start time (HH:MM)"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "End time (HH:MM)"
+    },
+    "location": {
+      "type": "string"
+    },
+    "opponent": {
+      "type": "string",
+      "description": "Opponent team for games"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_cancelled": {
+      "type": "boolean",
+      "default": false
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "win",
+        "loss",
+        "draw"
+      ],
+      "description": "Game/tournament result (set after the event)"
+    },
+    "our_score": {
+      "type": "string",
+      "description": "Our team's final score"
+    },
+    "opponent_score": {
+      "type": "string",
+      "description": "Opponent's final score"
+    },
+    "tournament_round": {
+      "type": "string",
+      "enum": [
+        "Pool Play",
+        "Round of 16",
+        "Quarterfinals",
+        "Semifinals",
+        "Finals",
+        "Championship"
+      ],
+      "description": "Round within a tournament"
+    },
+    "is_championship_win": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark as a championship/trophy win"
+    },
+    "uniform_info": {
+      "type": "string",
+      "description": "JSON object of uniform piece \u2192 color, e.g. {\"jersey\":\"White\",\"hat\":\"Navy\"}"
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "date"
+  ]
+}

@@ -45,7 +45,7 @@ export default function FamilyDashboardStats({
       sub: rsvpRequests.length > 0 ? `${completedRsvps}/${totalRsvpNeeded} responded` : "No open RSVPs",
       color: rsvpRate === 100 ? "text-green-400" : rsvpRate >= 50 ? "text-yellow-400" : "text-red-400",
       bg: rsvpRate === 100 ? "bg-green-500/10 border-green-500/20" : "bg-yellow-500/10 border-yellow-500/20",
-      tab: "schedule",
+      tab: "rsvp-volunteers",
     },
     {
       icon: DollarSign,
@@ -72,7 +72,7 @@ export default function FamilyDashboardStats({
       sub: myVolunteerCount === 0 ? "No upcoming slots" : `${myVolunteerCount} signed up`,
       color: "text-purple-400",
       bg: "bg-purple-500/10 border-purple-500/20",
-      tab: "volunteers",
+      tab: "rsvp-volunteers",
     },
     {
       icon: TrendingUp,

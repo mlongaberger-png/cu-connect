@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useQuery } from "@tanstack/react-query";
-import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2, Navigation, ExternalLink, Bell } from "lucide-react";
+import { X, MapPin, Clock, Trophy, FileText, Download, Calendar, Pencil, Check, ClipboardList, CheckCircle2, Navigation, ExternalLink, Bell, Shirt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import RsvpBreakdown from "@/components/schedule/RsvpBreakdown";
+import UniformSelector from "@/components/schedule/UniformSelector";
 import { useQueryClient } from "@tanstack/react-query";
 
 const getGoogleMapsUrl = (location) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
@@ -315,6 +316,9 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
               <Label className="text-xs">Notes</Label>
               <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-surface border-border mt-0.5" />
             </div>
+
+            <UniformSelector form={form} setForm={setForm} sportName={form.sport_name || ""} />
+
             <div className="flex items-center gap-2">
               <input type="checkbox" id="cancelled" checked={!!form.is_cancelled} onChange={e => setForm(f => ({ ...f, is_cancelled: e.target.checked }))} />
               <label htmlFor="cancelled" className="text-sm text-muted-foreground">Mark as Cancelled</label>
@@ -393,6 +397,28 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
                   <span>{event.notes}</span>
                 </div>
               )}
+              {event.uniform_info && (() => {
+                try {
+                  const uni = JSON.parse(event.uniform_info);
+                  const entries = Object.entries(uni).filter(([, v]) => v);
+                  if (!entries.length) return null;
+                  return (
+                    <div className="flex items-start gap-2 text-muted-foreground">
+                      <Shirt className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-foreground mb-1">Uniform</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {entries.map(([piece, color]) => (
+                            <span key={piece} className="text-xs bg-surface border border-border px-2 py-0.5 rounded-full capitalize">
+                              {piece}: <span className="text-foreground font-medium">{color}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
             </div>
           </>
         )}

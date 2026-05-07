@@ -27,6 +27,7 @@ import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import DeleteAccountModal from "@/components/parentportal/DeleteAccountModal";
 import PromoteAthleteModal from "@/components/parentportal/PromoteAthleteModal";
 import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
+import RsvpVolunteerTab from "@/components/parentportal/RsvpVolunteerTab";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -35,7 +36,7 @@ const ALL_TABS = [
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard, permission: "financial_contributor" },
   { id: "messages", label: "Messages", icon: MessageSquare, permission: "view_messages" },
-  { id: "volunteers", label: "Volunteers", icon: Users },
+  { id: "rsvp-volunteers", label: "RSVP & Carpool", icon: Users },
 ];
 
 // Tabs always visible to grandparents regardless of permissions
@@ -666,12 +667,17 @@ export default function ParentPortal() {
         <ContactAD sportIds={myTeams.map(t => t.sport_id).filter(Boolean)} />
       )}
 
-      {/* Volunteers Tab */}
-      {activeTab === "volunteers" && (
-        <ParentVolunteerView
+      {/* RSVP / Volunteers / Carpool Tab */}
+      {activeTab === "rsvp-volunteers" && (
+        <RsvpVolunteerTab
+          myAttendanceRequests={myAttendanceRequests}
+          user={user}
           myKids={myKids}
           userEmail={userEmail}
           userName={user?.full_name}
+          myTeamIds={myTeamIds}
+          myTeams={myTeams}
+          events={myEvents}
         />
       )}
 
