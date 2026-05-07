@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, CheckCircle2, XCircle, Users, Plus } from "lucide-react";
+import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/button";
 import AddChildForm from "./AddChildForm";
 
@@ -72,12 +73,7 @@ export default function MyChildrenPanel({ userEmail, userName, linkedPlayers = [
 
             return (
               <div key={child.id || i} className={`flex items-center gap-3 p-4 rounded-xl border ${cfg.bg}`}>
-                <div className={`w-9 h-9 rounded-full overflow-hidden bg-background/40 flex items-center justify-center shrink-0 font-bold text-sm ${cfg.color}`}>
-                  {child.photo_url
-                    ? <img src={child.photo_url} alt={child.first_name} className="w-full h-full object-cover object-top" />
-                    : <>{child.first_name?.[0]}{child.last_name?.[0]}</>
-                  }
-                </div>
+                <PlayerAvatar player={child} size="md" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground text-sm">{name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">

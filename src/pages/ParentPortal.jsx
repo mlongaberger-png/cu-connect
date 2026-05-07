@@ -23,6 +23,7 @@ import FamilyDashboardStats from "@/components/parentportal/FamilyDashboardStats
 import TeamRosterView from "@/components/parentportal/TeamRosterView";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import AthleteCard from "@/components/parentportal/AthleteCard";
+import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import DeleteAccountModal from "@/components/parentportal/DeleteAccountModal";
 import PromoteAthleteModal from "@/components/parentportal/PromoteAthleteModal";
 import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
@@ -464,12 +465,7 @@ export default function ParentPortal() {
               return (
                 <div key={kid.id} className="bg-card rounded-2xl border border-border p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
-                      {kid.photo_url
-                        ? <img src={kid.photo_url} alt={kid.first_name} className="w-full h-full object-cover object-top" />
-                        : <span className="text-sm font-bold text-primary">{kid.first_name[0]}{kid.last_name[0]}</span>
-                      }
-                    </div>
+                    <PlayerAvatar player={kid} size="lg" />
                     <div>
                       <h3 className="font-semibold text-foreground">{kid.first_name} {kid.last_name}</h3>
                       {kid.jersey_number && <p className="text-xs text-primary">#{kid.jersey_number}</p>}

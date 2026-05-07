@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload, FileText, Trash2, CheckCircle } from "lucide-react";
+import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
@@ -53,9 +54,7 @@ export default function PlayerDocuments({ player }) {
   return (
     <div className="bg-card rounded-2xl border border-border p-5">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-xs font-bold text-primary">{player.first_name[0]}{player.last_name[0]}</span>
-        </div>
+        <PlayerAvatar player={player} size="md" />
         <h3 className="font-semibold text-foreground">{player.first_name} {player.last_name}</h3>
         <span className="text-xs text-muted-foreground ml-auto">{player.team_name}</span>
       </div>

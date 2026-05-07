@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import InvoiceDetailModal from "@/components/parentportal/InvoiceDetailModal";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Clock, DollarSign, Calendar, FileText, CreditCard, AlertCircle } from "lucide-react";
+import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/button";
 import { isPast, parseISO } from "date-fns";
 
@@ -95,9 +96,7 @@ export function PlayerPaymentCard({ player, onPay, loadingFor }) {
       {/* Player Header */}
       <div className="flex items-center justify-between p-5 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold text-primary">{player.first_name[0]}{player.last_name[0]}</span>
-          </div>
+          <PlayerAvatar player={player} size="lg" />
           <div>
             <h3 className="font-semibold text-foreground">{player.first_name} {player.last_name}</h3>
             <p className="text-xs text-muted-foreground">{player.sport_name} · {player.team_name}</p>

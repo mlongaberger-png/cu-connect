@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Trash2, Pencil, Users, Calendar, MessageSquare, CreditCard, CheckCircle } from "lucide-react";
+import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import InviteFamilyMember from "./InviteFamilyMember";
 import EditFamilyPermissions from "./EditFamilyPermissions";
@@ -63,9 +64,7 @@ export default function FamilyAccessManager({ players, currentUserEmail }) {
         <div key={player.id} className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-primary">{player.first_name[0]}{player.last_name[0]}</span>
-              </div>
+              <PlayerAvatar player={player} size="sm" />
               <span className="text-sm font-semibold text-foreground">{player.first_name} {player.last_name}</span>
               {player.team_name && <span className="text-xs text-muted-foreground">· {player.team_name}</span>}
             </div>
