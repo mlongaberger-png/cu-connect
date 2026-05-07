@@ -376,7 +376,7 @@ export default function ParentPortal() {
       {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Parent Portal</h1>
-          <p className="text-sm text-muted-foreground mt-1">Welcome back! Manage your kids' teams, documents, and payments.</p>
+          <p className="text-sm text-muted-foreground mt-1">Welcome back! Manage your athletes' teams, documents, and payments.</p>
         </div>
 
         <PushNotificationBanner />
@@ -433,6 +433,7 @@ export default function ParentPortal() {
             rsvpRequests={myAttendanceRequests}
             rsvpResponses={myRsvpResponses}
             volunteerAssignments={myVolunteerAssignments}
+            onStatClick={(tab) => setActiveTab(tab)}
           />
 
           {/* Open RSVP Requests */}
