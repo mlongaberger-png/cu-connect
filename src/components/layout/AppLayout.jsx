@@ -47,11 +47,10 @@ export default function AppLayout() {
           style={{
             overscrollBehavior: "contain",
             WebkitOverflowScrolling: "touch",
-            paddingBottom: "env(safe-area-inset-bottom, 0px)",
             transform: "translateZ(0)",
           }}
         >
-          <div className="pb-20 lg:pb-6">
+          <div className="pb-24 lg:pb-8" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)" }}>
             <PageTransition>
               <Outlet />
             </PageTransition>

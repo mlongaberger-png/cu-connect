@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Send, MessageSquare, Hash, ClipboardList, MessagesSquare,
-  Settings2, ArrowLeft, ChevronLeft
+  Settings2, ArrowLeft, ChevronLeft, Lock, Globe
 } from "lucide-react";
 import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
@@ -249,6 +249,14 @@ export default function Messages() {
 
   const sortedMessages = [...messages].reverse().filter(m => !allBlockedEmails.has(m.sender_email));
   const currentTeam = teams.find(t => t.id === channelId);
+  const currentSport = sports.find(s => s.id === channelId);
+
+  // Determine channel icon for the chat header
+  const ChannelIcon = () => {
+    if (currentSport?.icon) return <span className="text-base leading-none">{currentSport.icon}</span>;
+    if (channel === "room") return <Globe className="w-4 h-4 text-primary flex-shrink-0" />;
+    return <Hash className="w-4 h-4 text-primary flex-shrink-0" />;
+  };
 
   const myCoachContacts = useMemo(() => {
     if (!isParent) return [];
@@ -259,6 +267,40 @@ export default function Messages() {
       .filter(t => myTids.includes(t.id) && t.coach_email)
       .map(t => ({ email: t.coach_email, name: t.head_coach || t.coach_email, role: "coach", teamName: t.name }));
   }, [isParent, guardianLinks, allPlayers, teams, user?.email]);
+
+  // Same-team parents for parent DMs
+  const { data: allGuardianLinks = [] } = useQuery({
+    queryKey: ["all-guardian-links-dm"],
+    queryFn: () => base44.entities.PlayerGuardian.list(),
+    enabled: isParent,
+  });
+  const { data: allUsersForDm = [] } = useQuery({
+    queryKey: ["all-users-parent-dm"],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isParent,
+  });
+
+  const sameTeamParents = useMemo(() => {
+    if (!isParent) return [];
+    const linkedIds = new Set(guardianLinks.map(g => g.player_id));
+    const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
+    const myTids = new Set(myKids.map(p => p.team_id));
+    // Teammates
+    const teammatePlayerIds = new Set(allPlayers.filter(p => myTids.has(p.team_id)).map(p => p.id));
+    // Emails of guardians of those teammates
+    const teamParentEmails = new Set(
+      allGuardianLinks
+        .filter(g => teammatePlayerIds.has(g.player_id) && g.user_email !== user?.email)
+        .map(g => g.user_email)
+    );
+    // Also include parent_email from player records
+    allPlayers.filter(p => myTids.has(p.team_id) && p.parent_email && p.parent_email !== user?.email)
+      .forEach(p => teamParentEmails.add(p.parent_email));
+    // Map to user objects
+    return allUsersForDm
+      .filter(u => teamParentEmails.has(u.email))
+      .map(u => ({ email: u.email, name: u.full_name || u.email, role: "parent" }));
+  }, [isParent, guardianLinks, allPlayers, allGuardianLinks, allUsersForDm, user?.email]);
 
   // ── Chat panel (shared mobile + desktop) ─────────────────────────────────
   const ChatPanel = () => (
@@ -273,7 +315,7 @@ export default function Messages() {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <Hash className="w-4 h-4 text-primary flex-shrink-0" />
+        <ChannelIcon />
         <h3 className="font-semibold text-foreground truncate flex-1">{channelName}</h3>
         <div className="flex items-center gap-1 flex-shrink-0">
           {canPostAttendance && (
@@ -400,6 +442,21 @@ export default function Messages() {
               </div>
             </button>
           ))}
+          {sameTeamParents.length > 0 && (
+            <>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mt-4 mb-2">Team Parents</p>
+              {sameTeamParents.map((c, i) => (
+                <button key={i}
+                  onClick={() => setDmContact(c)}
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}>
+                  <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 flex-shrink-0">
+                    {(c.name || c.email)[0].toUpperCase()}
+                  </div>
+                  <span className="truncate">{c.name || c.email}</span>
+                </button>
+              ))}
+            </>
+          )}
         </>
       )}
     </div>

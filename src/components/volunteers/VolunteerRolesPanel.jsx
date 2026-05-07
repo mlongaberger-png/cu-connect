@@ -5,12 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Shield, Trash2, Lock } from "lucide-react";
+import { Plus, Shield, Trash2, Lock, Zap } from "lucide-react";
+
+const PRESET_ROLES = [
+  { name: "Snack Duty", description: "Provide post-game snacks and drinks for the team" },
+  { name: "Gate/Admission", description: "Collect admission and manage entry at the gate" },
+  { name: "Concession Stand", description: "Work the concession stand during games" },
+  { name: "Field Setup", description: "Set up fields, nets, cones, and equipment before events" },
+  { name: "Field Cleanup", description: "Clean up the field and equipment after events" },
+  { name: "Scoreboard Operator", description: "Operate the scoreboard during games" },
+  { name: "Parking Attendant", description: "Direct and manage parking at the venue" },
+  { name: "First Aid", description: "Provide first aid coverage during events" },
+  { name: "Team Photographer", description: "Take photos and video during games and events" },
+  { name: "Fundraiser Helper", description: "Assist with fundraising activities and boosters" },
+];
 
 export default function VolunteerRolesPanel({ user }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
+  const [addingPreset, setAddingPreset] = useState(null);
 
   const { data: roles = [] } = useQuery({
     queryKey: ["volunteer-roles"],
@@ -33,6 +47,14 @@ export default function VolunteerRolesPanel({ user }) {
 
   const systemRoles = roles.filter(r => r.is_system_role);
   const customRoles = roles.filter(r => !r.is_system_role);
+  const existingNames = new Set(roles.map(r => r.name.toLowerCase()));
+  const availablePresets = PRESET_ROLES.filter(p => !existingNames.has(p.name.toLowerCase()));
+
+  const addPreset = async (preset) => {
+    setAddingPreset(preset.name);
+    await createMutation.mutateAsync({ ...preset, is_system_role: false, is_active: true, created_by: user?.email });
+    setAddingPreset(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -61,6 +83,28 @@ export default function VolunteerRolesPanel({ user }) {
           ))}
         </div>
       </div>
+
+      {/* Quick-add presets */}
+      {availablePresets.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5" /> Quick Add Common Roles
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {availablePresets.map(preset => (
+              <button
+                key={preset.name}
+                onClick={() => addPreset(preset)}
+                disabled={addingPreset === preset.name}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border bg-surface hover:border-primary/50 hover:bg-primary/5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {addingPreset === preset.name ? "Adding…" : preset.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Custom Roles */}
       <div>

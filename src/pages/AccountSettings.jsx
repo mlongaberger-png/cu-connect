@@ -85,8 +85,8 @@ export default function AccountSettings() {
         phone: form.phone.trim(),
         avatar_url: form.avatar_url,
       });
+      toast({ title: "Profile updated", description: "Your changes have been saved.", duration: 5000 });
       await checkAppState();
-      toast({ title: "Profile updated", description: "Your changes have been saved." });
     } catch (err) {
       toast({ title: "Save failed", description: err.message, variant: "destructive" });
     } finally {

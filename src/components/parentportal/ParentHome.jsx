@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -11,6 +11,7 @@ import {
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { format, isPast, parseISO } from "date-fns";
 import AthleteCard from "@/components/parentportal/AthleteCard";
+import AthleteProfileModal from "@/components/parentportal/AthleteProfileModal";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ const TYPE_COLORS = {
 export default function ParentHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [selectedAthlete, setSelectedAthlete] = useState(null);
   const userEmail = user?.email;
 
   const { data: guardianLinks = [] } = useQuery({
@@ -210,11 +212,14 @@ export default function ParentHome() {
             <div
               key={kid.id}
               className="bg-card border border-border rounded-2xl p-4 space-y-3 cursor-pointer hover:border-primary/30 transition-colors"
-              onClick={() => navigate("/ParentPortal")}
+              onClick={() => setSelectedAthlete({ player: kid, team: teams.find(t => t.id === kid.team_id), sport: sports.find(s => s.id === teams.find(t => t.id === kid.team_id)?.sport_id) })}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-primary">{kid.first_name[0]}{kid.last_name[0]}</span>
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center shrink-0 border border-primary/20">
+                  {kid.photo_url
+                    ? <img src={kid.photo_url} alt={kid.first_name} className="w-full h-full object-cover object-top" />
+                    : <span className="text-sm font-bold text-primary">{kid.first_name[0]}{kid.last_name[0]}</span>
+                  }
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground">{kid.first_name} {kid.last_name}</p>
@@ -344,6 +349,16 @@ export default function ParentHome() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Athlete Profile Modal */}
+      {selectedAthlete && (
+        <AthleteProfileModal
+          player={selectedAthlete.player}
+          team={selectedAthlete.team}
+          sport={selectedAthlete.sport}
+          onClose={() => setSelectedAthlete(null)}
+        />
       )}
 
       {/* 8. Messages CTA */}
