@@ -24,11 +24,9 @@ export default function TopBar({ onMenuToggle, title }) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <img
-            src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/fa10ad88f_IMG_20260126_085559_639.webp"
-            alt="CU"
-            className="lg:hidden w-8 h-8 object-contain rounded-full"
-          />
+          <div className="lg:hidden w-8 h-8 rounded-lg bg-black flex items-center justify-center border border-primary/40 shrink-0">
+            <span className="text-xs font-black text-primary tracking-tight">CU</span>
+          </div>
           <h2 className="text-lg font-semibold text-foreground hidden lg:block">{title}</h2>
         </div>
 

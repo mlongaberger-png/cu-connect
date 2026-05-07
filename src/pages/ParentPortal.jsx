@@ -27,6 +27,7 @@ import DeleteAccountModal from "@/components/parentportal/DeleteAccountModal";
 import PromoteAthleteModal from "@/components/parentportal/PromoteAthleteModal";
 import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
 import RsvpVolunteerTab from "@/components/parentportal/RsvpVolunteerTab";
+import AthleteProfileModal from "@/components/parentportal/AthleteProfileModal";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -67,6 +68,7 @@ export default function ParentPortal() {
   const [loadingPayAll, setLoadingPayAll] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [promotingPlayer, setPromotingPlayer] = useState(null);
+  const [selectedAthlete, setSelectedAthlete] = useState(null);
 
   // Check for payment return
   useEffect(() => {
@@ -363,6 +365,15 @@ export default function ParentPortal() {
   return (
     <div className={isStandalone ? "min-h-screen bg-background overflow-x-hidden" : "overflow-x-hidden"}>
     {isStandalone && standaloneHeader}
+    {selectedAthlete && (
+      <AthleteProfileModal
+        player={selectedAthlete}
+        team={teams.find(t => t.id === selectedAthlete.team_id)}
+        sport={sports.find(s => s.id === teams.find(t => t.id === selectedAthlete.team_id)?.sport_id)}
+        events={myEvents}
+        onClose={() => setSelectedAthlete(null)}
+      />
+    )}
     {promotingPlayer && (
       <PromoteAthleteModal
         player={promotingPlayer}
@@ -464,7 +475,7 @@ export default function ParentPortal() {
               const team = teams.find(t => t.id === kid.team_id);
               const kidTeamPlayers = players.filter(p => p.team_id === kid.team_id && p.is_active !== false);
               return (
-                <div key={kid.id} className="bg-card rounded-2xl border border-border p-5">
+                <div key={kid.id} className="bg-card rounded-2xl border border-border p-5 cursor-pointer hover:border-primary/40 transition-colors" onClick={() => setSelectedAthlete(kid)}>
                   <div className="flex items-center gap-3 mb-3">
                     <PlayerAvatar player={kid} size="lg" />
                     <div>
@@ -485,7 +496,7 @@ export default function ParentPortal() {
                   {!kid.is_promoted ? (
                     isEligibleForPromotion(kid, teams.find(t => t.id === kid.team_id)) ? (
                       <button
-                        onClick={() => setPromotingPlayer(kid)}
+                        onClick={(e) => { e.stopPropagation(); setPromotingPlayer(kid); }}
                         className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
                       >
                         🎓 Promote to Athlete Account
@@ -593,12 +604,13 @@ export default function ParentPortal() {
             <h3 className="font-semibold text-foreground">Athlete Cards</h3>
             <p className="text-sm text-muted-foreground mt-1">Official digital athlete cards for your players.</p>
           </div>
+          <p className="text-sm text-muted-foreground -mt-4">Tap a card to view athlete stats and upcoming events.</p>
           <div className="flex flex-wrap gap-8 justify-start">
             {myKids.map(kid => {
               const team = teams.find(t => t.id === kid.team_id);
               const sport = sports.find(s => s.id === team?.sport_id);
               return (
-                <AthleteCard key={kid.id} player={kid} team={team} sport={sport} canEdit={true} />
+                <AthleteCard key={kid.id} player={kid} team={team} sport={sport} canEdit={true} onClick={() => setSelectedAthlete(kid)} />
               );
             })}
           </div>

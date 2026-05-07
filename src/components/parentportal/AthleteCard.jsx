@@ -67,10 +67,19 @@ export default function AthleteCard({ player, team, sport, canEdit = false, onCl
               #{player.jersey_number}
             </div>
           )}
-          {/* Upload overlay (only when canEdit) */}
-          {canEdit && (
+          {/* Upload overlay — always visible hint when no photo, hover overlay when has photo */}
+          {canEdit && !photoUrl && !uploading && (
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-1 cursor-pointer bg-black/30"
+            >
+              <Camera className="w-6 h-6 text-white" />
+              <span className="text-[10px] text-white font-bold">Tap to Upload</span>
+            </button>
+          )}
+          {canEdit && photoUrl && (
+            <button
+              onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
               disabled={uploading}
               className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer"
             >
@@ -78,8 +87,13 @@ export default function AthleteCard({ player, team, sport, canEdit = false, onCl
                 ? <Loader2 className="w-5 h-5 text-white animate-spin" />
                 : <Camera className="w-5 h-5 text-white" />
               }
-              {!uploading && <span className="text-[10px] text-white font-semibold">Upload</span>}
+              {!uploading && <span className="text-[10px] text-white font-semibold">Change Photo</span>}
             </button>
+          )}
+          {canEdit && uploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-white animate-spin" />
+            </div>
           )}
           <input
             ref={fileInputRef}
