@@ -119,6 +119,15 @@ export default function ParentHome() {
   }
 
   return (
+    <>
+    {selectedAthlete && (
+      <AthleteProfileModal
+        player={selectedAthlete.player}
+        team={selectedAthlete.team}
+        sport={selectedAthlete.sport}
+        onClose={() => setSelectedAthlete(null)}
+      />
+    )}
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6 pb-24">
       <PushNotificationBanner />
 
@@ -351,16 +360,6 @@ export default function ParentHome() {
         </section>
       )}
 
-      {/* Athlete Profile Modal */}
-      {selectedAthlete && (
-        <AthleteProfileModal
-          player={selectedAthlete.player}
-          team={selectedAthlete.team}
-          sport={selectedAthlete.sport}
-          onClose={() => setSelectedAthlete(null)}
-        />
-      )}
-
       {/* 8. Messages CTA */}
       <section
         className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
@@ -377,5 +376,6 @@ export default function ParentHome() {
         </div>
       </section>
     </div>
+    </>
   );
 }

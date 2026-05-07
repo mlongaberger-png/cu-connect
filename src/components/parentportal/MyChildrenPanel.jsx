@@ -72,8 +72,11 @@ export default function MyChildrenPanel({ userEmail, userName, linkedPlayers = [
 
             return (
               <div key={child.id || i} className={`flex items-center gap-3 p-4 rounded-xl border ${cfg.bg}`}>
-                <div className={`w-9 h-9 rounded-full bg-background/40 flex items-center justify-center shrink-0 font-bold text-sm ${cfg.color}`}>
-                  {child.first_name?.[0]}{child.last_name?.[0]}
+                <div className={`w-9 h-9 rounded-full overflow-hidden bg-background/40 flex items-center justify-center shrink-0 font-bold text-sm ${cfg.color}`}>
+                  {child.photo_url
+                    ? <img src={child.photo_url} alt={child.first_name} className="w-full h-full object-cover object-top" />
+                    : <>{child.first_name?.[0]}{child.last_name?.[0]}</>
+                  }
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground text-sm">{name}</p>

@@ -1,14 +1,19 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Trophy, Shield, Camera, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function AthleteCard({ player, team, sport, canEdit = false }) {
+export default function AthleteCard({ player, team, sport, canEdit = false, onClick }) {
   const initials = `${player.first_name?.[0] || ""}${player.last_name?.[0] || ""}`.toUpperCase();
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(player.photo_url || "");
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
+
+  // Keep photo in sync if parent refreshes player data
+  useEffect(() => {
+    setPhotoUrl(player.photo_url || "");
+  }, [player.photo_url]);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -22,7 +27,10 @@ export default function AthleteCard({ player, team, sport, canEdit = false }) {
   };
 
   return (
-    <div className="relative w-64 rounded-3xl overflow-hidden shadow-2xl border border-primary/30 bg-gradient-to-b from-card via-card to-background select-none">
+    <div
+      className={`relative w-64 rounded-3xl overflow-hidden shadow-2xl border border-primary/30 bg-gradient-to-b from-card via-card to-background select-none ${onClick ? "cursor-pointer hover:border-primary/60 transition-colors" : ""}`}
+      onClick={onClick}
+    >
       {/* Top accent bar */}
       <div className="h-1.5 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
 
