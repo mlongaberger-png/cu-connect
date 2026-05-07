@@ -150,6 +150,11 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
       >
         <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+        <img
+          src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/fa10ad88f_IMG_20260126_085559_639.webp"
+          alt=""
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-28 h-28 object-contain opacity-[0.07] pointer-events-none select-none"
+        />
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -196,6 +201,12 @@ export default function PerformanceHero({ events = [], teams = [], sports = [], 
       {/* Background glow orbs */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/6 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/4 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl pointer-events-none" />
+      {/* Lions crest watermark */}
+      <img
+        src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/fa10ad88f_IMG_20260126_085559_639.webp"
+        alt=""
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-32 h-32 object-contain opacity-[0.06] pointer-events-none select-none"
+      />
       {championships.length > 0 && (
         <div className="absolute inset-0 bg-gradient-to-r from-primary/3 via-transparent to-primary/3 pointer-events-none" />
       )}

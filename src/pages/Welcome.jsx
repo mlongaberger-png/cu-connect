@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { Users, Calendar, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/2ff00e9bd_file_0000000089d071f8be26c9f306ac7ce1.png";
+const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/1cdeb1496_file_0000000089d071f8be26c9f306ac7ce1.png";
+const LIONS_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/fa10ad88f_IMG_20260126_085559_639.webp";
 
 export default function Welcome() {
   return (
@@ -12,7 +13,7 @@ export default function Welcome() {
       <header className="px-6 py-4 flex items-center justify-between border-b border-border">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg overflow-hidden">
-            <img src={CU_LOGO} alt="CU Logo" className="w-full h-full object-cover" />
+            <img src={CU_LOGO} alt="CU Logo" className="w-full h-full object-contain" />
           </div>
           <span className="font-bold text-foreground text-lg">Cornerstone United</span>
         </div>
@@ -26,8 +27,9 @@ export default function Welcome() {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center max-w-2xl mx-auto w-full">
-        <div className="w-24 h-24 rounded-2xl overflow-hidden mx-auto mb-6">
-          <img src={CU_LOGO} alt="Cornerstone United Logo" className="w-full h-full object-cover" />
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <img src={LIONS_LOGO} alt="Cornerstone United Lions" className="w-28 h-28 object-contain" />
+          <img src={CU_LOGO} alt="CU" className="w-16 h-16 object-contain opacity-90" />
         </div>
 
         <h1 className="text-4xl font-extrabold text-foreground mb-3">

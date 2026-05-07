@@ -83,19 +83,17 @@ export default function Sidebar({ isOpen, onClose }) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Logo */}
-        <div className="p-6 border-b border-sidebar-border">
+        <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden">
-                <img
-                  src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/2ff00e9bd_file_0000000089d071f8be26c9f306ac7ce1.png"
-                  alt="Cornerstone United Logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <img
+                src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/fa10ad88f_IMG_20260126_085559_639.webp"
+                alt="Cornerstone United Lions"
+                className="w-12 h-12 object-contain"
+              />
               <div>
-                <h1 className="text-primary text-base font-bold tracking-tight">Cornerstone United</h1>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Athletics</p>
+                <h1 className="text-primary text-sm font-bold tracking-tight leading-tight">Cornerstone United</h1>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Lions Athletics</p>
               </div>
             </div>
             <button onClick={onClose} className="lg:hidden text-muted-foreground hover:text-foreground">
