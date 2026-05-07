@@ -1,0 +1,64 @@
+{
+  "name": "FilmClip",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "e.g. Game 3 \u2013 Offensive Series"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "sport_name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Game Film",
+        "Practice",
+        "Opponent Scout",
+        "Highlight",
+        "Other"
+      ],
+      "default": "Game Film"
+    },
+    "description": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "Uploaded video URL or external link (YouTube, Hudl, Vimeo, etc.)"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Optional video duration in seconds"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the game or practice"
+    },
+    "tags": {
+      "type": "string",
+      "description": "Comma-separated tags"
+    },
+    "uploaded_by_email": {
+      "type": "string"
+    },
+    "uploaded_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "team_id",
+    "video_url"
+  ]
+}

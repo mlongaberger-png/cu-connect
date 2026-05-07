@@ -1,0 +1,44 @@
+{
+  "name": "FilmView",
+  "type": "object",
+  "properties": {
+    "film_clip_id": {
+      "type": "string"
+    },
+    "film_clip_title": {
+      "type": "string"
+    },
+    "film_assignment_id": {
+      "type": "string",
+      "description": "Optional \u2014 set if viewed from an assignment"
+    },
+    "player_id": {
+      "type": "string"
+    },
+    "player_name": {
+      "type": "string"
+    },
+    "viewer_email": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "seconds_watched": {
+      "type": "number",
+      "default": 0
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_watched_at": {
+      "type": "string",
+      "description": "ISO timestamp of last view session"
+    }
+  },
+  "required": [
+    "film_clip_id",
+    "viewer_email"
+  ]
+}

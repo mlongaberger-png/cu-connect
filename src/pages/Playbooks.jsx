@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
-import { BookOpen, Plus, Pencil, Trash2, Users, Eye, BarChart2, ArrowLeft, Upload, ClipboardList } from "lucide-react";
+import { BookOpen, Plus, Pencil, Trash2, Users, Eye, BarChart2, ArrowLeft, Upload, ClipboardList, Video } from "lucide-react";
+import FilmRoom from "@/components/film/FilmRoom";
 import UploadPlaybookModal from "@/components/playbooks/UploadPlaybookModal";
 import AssignmentCreatorDialog from "@/components/playbooks/AssignmentCreatorDialog";
 import CoachAssignmentDashboard from "@/components/playbooks/CoachAssignmentDashboard";
@@ -158,20 +159,36 @@ export default function Playbooks() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-surface rounded-xl p-1">
+      <div className="flex gap-1 bg-surface rounded-xl p-1 overflow-x-auto">
         <button
           onClick={() => setActiveTab("playbooks")}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "playbooks" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === "playbooks" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           <BookOpen className="w-4 h-4" /> Playbooks
         </button>
         <button
           onClick={() => setActiveTab("assignments")}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "assignments" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === "assignments" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           <ClipboardList className="w-4 h-4" /> Assignments
         </button>
+        <button
+          onClick={() => setActiveTab("film")}
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === "film" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Video className="w-4 h-4" /> Film Room
+        </button>
       </div>
+
+      {/* Film Room tab */}
+      {activeTab === "film" && (
+        <FilmRoom
+          user={user}
+          teams={teams}
+          players={allPlayers}
+          isStaff={isStaff}
+        />
+      )}
 
       {/* Assignments tab */}
       {activeTab === "assignments" && (
