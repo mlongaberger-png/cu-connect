@@ -1,0 +1,45 @@
+{
+  "name": "MessageRoom",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Room name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Room description"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Emoji icon for the room"
+    },
+    "is_private": {
+      "type": "boolean",
+      "default": false,
+      "description": "Private rooms are invite-only"
+    },
+    "allowed_roles": {
+      "type": "string",
+      "description": "JSON array of roles allowed (e.g. [\"admin\",\"coach\"]). Empty = all roles."
+    },
+    "allowed_emails": {
+      "type": "string",
+      "description": "JSON array of specific user emails allowed in private rooms"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Admin email who created the room"
+    },
+    "created_by_name": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

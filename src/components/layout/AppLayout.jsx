@@ -46,11 +46,17 @@ export default function AppLayout() {
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
         {/* Main content — pb-14 on mobile reserves space for the fixed bottom tab bar */}
-        <main className="flex-1 min-h-0 overflow-hidden flex flex-col pb-14 lg:pb-0" style={{ transform: "translateZ(0)" }}>
+        <main
+          className="flex-1 min-h-0 overflow-hidden flex flex-col"
+          style={{ transform: "translateZ(0)" }}
+        >
           <PageTransition>
             {isFullscreen ? (
               /* Full-height pages (e.g. Messages) manage their own scroll */
-              <div className="h-full flex flex-col overflow-hidden">
+              <div
+                className="flex flex-col overflow-hidden"
+                style={{ height: "100%", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+              >
                 <Outlet />
               </div>
             ) : (
@@ -60,7 +66,7 @@ export default function AppLayout() {
                 style={{
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                  paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 16px))",
                 }}
               >
                 <Outlet />

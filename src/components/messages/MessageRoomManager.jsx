@@ -8,11 +8,18 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Lock, Globe, Trash2, Pencil } from "lucide-react";
 
+const ICON_OPTIONS = [
+  { group: "Sports", icons: ["⚽", "🏀", "🏈", "⚾", "🥎", "🏐", "🏉", "🎾", "🏊", "🏋️", "🤸", "🏇", "⛷️", "🏌️", "🥊", "🏒", "🎿", "🏑", "🥅", "🏟️"] },
+  { group: "Volunteer & Events", icons: ["🙋", "🤝", "🎽", "📋", "🧢", "🍕", "🥤", "🍉", "🍪", "🎉", "📣", "🚗", "🏕️", "🎪", "📸", "🎤", "🎯", "🗓️", "📢", "💪"] },
+  { group: "General", icons: ["⭐", "🔥", "💬", "📌", "🏆", "🎖️", "👋", "🌟", "💡", "📣", "🔔", "✅", "🎁", "🛡️", "🦁", "🌊", "❤️", "🤩", "👏", "🙌"] },
+];
+
 export default function MessageRoomManager({ currentUser }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", description: "", is_private: false, allowed_roles: "", allowed_emails: "" });
+  const [form, setForm] = useState({ name: "", description: "", icon: "", is_private: false, allowed_roles: "", allowed_emails: "" });
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ["message-rooms"],
@@ -27,7 +34,7 @@ export default function MessageRoomManager({ currentUser }) {
       queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
       setShowForm(false);
       setEditing(null);
-      setForm({ name: "", description: "", is_private: false, allowed_roles: "", allowed_emails: "" });
+      setForm({ name: "", description: "", icon: "", is_private: false, allowed_roles: "", allowed_emails: "" });
     },
   });
 
@@ -41,6 +48,7 @@ export default function MessageRoomManager({ currentUser }) {
     setForm({
       name: room.name,
       description: room.description || "",
+      icon: room.icon || "",
       is_private: room.is_private || false,
       allowed_roles: room.allowed_roles || "",
       allowed_emails: room.allowed_emails || "",
@@ -52,7 +60,7 @@ export default function MessageRoomManager({ currentUser }) {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground">Custom Rooms</h3>
-        <Button size="sm" onClick={() => { setEditing(null); setForm({ name: "", description: "", is_private: false, allowed_roles: "", allowed_emails: "" }); setShowForm(true); }} className="bg-primary text-primary-foreground">
+        <Button size="sm" onClick={() => { setEditing(null); setForm({ name: "", description: "", icon: "", is_private: false, allowed_roles: "", allowed_emails: "" }); setShowForm(true); }} className="bg-primary text-primary-foreground">
           <Plus className="w-3.5 h-3.5 mr-1" /> New Room
         </Button>
       </div>
@@ -63,7 +71,12 @@ export default function MessageRoomManager({ currentUser }) {
         <div className="space-y-2">
           {rooms.map(room => (
             <div key={room.id} className="flex items-center gap-2 bg-surface rounded-xl px-3 py-2.5">
-              {room.is_private ? <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" /> : <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
+              {room.icon
+                ? <span className="text-lg leading-none flex-shrink-0">{room.icon}</span>
+                : room.is_private
+                  ? <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  : <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+              }
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{room.name}</p>
                 {room.description && <p className="text-xs text-muted-foreground truncate">{room.description}</p>}
@@ -83,6 +96,44 @@ export default function MessageRoomManager({ currentUser }) {
         <DialogContent className="bg-card border-border text-foreground max-w-md">
           <DialogHeader><DialogTitle>{editing ? "Edit Room" : "Create Room"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            {/* Icon Picker */}
+            <div>
+              <Label>Icon</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowIconPicker(p => !p)}
+                  className="w-12 h-12 rounded-xl border border-border bg-surface flex items-center justify-center text-2xl hover:border-primary/50 transition-colors"
+                >
+                  {form.icon || <span className="text-muted-foreground text-base">+</span>}
+                </button>
+                {form.icon && (
+                  <button type="button" onClick={() => setForm(f => ({ ...f, icon: "" }))} className="text-xs text-muted-foreground hover:text-foreground">Remove</button>
+                )}
+                <span className="text-xs text-muted-foreground">Click to pick an emoji</span>
+              </div>
+              {showIconPicker && (
+                <div className="mt-2 border border-border rounded-xl bg-surface p-3 space-y-3 max-h-52 overflow-y-auto">
+                  {ICON_OPTIONS.map(group => (
+                    <div key={group.group}>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">{group.group}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {group.icons.map(icon => (
+                          <button
+                            key={icon}
+                            type="button"
+                            onClick={() => { setForm(f => ({ ...f, icon })); setShowIconPicker(false); }}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center text-xl hover:bg-primary/20 transition-colors ${form.icon === icon ? "bg-primary/30 ring-1 ring-primary" : ""}`}
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div>
               <Label>Room Name</Label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="bg-surface border-border" placeholder="e.g. Coaches Only" />
