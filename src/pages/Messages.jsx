@@ -58,6 +58,7 @@ export default function Messages() {
     queryKey: ["blocked-users", user?.email],
     queryFn: () => base44.entities.BlockedUser.filter({ blocker_email: user?.email }),
     enabled: !!user?.email,
+    staleTime: 60000,
   });
   const blockedEmailsFromDB = new Set(blockedUsers.map(b => b.blocked_email));
   const allBlockedEmails = new Set([...blockedEmailsFromDB, ...locallyBlockedEmails]);

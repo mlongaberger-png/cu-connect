@@ -137,26 +137,25 @@ export default function ChatPanel({
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", channelId],
     queryFn: () => base44.entities.Message.filter({ channel_id: channelId }, "-created_date", 50),
-    refetchInterval: 8000,
+    refetchInterval: 12000,         // poll every 12s
+    refetchIntervalInBackground: false, // stop polling when tab is hidden
+    staleTime: 10000,               // don't refetch if data is < 10s old
   });
 
-  // ── Batch read-receipt tracking (one call per channel, not per message) ────
+  // ── Batch read-receipt tracking (once per channel, not per poll) ──────────
   const trackedChannelRef = useRef(null);
   useEffect(() => {
     if (!user?.email || messages.length === 0) return;
-    // Only run once per channel load
-    if (trackedChannelRef.current === channelId) return;
+    if (trackedChannelRef.current === channelId) return; // only on channel change
     trackedChannelRef.current = channelId;
 
     const unreadMsgs = messages.filter(m => m.sender_email !== user.email && m.id && !m.id.startsWith("temp-"));
     if (unreadMsgs.length === 0) return;
 
-    // Fetch existing receipts for this channel in one query, then create missing ones
     base44.entities.MessageReadReceipt.filter({ channel_id: channelId, reader_email: user.email })
       .then(existing => {
         const trackedIds = new Set(existing.map(r => r.message_id));
         const toCreate = unreadMsgs.filter(m => !trackedIds.has(m.id));
-        // Create up to 10 receipts to avoid bursting
         toCreate.slice(0, 10).forEach(m => {
           base44.entities.MessageReadReceipt.create({
             message_id: m.id,
@@ -167,13 +166,14 @@ export default function ChatPanel({
           });
         });
       })
-      .catch(() => {}); // Silently ignore errors
-  }, [channelId, messages.length, user?.email]);
+      .catch(() => {});
+  }, [channelId, user?.email]); // ← removed messages.length — only fires on channel change
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ["blocked-users", user?.email],
     queryFn: () => base44.entities.BlockedUser.filter({ blocker_email: user?.email }),
     enabled: !!user?.email,
+    staleTime: 60000, // blocked list rarely changes — cache for 60s
   });
   const allBlockedEmails = new Set([
     ...blockedUsers.map(b => b.blocked_email),
@@ -247,7 +247,6 @@ export default function ChatPanel({
         { ...newMsg, id: "temp-" + Date.now(), created_date: new Date().toISOString() },
       ],
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["messages", channelId] });
         scrollToBottom("smooth");
       },
     }
