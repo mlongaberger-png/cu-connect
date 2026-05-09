@@ -136,7 +136,7 @@ export default function ChatPanel({
 
   const isAdmin = ["admin", "athletic_director"].includes(user?.role);
 
-  // Load current room/sport data for editing
+  // Load current room/sport/team data for editing
   const { data: currentRoom } = useQuery({
     queryKey: ["message-room-single", channelId],
     queryFn: () => base44.entities.MessageRoom.filter({ is_active: true }).then(rooms => rooms.find(r => r.id === channelId) || null),
@@ -149,17 +149,26 @@ export default function ChatPanel({
     enabled: isAdmin && channel === "sport",
     staleTime: 30000,
   });
+  const { data: allTeams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list(),
+    enabled: isAdmin && channel === "team",
+    staleTime: 30000,
+  });
   const currentSportForEdit = allSports.find(s => s.id === channelId);
+  const currentTeamForEdit = allTeams.find(t => t.id === channelId);
 
   const updateMutation = useMutation({
     mutationFn: ({ type, id, data }) => {
       if (type === "room") return base44.entities.MessageRoom.update(id, data);
       if (type === "sport") return base44.entities.Sport.update(id, data);
+      if (type === "team") return base44.entities.Team.update(id, data);
       return Promise.resolve();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
       queryClient.invalidateQueries({ queryKey: ["sports"] });
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
       queryClient.invalidateQueries({ queryKey: ["message-room-single", channelId] });
       setEditForm(null);
       setShowEditMenu(false);
@@ -183,6 +192,18 @@ export default function ChatPanel({
         name: currentSportForEdit.name,
         icon: currentSportForEdit.icon || "",
       });
+    } else if (channel === "team" && currentTeamForEdit) {
+      setEditForm({
+        type: "team",
+        name: currentTeamForEdit.name,
+        icon: currentTeamForEdit.icon || "",
+      });
+    } else if (channel === "org") {
+      setEditForm({
+        type: "org",
+        name: channelName,
+        icon: "",
+      });
     }
     setShowEditMenu(false);
     setShowIconPicker(false);
@@ -190,6 +211,7 @@ export default function ChatPanel({
 
   const saveEdit = () => {
     if (!editForm) return;
+    if (editForm.type === "org") return; // org not editable
     updateMutation.mutate({ type: editForm.type, id: channelId, data: editForm });
   };
 
@@ -414,8 +436,8 @@ export default function ChatPanel({
             </button>
           )}
           <AnnouncementsPanel channel={channel} channelId={channelId} channelName={channelName} sports={sports} teams={teams} />
-          {/* Admin edit button — only for room/sport channels */}
-          {isAdmin && (channel === "room" || channel === "sport") && (
+          {/* Admin edit button — all channels */}
+          {isAdmin && (
             <div className="relative">
               <button
                 onClick={() => { setShowEditMenu(p => !p); setEditForm(null); }}
