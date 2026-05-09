@@ -274,33 +274,37 @@ export default function Messages() {
     queryFn: () => base44.entities.PlayerGuardian.list(),
     enabled: isParent,
   });
-  const { data: allUsersForDm = [] } = useQuery({
-    queryKey: ["all-users-parent-dm"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: isParent,
-  });
-
+  // Build same-team parent contacts from player records only (no User.list needed)
   const sameTeamParents = useMemo(() => {
     if (!isParent) return [];
     const linkedIds = new Set(guardianLinks.map(g => g.player_id));
     const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
     const myTids = new Set(myKids.map(p => p.team_id));
-    // Teammates
-    const teammatePlayerIds = new Set(allPlayers.filter(p => myTids.has(p.team_id)).map(p => p.id));
-    // Emails of guardians of those teammates
-    const teamParentEmails = new Set(
-      allGuardianLinks
-        .filter(g => teammatePlayerIds.has(g.player_id) && g.user_email !== user?.email)
-        .map(g => g.user_email)
-    );
-    // Also include parent_email from player records
-    allPlayers.filter(p => myTids.has(p.team_id) && p.parent_email && p.parent_email !== user?.email)
-      .forEach(p => teamParentEmails.add(p.parent_email));
-    // Map to user objects
-    return allUsersForDm
-      .filter(u => teamParentEmails.has(u.email))
-      .map(u => ({ email: u.email, name: u.full_name || u.email, role: "parent" }));
-  }, [isParent, guardianLinks, allPlayers, allGuardianLinks, allUsersForDm, user?.email]);
+    const seen = new Set();
+    const contacts = [];
+    // From guardian links
+    allGuardianLinks
+      .filter(g => {
+        const player = allPlayers.find(p => p.id === g.player_id);
+        return player && myTids.has(player.team_id) && g.user_email !== user?.email;
+      })
+      .forEach(g => {
+        if (!seen.has(g.user_email)) {
+          seen.add(g.user_email);
+          contacts.push({ email: g.user_email, name: g.user_email, role: "parent" });
+        }
+      });
+    // From player parent_email fields
+    allPlayers
+      .filter(p => myTids.has(p.team_id) && p.parent_email && p.parent_email !== user?.email)
+      .forEach(p => {
+        if (!seen.has(p.parent_email)) {
+          seen.add(p.parent_email);
+          contacts.push({ email: p.parent_email, name: p.parent_name || p.parent_email, role: "parent" });
+        }
+      });
+    return contacts;
+  }, [isParent, guardianLinks, allPlayers, allGuardianLinks, user?.email]);
 
   // ── Chat panel (shared mobile + desktop) ─────────────────────────────────
   const ChatPanel = () => (
