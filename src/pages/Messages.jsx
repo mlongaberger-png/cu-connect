@@ -307,7 +307,9 @@ export default function Messages() {
       </div>
 
       {/* ── Mobile: chat view ── */}
-      <div className={`md:hidden flex-1 flex-col overflow-hidden ${mobileView === "chat" ? "flex" : "hidden"}`}>
+      <div className={`md:hidden flex-1 flex-col overflow-hidden ${mobileView === "chat" ? "flex" : "hidden"}`}
+        style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+      >
         {activeTab === "direct"
           ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
           : <ChatPanel {...chatPanelProps} onBack={() => setMobileView("list")} />

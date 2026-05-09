@@ -606,7 +606,7 @@ export default function ChatPanel({
       {/* Fixed input bar */}
       <form
         onSubmit={handleSend}
-        className="flex-shrink-0 px-3 py-3 border-t border-border bg-card"
+        className="flex-shrink-0 px-3 pt-3 pb-3 border-t border-border bg-card"
       >
         <div className="flex gap-2 items-center">
           <Input
