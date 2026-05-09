@@ -294,6 +294,11 @@ export default function ParentHome() {
         )}
       </section>
 
+      {/* Finance header */}
+      <h2 className="text-sm font-semibold flex items-center gap-2 bg-primary/20 text-primary px-3 py-2 rounded-xl w-fit">
+        <DollarSign className="w-4 h-4" /> Finance
+      </h2>
+
       {/* 5. Payments Summary */}
       <section
         className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
