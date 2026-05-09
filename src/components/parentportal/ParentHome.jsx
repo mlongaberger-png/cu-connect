@@ -295,8 +295,8 @@ export default function ParentHome() {
       </section>
 
       {/* Finance header */}
-      <h2 className="text-sm font-semibold flex items-center gap-2 bg-primary/20 text-primary px-3 py-2 rounded-xl w-fit">
-        <DollarSign className="w-4 h-4" /> Finance
+      <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <DollarSign className="w-4 h-4 text-primary" /> Finance
       </h2>
 
       {/* 5. Payments Summary */}
