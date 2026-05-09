@@ -377,10 +377,10 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
                     <span>{event.location}</span>
                   </div>
                   <div className="flex gap-3 pl-6">
-                    <a href={getGoogleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline">
+                    <a href={getGoogleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 no-underline">
                       <Navigation className="w-3 h-3" /> Google Maps
                     </a>
-                    <a href={getAppleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline underline">
+                    <a href={getAppleMapsUrl(event.location)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 no-underline">
                       <Navigation className="w-3 h-3" /> Apple Maps
                     </a>
                   </div>
