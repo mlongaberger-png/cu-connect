@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Calendar, Clock, MapPin, Megaphone, CreditCard,
   FileText, ChevronRight, DollarSign, AlertCircle,
-  MessageSquare, UserCircle, Trophy, HandHeart
+  MessageSquare, UserCircle, Trophy, HandHeart, CheckCircle2
 } from "lucide-react";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { format, isPast, parseISO } from "date-fns";
@@ -83,6 +83,41 @@ export default function ParentHome() {
     enabled: myTeamIds.length > 0,
   });
   const openRsvps = attendanceRequests.filter(r => myTeamIds.includes(r.team_id) && !r.is_locked);
+
+  // Fetch all responses for open RSVPs to determine completion
+  const { data: rsvpResponses = [] } = useQuery({
+    queryKey: ["rsvp-responses-home", openRsvps.map(r => r.id).join(",")],
+    queryFn: async () => {
+      if (!openRsvps.length) return [];
+      const all = await Promise.all(
+        openRsvps.map(r => base44.entities.AttendanceResponse.filter({ attendance_request_id: r.id }))
+      );
+      return all.flat();
+    },
+    enabled: openRsvps.length > 0,
+    refetchInterval: 30000,
+    staleTime: 25000,
+  });
+
+  // For each open RSVP, check if all my eligible players have responded
+  const rsvpStatusMap = useMemo(() => {
+    const map = {};
+    openRsvps.forEach(req => {
+      const eligible = myKids.filter(p => p.team_id === req.team_id);
+      const responses = rsvpResponses.filter(r => r.attendance_request_id === req.id);
+      const responseByPlayer = {};
+      responses.forEach(r => { responseByPlayer[r.player_id] = r; });
+      const allDone = eligible.length > 0 && eligible.every(p => responseByPlayer[p.id]);
+      const goingCount = eligible.filter(p => responseByPlayer[p.id]?.status === "attending").length;
+      const total = eligible.length;
+      const pct = total > 0 ? Math.round((goingCount / total) * 100) : 0;
+      map[req.id] = { allDone, goingCount, total, pct };
+    });
+    return map;
+  }, [openRsvps, myKids, rsvpResponses]);
+
+  const pendingRsvps = openRsvps.filter(r => !rsvpStatusMap[r.id]?.allDone);
+  const completedRsvps = openRsvps.filter(r => rsvpStatusMap[r.id]?.allDone);
 
   const mySportIds = [...new Set(myTeams.map(t => t.sport_id).filter(Boolean))];
   const { data: volunteerOpportunities = [] } = useQuery({
@@ -188,22 +223,42 @@ export default function ParentHome() {
       )}
 
       {/* 2. Open RSVPs */}
-      {openRsvps.length > 0 && (
+      {(pendingRsvps.length > 0 || completedRsvps.length > 0) && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
-            RSVPs Needed
-          </h2>
-          {openRsvps.slice(0, 3).map(req => (
-            <AttendanceCard
-              key={req.id}
-              request={req}
-              isStaff={false}
-              currentUser={user}
-              myPlayers={myKids}
-              allPlayers={[]}
-            />
-          ))}
+          {pendingRsvps.length > 0 && (
+            <>
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
+                RSVPs Needed
+              </h2>
+              {pendingRsvps.slice(0, 3).map(req => (
+                <AttendanceCard
+                  key={req.id}
+                  request={req}
+                  isStaff={false}
+                  currentUser={user}
+                  myPlayers={myKids}
+                  allPlayers={[]}
+                />
+              ))}
+            </>
+          )}
+          {completedRsvps.length > 0 && (
+            <div className="space-y-1">
+              {completedRsvps.map(req => {
+                const { pct, goingCount, total } = rsvpStatusMap[req.id] || {};
+                return (
+                  <div key={req.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                    <span className="truncate">
+                      <span className="text-foreground font-medium">{req.label}</span>
+                      <span className="ml-1.5 text-green-400 font-medium">{pct}% Going</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
 
