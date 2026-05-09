@@ -176,7 +176,8 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60" onClick={editing ? undefined : onClose}>
       <div
-        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg p-6 space-y-4 overflow-y-auto"
+        style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

@@ -50,7 +50,8 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto"
+        className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden overflow-y-auto"
+        style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem)" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Gold top bar */}
@@ -195,6 +196,8 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
 
         {/* Bottom accent */}
         <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        {/* Safe area bottom spacer */}
+        <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
       </div>
     </div>
   );

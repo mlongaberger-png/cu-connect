@@ -65,8 +65,8 @@ export default function FilmAssignModal({ clip, teams, players, user, onClose, o
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 space-y-4 my-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 space-y-4 overflow-y-auto" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />

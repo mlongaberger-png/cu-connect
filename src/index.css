@@ -115,6 +115,24 @@
 .safe-area-left { padding-left: env(safe-area-inset-left, 0px); }
 .safe-area-right { padding-right: env(safe-area-inset-right, 0px); }
 
+/* Prevent body scroll when a modal/overlay is open */
+body:has([data-radix-dialog-overlay]) {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Ensure modals always respect the visible viewport height */
+.modal-safe {
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom padding helper for modal content above nav bar */
+.pb-safe-nav {
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* Disable text selection on interactive controls */
 button, a, [role="tab"], [role="button"], nav {
   -webkit-user-select: none;
