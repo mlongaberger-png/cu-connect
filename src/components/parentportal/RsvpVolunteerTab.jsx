@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { CheckCircle2, Users, Car } from "lucide-react";
+import { CheckCircle2, Cookie, Car } from "lucide-react";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
-import ParentVolunteerView from "@/components/volunteers/ParentVolunteerView";
+import SnacksTab from "@/components/snacks/SnacksTab";
 import CarpoolBoard from "@/components/parentportal/CarpoolBoard";
 
 const SUBTABS = [
-  { id: "rsvp", label: "RSVPs", icon: CheckCircle2 },
-  { id: "volunteers", label: "Volunteers", icon: Users },
+  { id: "rsvp",    label: "RSVPs",   icon: CheckCircle2 },
+  { id: "snacks",  label: "Snacks",  icon: Cookie },
   { id: "carpool", label: "Carpool", icon: Car },
 ];
 
@@ -68,11 +68,12 @@ export default function RsvpVolunteerTab({
               ))}
             </div>
           )}
-          {/* Also show locked/past for reference */}
           {myAttendanceRequests.filter(r => r.is_locked).length > 0 && (
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Past / Locked RSVPs</p>
-              <div className="space-y-2">
+            <details>
+              <summary className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2 cursor-pointer">
+                Past / Locked RSVPs
+              </summary>
+              <div className="space-y-2 mt-2">
                 {myAttendanceRequests.filter(r => r.is_locked).slice(0, 5).map(req => (
                   <AttendanceCard
                     key={req.id}
@@ -84,13 +85,19 @@ export default function RsvpVolunteerTab({
                   />
                 ))}
               </div>
-            </div>
+            </details>
           )}
         </div>
       )}
 
-      {sub === "volunteers" && (
-        <ParentVolunteerView myKids={myKids} userEmail={userEmail} userName={userName} />
+      {sub === "snacks" && (
+        <SnacksTab
+          myTeamIds={myTeamIds}
+          userEmail={userEmail}
+          userName={userName}
+          myKids={myKids}
+          events={events}
+        />
       )}
 
       {sub === "carpool" && (

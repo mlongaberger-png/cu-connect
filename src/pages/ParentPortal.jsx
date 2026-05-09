@@ -36,7 +36,7 @@ const ALL_TABS = [
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard, permission: "financial_contributor" },
   { id: "messages", label: "Messages", icon: MessageSquare, permission: "view_messages" },
-  { id: "rsvp-volunteers", label: "RSVP & Carpool", icon: Users },
+  { id: "rsvp-volunteers", label: "RSVP & Snacks", icon: Users },
 ];
 
 // Tabs always visible to grandparents regardless of permissions

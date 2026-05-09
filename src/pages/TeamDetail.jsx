@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie } from "lucide-react";
+import SnackManagerPanel from "@/components/snacks/SnackManagerPanel";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
 import RosterPDFButton from "@/components/roster/RosterPDFButton";
@@ -54,6 +55,11 @@ export default function TeamDetail() {
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
+  });
+  const { data: teamEvents = [] } = useQuery({
+    queryKey: ["events-team", teamId],
+    queryFn: () => base44.entities.Event.filter({ team_id: teamId }, "-date"),
+    enabled: !!teamId,
   });
   const team = teams.find(t => t.id === teamId);
 
@@ -222,6 +228,14 @@ export default function TeamDetail() {
               <DollarSign className="w-4 h-4" /> Invoices
             </button>
           )}
+          {(canManage || isCoach) && (
+            <button
+              onClick={() => setActiveTab("snacks")}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "snacks" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            >
+              <Cookie className="w-4 h-4" /> Snacks
+            </button>
+          )}
         </div>
       )}
 
@@ -368,6 +382,15 @@ export default function TeamDetail() {
       {/* Invoices Tab */}
       {activeTab === "invoices" && canManage && (
         <AdminInvoiceManager players={players} teamName={team?.name || ""} />
+      )}
+
+      {/* Snacks Tab */}
+      {activeTab === "snacks" && (canManage || isCoach) && (
+        <SnackManagerPanel
+          teams={[team]}
+          events={teamEvents}
+          currentUser={user}
+        />
       )}
 
       {/* Edit Team Dialog */}

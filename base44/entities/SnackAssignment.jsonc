@@ -1,0 +1,78 @@
+{
+  "name": "SnackAssignment",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "ID of the event this snack slot belongs to"
+    },
+    "event_title": {
+      "type": "string",
+      "description": "Denormalized event title"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "event_time": {
+      "type": "string",
+      "description": "HH:MM start time"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "slot_type": {
+      "type": "string",
+      "enum": [
+        "Drinks",
+        "Snacks",
+        "Post-game Food",
+        "Other"
+      ],
+      "default": "Snacks",
+      "description": "Type of snack responsibility"
+    },
+    "slot_label": {
+      "type": "string",
+      "description": "Optional custom label override"
+    },
+    "assigned_email": {
+      "type": "string",
+      "description": "Email of the parent assigned to this slot (empty = open)"
+    },
+    "assigned_name": {
+      "type": "string",
+      "description": "Full name of the assigned parent"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "Optional: player/athlete linked to the assignment"
+    },
+    "player_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any notes or instructions for this slot"
+    },
+    "reminder_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the 24hr reminder has been sent"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "created_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "team_id",
+    "slot_type"
+  ]
+}
