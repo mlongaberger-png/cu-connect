@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Calendar, MessageSquare, CreditCard, CheckCircle, Save } from "lucide-react";
+import { Calendar, MessageSquare, CreditCard, CheckCircle, Save, Loader2 } from "lucide-react";
 
 const PERMISSION_OPTIONS = [
   {
@@ -31,6 +31,7 @@ const PERMISSION_OPTIONS = [
 export default function EditFamilyPermissions({ guardian, onClose }) {
   const [permissions, setPermissions] = useState(guardian.permissions || []);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const queryClient = useQueryClient();
 
   const togglePermission = (id) => {
@@ -44,7 +45,11 @@ export default function EditFamilyPermissions({ guardian, onClose }) {
     await base44.entities.PlayerGuardian.update(guardian.id, { permissions });
     queryClient.invalidateQueries({ queryKey: ["guardians", guardian.player_id] });
     setSaving(false);
-    onClose();
+    setSaved(true);
+    setTimeout(() => {
+      setSaved(false);
+      onClose();
+    }, 2000);
   };
 
   return (
@@ -84,11 +89,16 @@ export default function EditFamilyPermissions({ guardian, onClose }) {
         })}
       </div>
 
+      {saved && (
+        <div className="flex items-center justify-center gap-2 py-2 text-green-400 text-sm font-medium">
+          <CheckCircle className="w-4 h-4" /> Permissions updated!
+        </div>
+      )}
+
       <div className="flex gap-2 pt-1">
-        <Button variant="outline" className="flex-1 border-border" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-primary-foreground gap-1.5">
-          <Save className="w-4 h-4" />
-          {saving ? "Saving…" : "Save Changes"}
+        <Button variant="outline" className="flex-1 border-border" onClick={onClose} disabled={saving || saved}>Cancel</Button>
+        <Button onClick={handleSave} disabled={saving || saved} className={`flex-1 gap-1.5 ${saved ? "bg-green-600 hover:bg-green-700 text-white" : "bg-primary text-primary-foreground"}`}>
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Changes</>}
         </Button>
       </div>
     </div>

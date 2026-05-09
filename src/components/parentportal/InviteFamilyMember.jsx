@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,14 @@ export default function InviteFamilyMember({ player, currentUserEmail, onClose, 
     setStep("success");
   };
 
+  // Auto-close success screen after 3 seconds
+  useEffect(() => {
+    if (step === "success") {
+      const timer = setTimeout(() => onClose(), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [step, onClose]);
+
   if (step === "success") {
     return (
       <div className="space-y-4 text-center py-4">
@@ -107,6 +115,7 @@ export default function InviteFamilyMember({ player, currentUserEmail, onClose, 
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground">Closing automatically…</p>
         <Button onClick={onClose} className="w-full bg-primary text-primary-foreground">Done</Button>
       </div>
     );

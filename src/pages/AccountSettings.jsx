@@ -26,6 +26,7 @@ export default function AccountSettings() {
     avatar_url: user?.avatar_url || "",
   });
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
@@ -85,7 +86,9 @@ export default function AccountSettings() {
         phone: form.phone.trim(),
         avatar_url: form.avatar_url,
       });
-      toast({ title: "Profile updated", description: "Your changes have been saved.", duration: 5000 });
+      toast({ title: "✓ Changes saved", description: "Your profile has been updated.", duration: 3000 });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
       await checkAppState();
     } catch (err) {
       toast({ title: "Save failed", description: err.message, variant: "destructive" });
@@ -193,8 +196,8 @@ export default function AccountSettings() {
             />
           </div>
 
-          <Button onClick={handleSave} disabled={saving} className="w-full">
-            {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving…</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
+          <Button onClick={handleSave} disabled={saving} className={`w-full transition-colors ${saved ? "bg-green-600 hover:bg-green-700" : ""}`}>
+            {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving…</> : saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : <><Save className="w-4 h-4 mr-2" />Save Changes</>}
           </Button>
         </CardContent>
       </Card>
