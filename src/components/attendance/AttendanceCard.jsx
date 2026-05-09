@@ -104,6 +104,7 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
 
   const eligiblePlayers = myPlayers.filter(p => p.team_id === request.team_id);
   const typeColorClass = EVENT_TYPE_COLORS[request.event_type] || EVENT_TYPE_COLORS.other;
+  const [collapsed, setCollapsed] = useState(false);
 
   // ── Staff view ─────────────────────────────────────────────────────────────
   if (isStaff) {
@@ -136,6 +137,17 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
   }
 
   // ── Parent / compact inline view ───────────────────────────────────────────
+  // Check if all eligible players have responded
+  const allResponded = eligiblePlayers.length > 0 && eligiblePlayers.every(p => responseMap[p.id]);
+  const showCollapsed = (collapsed || allResponded) && !request.is_locked && eligiblePlayers.length > 0;
+
+  // Stats for collapsed view
+  const goingCount = eligiblePlayers.filter(p => responseMap[p.id]?.status === "attending").length;
+  const notGoingCount = eligiblePlayers.filter(p => responseMap[p.id]?.status === "not_attending").length;
+  const maybeCount = eligiblePlayers.filter(p => responseMap[p.id]?.status === "maybe").length;
+  const total = eligiblePlayers.length;
+  const goingPct = total > 0 ? Math.round((goingCount / total) * 100) : 0;
+
   return (
     <>
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2.5">
@@ -147,6 +159,32 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
         </div>
         {request.is_locked ? (
           <p className="text-xs text-yellow-400 flex items-center gap-1"><Lock className="w-3 h-3" /> RSVP closed</p>
+        ) : showCollapsed ? (
+          /* Collapsed summary view */
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+              <span className="text-xs font-semibold text-green-400">{goingPct}% Going</span>
+            </div>
+            {notGoingCount > 0 && (
+              <div className="flex items-center gap-1">
+                <XCircle className="w-3 h-3 text-red-400" />
+                <span className="text-xs text-red-400">{notGoingCount}</span>
+              </div>
+            )}
+            {maybeCount > 0 && (
+              <div className="flex items-center gap-1">
+                <HelpCircle className="w-3 h-3 text-yellow-400" />
+                <span className="text-xs text-yellow-400">{maybeCount}</span>
+              </div>
+            )}
+            <button
+              onClick={() => setCollapsed(false)}
+              className="ml-auto text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+            >
+              Change
+            </button>
+          </div>
         ) : eligiblePlayers.length > 0 ? (
           <div className="space-y-2">
             {eligiblePlayers.map(player => (
