@@ -67,7 +67,9 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
   const { data: responses = [] } = useQuery({
     queryKey: ["attendance-responses", request.id],
     queryFn: () => base44.entities.AttendanceResponse.filter({ attendance_request_id: request.id }),
-    refetchInterval: 8000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    staleTime: 25000,
   });
 
   const responseMap = {};

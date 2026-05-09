@@ -32,7 +32,9 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
   const { data: recentMessages = [] } = useQuery({
     queryKey: ["messages-recent-all"],
     queryFn: () => base44.entities.Message.list("-created_date", 200),
-    refetchInterval: 8000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    staleTime: 25000,
   });
 
   const visibleTeams = filterTeamIds ? teams.filter(t => filterTeamIds.includes(t.id)) : teams;
