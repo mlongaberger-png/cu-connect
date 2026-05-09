@@ -32,24 +32,6 @@ const ROLE_STYLES = {
 
 // ─── MessageRow ─────────────────────────────────────────────────────────────
 function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId, channelName, senderRole, onBlock }) {
-  const tracked = useRef(false);
-
-  useEffect(() => {
-    if (isMe || tracked.current || !user?.email || !msg.id) return;
-    tracked.current = true;
-    base44.entities.MessageReadReceipt.filter({ message_id: msg.id, reader_email: user.email })
-      .then(existing => {
-        if (existing.length === 0) {
-          base44.entities.MessageReadReceipt.create({
-            message_id: msg.id,
-            channel_id: channelId,
-            reader_email: user.email,
-            reader_name: user.full_name || user.email,
-            reader_avatar: user.avatar_url || "",
-          });
-        }
-      });
-  }, [msg.id, user?.email, isMe, channelId]);
 
   const style = isMe ? ROLE_STYLES.me : (ROLE_STYLES[senderRole] || ROLE_STYLES.parent);
 
@@ -155,8 +137,38 @@ export default function ChatPanel({
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", channelId],
     queryFn: () => base44.entities.Message.filter({ channel_id: channelId }, "-created_date", 50),
-    refetchInterval: 5000,
+    refetchInterval: 8000,
   });
+
+  // ── Batch read-receipt tracking (one call per channel, not per message) ────
+  const trackedChannelRef = useRef(null);
+  useEffect(() => {
+    if (!user?.email || messages.length === 0) return;
+    // Only run once per channel load
+    if (trackedChannelRef.current === channelId) return;
+    trackedChannelRef.current = channelId;
+
+    const unreadMsgs = messages.filter(m => m.sender_email !== user.email && m.id && !m.id.startsWith("temp-"));
+    if (unreadMsgs.length === 0) return;
+
+    // Fetch existing receipts for this channel in one query, then create missing ones
+    base44.entities.MessageReadReceipt.filter({ channel_id: channelId, reader_email: user.email })
+      .then(existing => {
+        const trackedIds = new Set(existing.map(r => r.message_id));
+        const toCreate = unreadMsgs.filter(m => !trackedIds.has(m.id));
+        // Create up to 10 receipts to avoid bursting
+        toCreate.slice(0, 10).forEach(m => {
+          base44.entities.MessageReadReceipt.create({
+            message_id: m.id,
+            channel_id: channelId,
+            reader_email: user.email,
+            reader_name: user.full_name || user.email,
+            reader_avatar: user.avatar_url || "",
+          });
+        });
+      })
+      .catch(() => {}); // Silently ignore errors
+  }, [channelId, messages.length, user?.email]);
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ["blocked-users", user?.email],

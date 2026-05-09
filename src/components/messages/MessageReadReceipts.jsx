@@ -6,19 +6,19 @@ import { Eye } from "lucide-react";
 export default function MessageReadReceipts({ messageId, channelId, isStaff }) {
   const [showList, setShowList] = useState(false);
 
-  const { data: receipts = [] } = useQuery({
+  const { data: receipts = [], refetch } = useQuery({
     queryKey: ["read-receipts", messageId],
     queryFn: () => base44.entities.MessageReadReceipt.filter({ message_id: messageId }),
-    enabled: isStaff && !!messageId,
-    refetchInterval: 15000,
+    enabled: isStaff && !!messageId && showList,
+    staleTime: 30000,
   });
 
-  if (!isStaff || receipts.length === 0) return null;
+  if (!isStaff) return null;
 
   return (
     <div className="relative inline-block">
       <button
-        onClick={() => setShowList(v => !v)}
+        onClick={() => { setShowList(v => !v); }}
         className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors mt-1"
       >
         <Eye className="w-3 h-3" />
