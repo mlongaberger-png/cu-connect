@@ -143,19 +143,21 @@ export default function ChatPanel({
     enabled: isAdmin && channel === "room",
     staleTime: 30000,
   });
-  const { data: allSports = [] } = useQuery({
-    queryKey: ["sports"],
-    queryFn: () => base44.entities.Sport.list(),
-    enabled: isAdmin && channel === "sport",
-    staleTime: 30000,
-  });
+
   const { data: allTeams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
     enabled: isAdmin && channel === "team",
     staleTime: 30000,
   });
-  const currentSportForEdit = allSports.find(s => s.id === channelId);
+
+  // Always fetch fresh sport data for icon display (not just when editing)
+  const { data: freshSports = [] } = useQuery({
+    queryKey: ["sports"],
+    queryFn: () => base44.entities.Sport.list(),
+    staleTime: 30000,
+  });
+  const currentSportForEdit = freshSports.find(s => s.id === channelId);
   const currentTeamForEdit = allTeams.find(t => t.id === channelId);
 
   const updateMutation = useMutation({
@@ -360,10 +362,16 @@ export default function ChatPanel({
     setTimeout(() => scrollToBottom("smooth"), 100);
   };
 
-  // Channel icon
-  const currentSport = sports.find(s => s.id === channelId);
+  // Channel icon — resolve from the freshest data source per channel type
+  const resolvedIcon = (() => {
+    if (channel === "sport") return freshSports.find(s => s.id === channelId)?.icon || "";
+    if (channel === "room") return currentRoom?.icon || "";
+    if (channel === "team") return currentTeamForEdit?.icon || "";
+    return "";
+  })();
   const ChannelIcon = () => {
-    if (currentSport?.icon) return <span className="text-base leading-none">{currentSport.icon}</span>;
+    const icon = resolvedIcon;
+    if (icon) return <span className="text-base leading-none">{icon}</span>;
     if (channel === "room") return <Globe className="w-4 h-4 text-primary flex-shrink-0" />;
     return <MessageSquare className="w-4 h-4 text-primary flex-shrink-0" />;
   };
