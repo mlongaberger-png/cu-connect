@@ -5,8 +5,8 @@ import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Send, MessageSquare, Hash, ClipboardList, Globe,
-  ChevronLeft, ChevronDown, ArrowDown
+  Send, MessageSquare, ClipboardList, Globe,
+  ChevronLeft, ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
@@ -275,7 +275,7 @@ export default function ChatPanel({
   const ChannelIcon = () => {
     if (currentSport?.icon) return <span className="text-base leading-none">{currentSport.icon}</span>;
     if (channel === "room") return <Globe className="w-4 h-4 text-primary flex-shrink-0" />;
-    return <Hash className="w-4 h-4 text-primary flex-shrink-0" />;
+    return <MessageSquare className="w-4 h-4 text-primary flex-shrink-0" />;
   };
 
   // Build message list with "Last Read" divider

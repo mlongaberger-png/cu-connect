@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  MessageSquare, Hash, MessagesSquare, Settings2,
+  MessageSquare, MessagesSquare, Settings2,
 } from "lucide-react";
 import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
@@ -258,7 +258,7 @@ export default function Messages() {
         <div className="flex border-b border-border">
           <button onClick={() => setActiveTab("channels")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            <Hash className="w-3.5 h-3.5" /> Channels
+            <MessageSquare className="w-3.5 h-3.5" /> Channels
           </button>
           <button onClick={() => setActiveTab("direct")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "direct" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
