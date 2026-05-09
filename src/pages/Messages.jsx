@@ -1,94 +1,20 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Send, MessageSquare, Hash, ClipboardList, MessagesSquare,
-  Settings2, ArrowLeft, ChevronLeft, Lock, Globe
+  MessageSquare, Hash, MessagesSquare, Settings2,
 } from "lucide-react";
 import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
-import { format } from "date-fns";
-import MessagesSidebar from "@/components/messages/MessagesSidebar";
-import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
 import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
-import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import ChannelList from "@/components/messages/ChannelList";
-import EventMessageCard from "@/components/messages/EventMessageCard";
 import MessagingTermsGate from "@/components/messages/MessagingTermsGate";
-import MessageActions from "@/components/messages/MessageActions";
+import ChatPanel from "@/components/messages/ChatPanel";
 import { useAuth } from "@/lib/AuthContext";
 
 // ─── Read/unread helpers ───────────────────────────────────────────────────
 function markChannelRead(channelId) {
   try { localStorage.setItem(`msg_read_${channelId}`, String(Date.now())); } catch {}
-}
-
-// ─── Role badge styles ─────────────────────────────────────────────────────
-const ROLE_STYLES = {
-  staff:  { border: "border-primary/50",    nameCls: "text-primary",    badge: "Staff" },
-  coach:  { border: "border-yellow-500/50", nameCls: "text-yellow-400", badge: "Coach" },
-  parent: { border: "border-blue-500/30",   nameCls: "text-foreground",  badge: null },
-  me:     { border: "border-primary",        nameCls: "text-primary",    badge: "You" },
-};
-
-function MessageRow({ msg, isMe, senderAvatar, senderInitial, isStaff, user, channelId, channelName, senderRole, onBlock }) {
-  const tracked = React.useRef(false);
-
-  React.useEffect(() => {
-    if (isMe || tracked.current || !user?.email || !msg.id) return;
-    tracked.current = true;
-    base44.entities.MessageReadReceipt.filter({ message_id: msg.id, reader_email: user.email })
-      .then(existing => {
-        if (existing.length === 0) {
-          base44.entities.MessageReadReceipt.create({
-            message_id: msg.id,
-            channel_id: channelId,
-            reader_email: user.email,
-            reader_name: user.full_name || user.email,
-            reader_avatar: user.avatar_url || "",
-          });
-        }
-      });
-  }, [msg.id, user?.email, isMe, channelId]);
-
-  const style = isMe ? ROLE_STYLES.me : (ROLE_STYLES[senderRole] || ROLE_STYLES.parent);
-
-  return (
-    <div className="flex gap-2.5 group">
-      <div className={`w-8 h-8 rounded-full overflow-hidden bg-surface flex items-center justify-center flex-shrink-0 mt-0.5 border ${style.border}`}>
-        {senderAvatar
-          ? <img src={senderAvatar} alt={msg.sender_name} className="w-full h-full object-cover" />
-          : <span className="text-xs font-bold text-primary">{senderInitial}</span>}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className={`text-sm font-semibold ${style.nameCls}`}>{msg.sender_name || "Unknown"}</span>
-          {style.badge && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface border border-border text-muted-foreground uppercase tracking-wider">
-              {style.badge}
-            </span>
-          )}
-          <span className="text-[10px] text-muted-foreground ml-auto">
-            {msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}
-          </span>
-          <MessageActions
-            msg={msg}
-            currentUser={user}
-            channelId={channelId}
-            channelName={channelName}
-            onBlock={onBlock}
-          />
-        </div>
-        <p className="text-sm text-foreground/80 mt-0.5 break-words">{msg.content}</p>
-        {isMe && isStaff && (
-          <MessageReadReceipts messageId={msg.id} channelId={channelId} isStaff={isStaff} />
-        )}
-      </div>
-    </div>
-  );
 }
 
 // ─── Main component ────────────────────────────────────────────────────────
@@ -111,23 +37,11 @@ export default function Messages() {
   const [dmContact, setDmContact] = useState(null);
   const [locallyBlockedEmails, setLocallyBlockedEmails] = useState(new Set());
 
-  const messagesEndRef = useRef(null);
-  const messagesScrollRef = useRef(null);
-  const inputRef = useRef(null);
   const queryClient = useQueryClient();
-
-  // iOS keyboard fix: track whether input is focused to prevent blur on re-renders
-  const inputFocused = useRef(false);
 
   const isTeamChannel = channel === "team";
 
   // ── Data fetching ─────────────────────────────────────────────────────────
-  const { data: messages = [] } = useQuery({
-    queryKey: ["messages", channelId],
-    queryFn: () => base44.entities.Message.filter({ channel_id: channelId }, "-created_date", 50),
-    refetchInterval: 5000,
-  });
-
   const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list() });
   const { data: teams = [] }  = useQuery({ queryKey: ["teams"],  queryFn: () => base44.entities.Team.list() });
   const { data: allPlayers = [] } = useQuery({ queryKey: ["players"], queryFn: () => base44.entities.Player.list() });
@@ -199,44 +113,10 @@ export default function Messages() {
     (role === "coach" && myCoachTeams.some(t => t.id === channelId))
   );
 
-  const sendMutation = useOptimisticMutation(
-    (data) => base44.entities.Message.create(data),
-    {
-      queryClient,
-      queryKey: ["messages", channelId],
-      updater: (old, newMsg) => [
-        ...old,
-        { ...newMsg, id: "temp-" + Date.now(), created_date: new Date().toISOString() },
-      ],
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["messages", channelId] }),
-    }
-  );
-
-  // Scroll to bottom when messages load — but don't steal focus from input
-  useEffect(() => {
-    if (inputFocused.current) return;
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   // Mark channel as read when chat view opens
   useEffect(() => {
     if (mobileView === "chat") markChannelRead(channelId);
   }, [mobileView, channelId]);
-
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    sendMutation.mutate({
-      content: newMessage.trim(),
-      channel,
-      channel_id: channelId,
-      channel_name: channelName,
-      sender_name: user?.full_name || "Staff",
-      sender_email: user?.email || "",
-      sender_avatar: user?.avatar_url || "",
-    });
-    setNewMessage("");
-  };
 
   const selectChannel = (type, id, name) => {
     setChannel(type);
@@ -244,19 +124,9 @@ export default function Messages() {
     setChannelName(name);
     setMobileView("chat");
     markChannelRead(id);
-    setTimeout(() => inputRef.current?.focus(), 150);
   };
 
-  const sortedMessages = [...messages].reverse().filter(m => !allBlockedEmails.has(m.sender_email));
   const currentTeam = teams.find(t => t.id === channelId);
-  const currentSport = sports.find(s => s.id === channelId);
-
-  // Determine channel icon for the chat header
-  const ChannelIcon = () => {
-    if (currentSport?.icon) return <span className="text-base leading-none">{currentSport.icon}</span>;
-    if (channel === "room") return <Globe className="w-4 h-4 text-primary flex-shrink-0" />;
-    return <Hash className="w-4 h-4 text-primary flex-shrink-0" />;
-  };
 
   const myCoachContacts = useMemo(() => {
     if (!isParent) return [];
@@ -306,109 +176,20 @@ export default function Messages() {
     return contacts;
   }, [isParent, guardianLinks, allPlayers, allGuardianLinks, user?.email]);
 
-  // ── Chat panel (shared mobile + desktop) ─────────────────────────────────
-  const ChatPanel = () => (
-    <>
-      {/* Header */}
-      <div className="px-3 py-2.5 border-b border-border bg-card flex items-center gap-2 flex-shrink-0 min-h-[48px]">
-        {/* Mobile back button */}
-        <button
-          onClick={() => setMobileView("list")}
-          className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors flex-shrink-0"
-          aria-label="Back to channels"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <ChannelIcon />
-        <h3 className="font-semibold text-foreground truncate flex-1">{channelName}</h3>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {canPostAttendance && (
-            <button onClick={() => setShowAttendanceDialog(true)} title="Attendance"
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors">
-              <ClipboardList className="w-4 h-4" />
-            </button>
-          )}
-          <AnnouncementsPanel channel={channel} channelId={channelId} channelName={channelName} sports={sports} teams={teams} />
-        </div>
-      </div>
-
-      {/* Scrollable messages */}
-      <div
-        ref={messagesScrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain"
-        onMouseDown={(e) => {
-          // Prevent the message area from stealing focus from the input on iOS
-          if (inputFocused.current) e.preventDefault();
-        }}
-      >
-
-
-        {sortedMessages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <MessageSquare className="w-12 h-12 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No messages yet in #{channelName}</p>
-            <p className="text-xs text-muted-foreground mt-1">Send the first message</p>
-          </div>
-        )}
-
-        {sortedMessages.map((msg) => {
-          // Event messages with an attendance_request_id render as interactive cards
-          if (msg.attendance_request_id) {
-            return (
-              <div key={msg.id} className="space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] font-bold text-primary">{(msg.sender_name || "?")[0].toUpperCase()}</span>
-                  </div>
-                  <span className="text-xs font-semibold text-primary">{msg.sender_name || "Staff"}</span>
-                  <span className="text-[10px] text-muted-foreground">{msg.created_date ? format(new Date(msg.created_date), "MMM d, h:mm a") : ""}</span>
-                </div>
-                <div className="pl-8">
-                  <EventMessageCard
-                    attendanceRequestId={msg.attendance_request_id}
-                    currentUser={user}
-                    isStaff={isStaff}
-                  />
-                </div>
-              </div>
-            );
-          }
-          const senderInitial = (msg.sender_name || "?")[0].toUpperCase();
-          const isMe = msg.sender_email === user?.email;
-          const senderAvatar = isMe ? (user?.avatar_url || msg.sender_avatar) : msg.sender_avatar;
-          const isCoachSender = teams.some(t => t.coach_email?.toLowerCase() === msg.sender_email?.toLowerCase());
-          const senderRole = isCoachSender ? "coach" : (isStaff ? "staff" : "parent");
-          return (
-            <MessageRow key={msg.id} msg={msg} isMe={isMe} senderAvatar={senderAvatar}
-              senderInitial={senderInitial} isStaff={isStaff} user={user}
-              channelId={channelId} channelName={channelName} senderRole={senderRole}
-              onBlock={handleBlockUser} />
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Fixed input */}
-      <form onSubmit={handleSend} className="flex-shrink-0 px-3 py-3 border-t border-border bg-card safe-area-bottom">
-        <div className="flex gap-2 items-center">
-          <Input
-            ref={inputRef}
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={`Message #${channelName}…`}
-            className="bg-surface border-border text-foreground flex-1"
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(e); }}
-            onFocus={() => { inputFocused.current = true; }}
-            onBlur={() => { inputFocused.current = false; }}
-          />
-          <Button type="submit" size="icon" disabled={!newMessage.trim()}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0 w-10 h-10">
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
-      </form>
-    </>
-  );
+  // ── Shared ChatPanel props ─────────────────────────────────────────────────
+  const chatPanelProps = {
+    channel,
+    channelId,
+    channelName,
+    user,
+    isStaff,
+    teams,
+    sports,
+    canPostAttendance,
+    onShowAttendance: () => setShowAttendanceDialog(true),
+    onBlockUser: handleBlockUser,
+    locallyBlockedEmails,
+  };
 
   // ── DM list (desktop sidebar) ─────────────────────────────────────────────
   const DmList = () => (
@@ -528,7 +309,7 @@ export default function Messages() {
       <div className={`md:hidden flex-1 flex-col overflow-hidden ${mobileView === "chat" ? "flex" : "hidden"}`}>
         {activeTab === "direct"
           ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
-          : <ChatPanel />
+          : <ChatPanel {...chatPanelProps} onBack={() => setMobileView("list")} />
         }
       </div>
 
@@ -536,7 +317,7 @@ export default function Messages() {
       <div className="hidden md:flex flex-1 flex-col min-w-0 overflow-hidden">
         {activeTab === "direct"
           ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
-          : <ChatPanel />
+          : <ChatPanel {...chatPanelProps} />
         }
       </div>
 
