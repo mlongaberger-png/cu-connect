@@ -60,7 +60,7 @@ export default function AppLayout() {
                 className="flex flex-col overflow-hidden"
                 style={{
                   height: "100%",
-                  paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                  paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
                 }}
               >
                 <Outlet />
