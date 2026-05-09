@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { format as formatDateFns, parse } from "date-fns";
 import BulkEventImporter from "@/components/schedule/BulkEventImporter";
+import UniformSelector from "@/components/schedule/UniformSelector";
 import SuggestionsInput from "@/components/schedule/SuggestionsInput";
 import TimePickerPopup from "@/components/schedule/TimePickerPopup";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
@@ -166,7 +167,7 @@ export default function Schedule() {
       queryClient.invalidateQueries({ queryKey: ["attendance-requests", form.team_id] });
     }
     setNotifyTeam(true);
-    setForm({ title: "", type: "practice", team_id: "", date: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "" });
+    setForm({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "", uniform_info: "" });
   };
 
   // Coaches only see events for their teams; ADs and admins see all
@@ -476,6 +477,7 @@ export default function Schedule() {
               </div>
             )}
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="bg-surface border-border" /></div>
+            <UniformSelector form={form} setForm={setForm} sportName={teams.find(t => t.id === form.team_id)?.sport_name || ""} />
             <div className="flex items-center gap-2 p-3 bg-surface rounded-xl border border-border">
                 <input
                   type="checkbox"
