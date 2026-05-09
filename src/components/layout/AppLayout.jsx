@@ -39,13 +39,16 @@ export default function AppLayout() {
   const isFullscreen = FULLSCREEN_PAGES.some(p => location.pathname.startsWith(p));
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background safe-area-left safe-area-right">
+    <div
+      className="flex overflow-hidden bg-background safe-area-left safe-area-right"
+      style={{ height: "100dvh", maxHeight: "100dvh" }}
+    >
       {/* Sidebar — desktop always visible, mobile as overlay */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
-        {/* Main content — pb-14 on mobile reserves space for the fixed bottom tab bar */}
+        {/* Main content area — fills remaining height between TopBar and BottomTabBar */}
         <main
           className="flex-1 min-h-0 overflow-hidden flex flex-col"
           style={{ transform: "translateZ(0)" }}
@@ -55,18 +58,22 @@ export default function AppLayout() {
               /* Full-height pages (e.g. Messages) manage their own scroll */
               <div
                 className="flex flex-col overflow-hidden"
-                style={{ height: "100%", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+                style={{
+                  height: "100%",
+                  paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                }}
               >
                 <Outlet />
               </div>
             ) : (
-              /* Normal pages: scrollable with bottom padding for tab bar */
+              /* Normal pages: single scrollable area, padded to clear bottom tab bar */
               <div
                 className="overflow-y-auto overflow-x-hidden h-full"
                 style={{
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 16px))",
+                  /* 56px tab bar + safe area bottom */
+                  paddingBottom: "calc(56px + env(safe-area-inset-bottom, 16px))",
                 }}
               >
                 <Outlet />

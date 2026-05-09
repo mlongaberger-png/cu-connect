@@ -87,6 +87,8 @@
   html {
     overscroll-behavior: none;
     -webkit-text-size-adjust: 100%;
+    height: 100%;
+    height: 100dvh;
   }
   * {
     @apply border-border outline-ring/50;
@@ -94,8 +96,10 @@
   body {
     @apply bg-background text-foreground font-inter;
     overscroll-behavior: none;
-    overflow-x: hidden;
+    overflow: hidden;
     max-width: 100vw;
+    height: 100%;
+    height: 100dvh;
     -webkit-tap-highlight-color: transparent;
   }
   main {
@@ -104,8 +108,12 @@
     -webkit-overflow-scrolling: touch;
   }
   #root {
-    overflow-x: hidden;
+    overflow: hidden;
     max-width: 100vw;
+    height: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -126,6 +134,12 @@ body:has([data-radix-dialog-overlay]) {
   max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Radix Dialog Content — always fits in viewport */
+[data-radix-dialog-content] {
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem) !important;
+  overflow-y: auto;
 }
 
 /* Bottom padding helper for modal content above nav bar */
