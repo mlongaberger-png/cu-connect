@@ -251,7 +251,7 @@ export default function Messages() {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <MessagingTermsGate>
-    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
+    <div className="flex overflow-hidden h-full">
 
       {/* ── Desktop sidebar ── */}
       <div className="hidden md:flex flex-col w-64 bg-card border-r border-border flex-shrink-0">
