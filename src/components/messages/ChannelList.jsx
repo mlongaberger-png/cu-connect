@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Hash, CheckCircle2, Lock, Globe, Star } from "lucide-react";
+import { MessageSquare, CheckCircle2, Lock, Globe, Star } from "lucide-react";
 
 function getLastRead(channelId) {
   try { return parseInt(localStorage.getItem(`msg_read_${channelId}`) || "0", 10); } catch { return 0; }
@@ -85,12 +85,12 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
         onClick={() => onSelectChannel(ch.type, ch.id, ch.name)}
         className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors border-b border-border/50 last:border-0 ${isActive ? "bg-primary/10" : "hover:bg-surface active:bg-surface"}`}
       >
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${ch.unread > 0 ? "bg-primary/20" : "bg-surface"}`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${ch.unread > 0 ? "bg-primary/20" : "bg-surface"}`}>
           {ch.icon
             ? <span className="text-lg leading-none">{ch.icon}</span>
             : ch.type === "room"
               ? ch.isPrivate ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />
-              : <Hash className={`w-4 h-4 ${ch.unread > 0 ? "text-primary" : "text-muted-foreground"}`} />
+              : <MessageSquare className={`w-4 h-4 ${ch.unread > 0 ? "text-primary" : "text-muted-foreground"}`} />
           }
         </div>
         <div className="flex-1 min-w-0">

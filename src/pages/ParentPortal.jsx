@@ -247,9 +247,11 @@ export default function ParentPortal() {
   const standaloneHeader = (
     <header className="sticky top-0 z-30 bg-sidebar border-b border-sidebar-border px-4 md:px-6 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-          <Trophy className="w-4 h-4 text-primary" />
-        </div>
+        <img
+          src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/61ac4d66c_file_0000000089d071f8be26c9f306ac7ce1.png"
+          alt="CU"
+          className="w-9 h-9 object-contain"
+        />
         <div>
           <span className="text-sm font-bold text-primary">Cornerstone United</span>
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Parent Portal</p>
