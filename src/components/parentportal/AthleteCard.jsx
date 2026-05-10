@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Trophy, Shield, Camera, Loader2 } from "lucide-react";
+import { Trophy, Camera, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -44,7 +44,7 @@ export default function AthleteCard({ player, team, sport, canEdit = false, onCl
             {team?.name || "Team"}
           </p>
         </div>
-        <Shield className="w-6 h-6 text-primary/40" />
+        <img src="https://i.imgur.com/placeholder.png" alt="CU" className="w-7 h-7 object-contain opacity-60" onError={e => { e.target.style.display='none'; }} />
       </div>
 
       {/* Photo area */}

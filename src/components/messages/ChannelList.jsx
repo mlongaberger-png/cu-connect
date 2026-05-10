@@ -24,11 +24,13 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
     mutationFn: ({ type, id, icon }) => {
       if (type === "room") return base44.entities.MessageRoom.update(id, { icon });
       if (type === "sport") return base44.entities.Sport.update(id, { icon });
+      if (type === "team") return base44.entities.Team.update(id, { icon });
       return Promise.resolve();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
       queryClient.invalidateQueries({ queryKey: ["sports"] });
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
       setIconPickerFor(null);
     },
   });
@@ -76,7 +78,7 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
     const channels = [
       { id: "org", name: "Organization", type: "org", icon: null, canEditIcon: false },
       ...sports.map(s => ({ id: s.id, name: s.name, type: "sport", icon: s.icon, canEditIcon: isAdmin })),
-      ...visibleTeams.map(t => ({ id: t.id, name: t.name, type: "team", icon: null, canEditIcon: false })),
+      ...visibleTeams.map(t => ({ id: t.id, name: t.name, type: "team", icon: t.icon || null, canEditIcon: isAdmin })),
       ...visibleRooms.map(r => ({ id: r.id, name: r.name, type: "room", icon: r.icon || null, isPrivate: r.is_private, canEditIcon: isAdmin || r.created_by === userEmail })),
     ];
 

@@ -17,11 +17,7 @@ const SPORT_UNIFORMS = {
   default:    ["jersey", "shorts"],
 };
 
-const COLORS = [
-  "White", "Black", "Gray", "Navy", "Royal Blue", "Light Blue",
-  "Red", "Maroon", "Orange", "Yellow", "Gold", "Green",
-  "Purple", "Pink", "Charcoal", "Camo",
-];
+const COLORS = ["Black", "White", "Gold", "Gray"];
 
 function detectSport(sportName = "") {
   const s = sportName.toLowerCase();
