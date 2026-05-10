@@ -44,7 +44,7 @@ export default function AthleteCard({ player, team, sport, canEdit = false, onCl
             {team?.name || "Team"}
           </p>
         </div>
-        <img src="https://i.imgur.com/placeholder.png" alt="CU" className="w-7 h-7 object-contain opacity-60" onError={e => { e.target.style.display='none'; }} />
+        <img src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/3d2c20771_file_0000000089d071f8be26c9f306ac7ce1.png" alt="CU" className="w-8 h-8 object-contain" />
       </div>
 
       {/* Photo area */}
