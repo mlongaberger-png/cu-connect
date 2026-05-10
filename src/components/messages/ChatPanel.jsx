@@ -147,7 +147,6 @@ export default function ChatPanel({
   const { data: allTeams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
-    enabled: isAdmin && channel === "team",
     staleTime: 30000,
   });
 
@@ -366,7 +365,7 @@ export default function ChatPanel({
   const resolvedIcon = (() => {
     if (channel === "sport") return freshSports.find(s => s.id === channelId)?.icon || "";
     if (channel === "room") return currentRoom?.icon || "";
-    if (channel === "team") return currentTeamForEdit?.icon || "";
+    if (channel === "team") return (currentTeamForEdit || teams.find(t => t.id === channelId))?.icon || "";
     return "";
   })();
   const ChannelIcon = () => {
