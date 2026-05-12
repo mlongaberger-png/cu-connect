@@ -49,16 +49,14 @@ export default function AccessRequestsPanel() {
     const playerIds = [...selectedPlayerIds];
     const altEmail = alternateEmail.trim() || undefined;
 
-    // Optimistically close the dialog and update the list immediately
     setReviewingReq(null);
-    toast({ title: action === "approve" ? "Approving… sending invite in background." : "Rejecting request…" });
+    toast({ title: action === "approve" ? "Approving parent account…" : "Rejecting request…" });
 
-    // Optimistically update local cache so it disappears from pending list right away
+    // Optimistically update local cache
     queryClient.setQueryData(["access-requests"], (old = []) =>
       old.map(r => r.id === reqToProcess.id ? { ...r, status: action === "approve" ? "approved" : "rejected" } : r)
     );
 
-    // Fire and forget — run in background
     base44.functions.invoke("approveParentRequest", {
       request_id: reqToProcess.id,
       action,
@@ -66,16 +64,22 @@ export default function AccessRequestsPanel() {
       alternate_email: altEmail,
     }).then(res => {
       if (res.data?.success) {
-        toast({ title: action === "approve" ? "✅ Parent approved & invited!" : "Request rejected." });
+        if (action === "approve") {
+          const msg = res.data.invited
+            ? "✅ Invitation sent to new parent"
+            : "✅ Existing account found — linked successfully";
+          toast({ title: msg });
+        } else {
+          toast({ title: "Request rejected." });
+        }
       } else {
-        toast({ title: "Error", description: res.data?.error || "Something went wrong.", variant: "destructive" });
-        // Revert optimistic update on error
+        toast({ title: "Approval failed", description: res.data?.error || "Something went wrong. Please try again.", variant: "destructive" });
         queryClient.invalidateQueries({ queryKey: ["access-requests"] });
       }
       queryClient.invalidateQueries({ queryKey: ["access-requests"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
-    }).catch(err => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }).catch(() => {
+      toast({ title: "Approval failed", description: "Something went wrong. Please try again.", variant: "destructive" });
       queryClient.invalidateQueries({ queryKey: ["access-requests"] });
     });
   };
