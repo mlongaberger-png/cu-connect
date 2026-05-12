@@ -81,16 +81,16 @@ Deno.serve(async (req) => {
         try {
           const existingUsers = await base44.asServiceRole.entities.User.filter({ email: linkEmail });
           if (existingUsers.length > 0) {
-            await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'parent' });
-            console.log(`Set role=parent for existing user: ${linkEmail}`);
+            await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'user' });
+            console.log(`Set role=user for existing user: ${linkEmail}`);
           }
         } catch (roleErr) {
           console.warn(`Could not set parent role for ${linkEmail}:`, roleErr.message);
         }
       }
 
-      // Invite via Base44 directly as 'parent' — no intermediate 'user' role
-      await base44.users.inviteUser(accessReq.parent_email, 'parent');
+      // Invite via Base44 as 'user' — autoUpgradeParentRole automation sets parent role on first login
+      await base44.users.inviteUser(accessReq.parent_email, 'user');
 
       await base44.asServiceRole.entities.AccessRequest.update(request_id, {
         status: 'approved',
