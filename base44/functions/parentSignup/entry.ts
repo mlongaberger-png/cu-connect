@@ -43,7 +43,9 @@ Child(ren): ${child_names}
 Sport/Team Interest: ${sport_interest || 'Not specified'}
 Notes: ${notes || 'None'}
 
-Please log in to the Admin panel to review and approve this request.
+Review and approve this request here:
+https://cu-connect.base44.app/AthleticDirectors?tab=people&sub=access
+
         `.trim(),
       });
     }

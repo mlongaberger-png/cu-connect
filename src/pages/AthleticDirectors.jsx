@@ -36,8 +36,9 @@ const TABS = [
 export default function AthleticDirectors() {
   useAdminGuard();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("people");
-  const [peopleSubTab, setPeopleSubTab] = useState("staff");
+  const urlParams = new URLSearchParams(window.location.search);
+  const [activeTab, setActiveTab] = useState(urlParams.get("tab") || "people");
+  const [peopleSubTab, setPeopleSubTab] = useState(urlParams.get("sub") || "staff");
   const [registrationsSubTab, setRegistrationsSubTab] = useState("athletes");
   const [settingsSubTab, setSettingsSubTab] = useState("seasons");
   const [open, setOpen] = useState(false);
