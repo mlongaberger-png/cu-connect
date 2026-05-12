@@ -44,24 +44,40 @@ export default function AccessRequestsPanel() {
     );
   };
 
-  const handleAction = async (action) => {
-    setSubmitting(true);
-    const res = await base44.functions.invoke("approveParentRequest", {
-      request_id: reviewingReq.id,
-      action,
-      player_ids: action === "approve" ? selectedPlayerIds : [],
-      alternate_email: alternateEmail.trim() || undefined,
-    });
-    setSubmitting(false);
+  const handleAction = (action) => {
+    const reqToProcess = reviewingReq;
+    const playerIds = [...selectedPlayerIds];
+    const altEmail = alternateEmail.trim() || undefined;
 
-    if (res.data?.success) {
-      toast({ title: action === "approve" ? "Parent approved & notified!" : "Request rejected." });
+    // Optimistically close the dialog and update the list immediately
+    setReviewingReq(null);
+    toast({ title: action === "approve" ? "Approving… sending invite in background." : "Rejecting request…" });
+
+    // Optimistically update local cache so it disappears from pending list right away
+    queryClient.setQueryData(["access-requests"], (old = []) =>
+      old.map(r => r.id === reqToProcess.id ? { ...r, status: action === "approve" ? "approved" : "rejected" } : r)
+    );
+
+    // Fire and forget — run in background
+    base44.functions.invoke("approveParentRequest", {
+      request_id: reqToProcess.id,
+      action,
+      player_ids: action === "approve" ? playerIds : [],
+      alternate_email: altEmail,
+    }).then(res => {
+      if (res.data?.success) {
+        toast({ title: action === "approve" ? "✅ Parent approved & invited!" : "Request rejected." });
+      } else {
+        toast({ title: "Error", description: res.data?.error || "Something went wrong.", variant: "destructive" });
+        // Revert optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ["access-requests"] });
+      }
       queryClient.invalidateQueries({ queryKey: ["access-requests"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      setReviewingReq(null);
-    } else {
-      toast({ title: "Error", description: res.data?.error || "Something went wrong.", variant: "destructive" });
-    }
+    }).catch(err => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+      queryClient.invalidateQueries({ queryKey: ["access-requests"] });
+    });
   };
 
   const statusBadge = (status) => {
@@ -199,23 +215,21 @@ export default function AccessRequestsPanel() {
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setReviewingReq(null)} disabled={submitting} className="order-last sm:order-first">
+            <Button variant="outline" onClick={() => setReviewingReq(null)} className="order-last sm:order-first">
               Cancel
             </Button>
             <Button
               variant="outline"
               onClick={() => handleAction("reject")}
-              disabled={submitting}
               className="border-red-500/30 text-red-400 hover:bg-red-500/10 gap-1"
             >
               <XCircle className="w-4 h-4" /> Reject
             </Button>
             <Button
               onClick={() => handleAction("approve")}
-              disabled={submitting}
               className="bg-green-600 hover:bg-green-700 text-white gap-1"
             >
-              <CheckCircle2 className="w-4 h-4" /> {submitting ? "Processing…" : "Approve & Invite"}
+              <CheckCircle2 className="w-4 h-4" /> Approve & Invite
             </Button>
           </DialogFooter>
         </DialogContent>
