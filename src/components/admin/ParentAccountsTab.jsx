@@ -54,7 +54,7 @@ export default function ParentAccountsTab() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.User.update(id, data),
+    mutationFn: ({ id, data }) => base44.functions.invoke("updateParentName", { target_user_id: id, ...data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast({ title: "Parent updated successfully" });
