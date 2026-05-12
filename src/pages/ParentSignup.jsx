@@ -77,8 +77,9 @@ export default function ParentSignup() {
       <div className="flex-1 flex items-start justify-center p-4 md:p-8">
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-lg w-full space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Request Parent Access</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h2 className="text-2xl font-bold text-foreground">First-Time Parent Sign Up</h2>
+            <p className="text-sm font-normal text-muted-foreground/70 mt-0.5">(New to CU)</p>
+            <p className="text-sm text-muted-foreground mt-2">
               Fill out the form below. An admin will review and approve your access within 1–2 business days.
             </p>
           </div>
