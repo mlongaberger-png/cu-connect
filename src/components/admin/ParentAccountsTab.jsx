@@ -55,8 +55,11 @@ export default function ParentAccountsTab() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.functions.invoke("updateParentName", { target_user_id: id, ...data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+    onSuccess: (_, variables) => {
+      // Directly patch the cache — refetching won't work due to User RLS
+      queryClient.setQueryData(["users"], (old = []) =>
+        old.map(u => u.id === variables.id ? { ...u, ...variables.data } : u)
+      );
       toast({ title: "Parent updated successfully" });
       setEditingUser(null);
     },
