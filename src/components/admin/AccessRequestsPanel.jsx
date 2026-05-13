@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, Clock, User, Mail, Phone, Users, Trophy, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, User, Mail, Phone, Users, Trophy, FileText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -18,6 +19,9 @@ export default function AccessRequestsPanel() {
   const [alternateEmail, setAlternateEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState("pending");
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerTeamFilter, setPlayerTeamFilter] = useState("all");
+  const [playerSportFilter, setPlayerSportFilter] = useState("all");
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["access-requests"],
@@ -29,6 +33,26 @@ export default function AccessRequestsPanel() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  // Unique sports and teams for filters
+  const sportOptions = useMemo(() => [...new Set(players.map(p => p.sport_name).filter(Boolean))].sort(), [players]);
+  const teamOptions = useMemo(() => {
+    const base = playerSportFilter !== "all" ? players.filter(p => p.sport_name === playerSportFilter) : players;
+    return [...new Set(base.map(p => p.team_name).filter(Boolean))].sort();
+  }, [players, playerSportFilter]);
+
+  const filteredPlayers = useMemo(() => {
+    return players.filter(p => {
+      if (!p.is_active) return false;
+      if (playerSportFilter !== "all" && p.sport_name !== playerSportFilter) return false;
+      if (playerTeamFilter !== "all" && p.team_name !== playerTeamFilter) return false;
+      if (playerSearch) {
+        const q = playerSearch.toLowerCase();
+        return `${p.first_name} ${p.last_name}`.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [players, playerSportFilter, playerTeamFilter, playerSearch]);
+
   const filtered = filter === "all" ? requests : requests.filter(r => r.status === filter);
   const pendingCount = requests.filter(r => r.status === "pending").length;
 
@@ -36,6 +60,9 @@ export default function AccessRequestsPanel() {
     setReviewingReq(req);
     setSelectedPlayerIds([]);
     setAlternateEmail(req.alternate_email || "");
+    setPlayerSearch("");
+    setPlayerTeamFilter("all");
+    setPlayerSportFilter("all");
   };
 
   const togglePlayer = (pid) => {
@@ -196,24 +223,68 @@ export default function AccessRequestsPanel() {
 
               {/* Link to Players */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">Link to existing player(s) <span className="text-muted-foreground font-normal">(optional)</span></p>
-                <p className="text-xs text-muted-foreground">Select which player(s) this parent should see in their portal.</p>
+                <p className="text-sm font-medium text-foreground">
+                  Link to existing player(s) <span className="text-muted-foreground font-normal">(optional)</span>
+                  {selectedPlayerIds.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-semibold">{selectedPlayerIds.length} selected</span>
+                  )}
+                </p>
+
+                {/* Filters row */}
+                <div className="flex gap-2 flex-wrap">
+                  <div className="relative flex-1 min-w-[120px]">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      className="pl-8 h-8 text-xs"
+                      placeholder="Search name…"
+                      value={playerSearch}
+                      onChange={e => setPlayerSearch(e.target.value)}
+                    />
+                  </div>
+                  <Select value={playerSportFilter} onValueChange={v => { setPlayerSportFilter(v); setPlayerTeamFilter("all"); }}>
+                    <SelectTrigger className="h-8 text-xs w-[110px]"><SelectValue placeholder="Sport" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sports</SelectItem>
+                      {sportOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={playerTeamFilter} onValueChange={setPlayerTeamFilter}>
+                    <SelectTrigger className="h-8 text-xs w-[130px]"><SelectValue placeholder="Team" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Teams</SelectItem>
+                      {teamOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                  {players.map(p => (
-                    <label key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-surface border border-border hover:border-primary/30 cursor-pointer transition-colors">
+                  {filteredPlayers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-2 text-center">
+                      {players.length === 0 ? "No players in the system yet." : "No players match your filters."}
+                    </p>
+                  ) : filteredPlayers.map(p => (
+                    <label key={p.id} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      selectedPlayerIds.includes(p.id)
+                        ? "bg-primary/10 border-primary/40"
+                        : "bg-surface border-border hover:border-primary/30"
+                    }`}>
                       <input
                         type="checkbox"
                         checked={selectedPlayerIds.includes(p.id)}
                         onChange={() => togglePlayer(p.id)}
                         className="accent-primary"
                       />
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
-                        <p className="text-xs text-muted-foreground">{p.team_name} {p.sport_name ? `· ${p.sport_name}` : ""}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.team_name}{p.sport_name ? ` · ${p.sport_name}` : ""}{p.jersey_number ? ` · #${p.jersey_number}` : ""}
+                        </p>
                       </div>
+                      {selectedPlayerIds.includes(p.id) && (
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                      )}
                     </label>
                   ))}
-                  {players.length === 0 && <p className="text-xs text-muted-foreground p-2">No players in the system yet. You can link them later from the team roster.</p>}
                 </div>
               </div>
             </div>

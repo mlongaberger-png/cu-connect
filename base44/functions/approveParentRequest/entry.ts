@@ -14,8 +14,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'request_id and action are required.' }, { status: 400 });
     }
 
-    const requests = await base44.asServiceRole.entities.AccessRequest.filter({ id: request_id });
-    const accessReq = requests[0];
+    // Use .get() instead of .filter({id}) — filter by id is not supported
+    let accessReq;
+    try {
+      accessReq = await base44.asServiceRole.entities.AccessRequest.get(request_id);
+    } catch (e) {
+      console.error('Could not fetch AccessRequest:', e.message);
+      return Response.json({ error: 'Request not found.' }, { status: 404 });
+    }
     if (!accessReq) {
       return Response.json({ error: 'Request not found.' }, { status: 404 });
     }
@@ -49,8 +55,13 @@ Deno.serve(async (req) => {
       // Create PlayerGuardian links for all relevant emails
       if (player_ids && player_ids.length > 0) {
         for (const pid of player_ids) {
-          const playerList = await base44.asServiceRole.entities.Player.filter({ id: pid });
-          const player = playerList[0];
+          let player;
+          try {
+            player = await base44.asServiceRole.entities.Player.get(pid);
+          } catch (e) {
+            console.warn(`Player ${pid} not found, skipping.`);
+            continue;
+          }
           if (!player) continue;
 
           for (const linkEmail of emailsToLink) {
@@ -66,12 +77,13 @@ Deno.serve(async (req) => {
                 relationship: 'Guardian',
                 invited_by: user.email,
               });
+              console.log(`Guardian link created: ${linkEmail} → ${player.first_name} ${player.last_name}`);
             }
           }
         }
       }
 
-      // Check if user already exists — if so, skip inviteUser to avoid errors
+      // Check if user already exists — skip inviteUser if so (prevents 500 on duplicate invite)
       let userAlreadyExists = false;
       for (const linkEmail of emailsToLink) {
         try {
@@ -82,14 +94,20 @@ Deno.serve(async (req) => {
             console.log(`Existing user found for ${linkEmail} — skipping invite, updated role.`);
           }
         } catch (roleErr) {
-          console.warn(`Could not set parent role for ${linkEmail}:`, roleErr.message);
+          console.warn(`Could not update role for ${linkEmail}:`, roleErr.message);
         }
       }
 
       // Only invite if no existing account was found
       if (!userAlreadyExists) {
-        await base44.users.inviteUser(accessReq.parent_email, 'user');
-        console.log(`Invite sent to new user: ${accessReq.parent_email}`);
+        try {
+          await base44.users.inviteUser(accessReq.parent_email, 'user');
+          console.log(`Invite sent to new user: ${accessReq.parent_email}`);
+        } catch (inviteErr) {
+          // If invite fails because user already exists, treat as existing user
+          console.warn(`inviteUser failed (user may already exist): ${inviteErr.message}`);
+          userAlreadyExists = true;
+        }
       }
 
       await base44.asServiceRole.entities.AccessRequest.update(request_id, {
@@ -98,7 +116,6 @@ Deno.serve(async (req) => {
         reviewed_at: new Date().toISOString(),
       });
 
-      // Send approval email
       const appleNote = alternate_email
         ? `\nNOTE: If you use "Sign in with Apple" and hide your email, your portal account will use your Apple private relay address (${alternate_email}). That has been linked to your account, so you can sign in either way.\n`
         : '\nIMPORTANT: If you plan to use "Sign in with Apple," please contact your administrator so they can link your Apple private relay email to your account.\n';
@@ -112,7 +129,7 @@ Great news! Your Cornerstone United parent portal access has been approved.
 
 ${userAlreadyExists
   ? 'Your existing account has been linked to your athlete(s). Simply sign in at the portal with this email address.'
-  : 'You should receive a separate email shortly with a link to set up your account. Simply click that link, create your password, and you\'ll be taken straight to the portal.'
+  : "You should receive a separate email shortly with a link to set up your account. Simply click that link, create your password, and you'll be taken straight to the portal."
 }
 
 Once logged in, you can:
@@ -133,7 +150,7 @@ Welcome aboard!
 
     return Response.json({ error: 'Invalid action.' }, { status: 400 });
   } catch (error) {
-    console.error('approveParentRequest error:', error.message);
+    console.error('approveParentRequest error:', error.message, error.stack);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
