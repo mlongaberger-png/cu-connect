@@ -45,7 +45,7 @@ const GRANDPARENT_ALWAYS_VISIBLE = ["overview"];
 export default function ParentPortal() {
   const location = useLocation();
   const isStandalone = location.pathname === "/ParentPortal";
-  const { user, isLoadingAuth } = useAuth();
+  const { user, isLoadingAuth, refreshUser } = useAuth();
   const userEmail = user?.email;
   const isGrandparent = user?.role === "grandparent";
   const isRestrictedFamily = isGrandparent; // extend to other limited roles if needed
@@ -69,6 +69,11 @@ export default function ParentPortal() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [promotingPlayer, setPromotingPlayer] = useState(null);
   const [selectedAthlete, setSelectedAthlete] = useState(null);
+
+  // Refresh user on mount so name changes made by admin are reflected immediately
+  useEffect(() => {
+    if (refreshUser) refreshUser();
+  }, []);
 
   // Check for payment return
   useEffect(() => {
