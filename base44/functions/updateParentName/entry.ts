@@ -15,18 +15,25 @@ Deno.serve(async (req) => {
     }
 
     const updates = {};
-    if (full_name !== undefined) updates.full_name = full_name;
     if (role !== undefined) updates.role = role;
 
-    try {
-      await base44.asServiceRole.entities.User.update(target_user_id, updates);
-    } catch (updateErr) {
-      // The User entity may throw a "not found" after a successful update due to RLS.
-      // If the log shows the update ran, treat it as success.
-      if (!updateErr.message?.toLowerCase().includes('not found')) {
-        throw updateErr;
+    // full_name is a built-in auth field that cannot be changed via entity update.
+    // We store it as display_name override on the User entity instead.
+    if (full_name !== undefined) updates.display_name = full_name;
+
+    await base44.asServiceRole.entities.User.update(target_user_id, updates);
+
+    // Also update parent_name on any linked Player records so the roster stays consistent
+    if (full_name !== undefined) {
+      const allUsers = await base44.asServiceRole.entities.User.list();
+      const targetUser = allUsers.find(u => u.id === target_user_id);
+      if (targetUser?.email) {
+        const players = await base44.asServiceRole.entities.Player.filter({ parent_email: targetUser.email });
+        await Promise.all(players.map(p =>
+          base44.asServiceRole.entities.Player.update(p.id, { parent_name: full_name })
+        ));
+        console.log(`Updated parent_name on ${players.length} player record(s) for ${targetUser.email}`);
       }
-      // Otherwise: update succeeded, RLS just hid the record from the response — continue.
     }
 
     console.log(`Admin ${user.email} updated user ${target_user_id}:`, updates);

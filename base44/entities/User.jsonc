@@ -17,6 +17,10 @@
       "default": "user",
       "description": "User role in the app"
     },
+    "display_name": {
+      "type": "string",
+      "description": "Admin-set display name override. Used instead of full_name when present."
+    },
     "setup_complete": {
       "type": "boolean",
       "default": false,
@@ -33,5 +37,6 @@
       "type": "string",
       "description": "JSON of notification preferences"
     }
-  }
+  },
+  "required": []
 }

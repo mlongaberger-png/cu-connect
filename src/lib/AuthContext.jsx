@@ -87,11 +87,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Merges auth profile with entity overrides (e.g. display_name set by admin)
+  const enrichUser = async (authUser) => {
+    if (!authUser) return authUser;
+    try {
+      const entityUsers = await base44.entities.User.filter({ id: authUser.id });
+      const entityRecord = entityUsers?.[0];
+      if (entityRecord?.display_name) {
+        return { ...authUser, full_name: entityRecord.display_name, display_name: entityRecord.display_name };
+      }
+    } catch (e) {
+      // Non-critical — fall back to auth profile name
+    }
+    return authUser;
+  };
+
   const refreshUser = async () => {
     try {
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      return currentUser;
+      const authUser = await base44.auth.me();
+      const enriched = await enrichUser(authUser);
+      setUser(enriched);
+      return enriched;
     } catch (e) {
       console.warn('refreshUser failed:', e.message);
     }
@@ -109,7 +125,6 @@ export const AuthProvider = ({ children }) => {
         try {
           const res = await base44.functions.invoke('autoUpgradeParentRole', {});
           if (res?.data?.upgraded) {
-            // Re-fetch to get the updated role
             currentUser = await base44.auth.me();
           }
         } catch (upgradeErr) {
@@ -117,7 +132,8 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      setUser(currentUser);
+      const enriched = await enrichUser(currentUser);
+      setUser(enriched);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
     } catch (error) {

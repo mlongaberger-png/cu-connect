@@ -57,8 +57,14 @@ export default function ParentAccountsTab() {
     mutationFn: ({ id, data }) => base44.functions.invoke("updateParentName", { target_user_id: id, ...data }),
     onSuccess: (_, variables) => {
       // Directly patch the cache — refetching won't work due to User RLS
+      // full_name is auth-only; we store it as display_name on the entity
+      const patch = { ...variables.data };
+      if (patch.full_name !== undefined) {
+        patch.display_name = patch.full_name;
+        delete patch.full_name;
+      }
       queryClient.setQueryData(["users"], (old = []) =>
-        old.map(u => u.id === variables.id ? { ...u, ...variables.data } : u)
+        old.map(u => u.id === variables.id ? { ...u, ...patch } : u)
       );
       toast({ title: "Parent updated successfully" });
       setEditingUser(null);
@@ -69,9 +75,11 @@ export default function ParentAccountsTab() {
   const [appleRelayEmail, setAppleRelayEmail] = useState("");
   const [linkingRelay, setLinkingRelay] = useState(false);
 
+  const displayName = (u) => u.display_name || u.full_name || "";
+
   const openEdit = (user) => {
     setEditingUser(user);
-    setEditForm({ full_name: user.full_name || "", role: user.role || "parent" });
+    setEditForm({ full_name: displayName(user), role: user.role || "parent" });
     setAppleRelayEmail("");
   };
 
@@ -124,11 +132,11 @@ export default function ParentAccountsTab() {
             return (
               <div key={user.id} className="flex items-center gap-3 p-4 rounded-xl bg-surface border border-border hover:border-primary/30 transition-colors">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-primary font-semibold text-sm">{(user.full_name || user.email || "?")[0].toUpperCase()}</span>
+                  <span className="text-primary font-semibold text-sm">{(displayName(user) || user.email || "?")[0].toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm text-foreground truncate">{user.full_name || <span className="text-muted-foreground italic">No name</span>}</span>
+                    <span className="font-medium text-sm text-foreground truncate">{displayName(user) || <span className="text-muted-foreground italic">No name</span>}</span>
                     <Badge variant="outline" className="text-[10px] capitalize">{user.role || "user"}</Badge>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
@@ -160,7 +168,7 @@ export default function ParentAccountsTab() {
           {deletingUser && (
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete the account for <span className="font-semibold text-foreground">{deletingUser.full_name || deletingUser.email}</span>?
+                Are you sure you want to delete the account for <span className="font-semibold text-foreground">{displayName(deletingUser) || deletingUser.email}</span>?
               </p>
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs space-y-1">
                 <p className="font-semibold">This will permanently:</p>
