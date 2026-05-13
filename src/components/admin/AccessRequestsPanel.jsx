@@ -154,7 +154,7 @@ export default function AccessRequestsPanel() {
             <div
               key={req.id}
               className="flex items-center gap-3 p-4 rounded-xl bg-surface border border-border hover:border-primary/30 transition-colors cursor-pointer"
-              onClick={() => req.status === "pending" && openReview(req)}
+              onClick={() => openReview(req)}
             >
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <span className="text-primary font-semibold text-sm">{(req.parent_name || "?")[0].toUpperCase()}</span>
@@ -174,13 +174,16 @@ export default function AccessRequestsPanel() {
                   {req.reviewed_by && ` · Reviewed by ${req.reviewed_by}`}
                 </p>
               </div>
-              {req.status === "pending" && (
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3" onClick={e => { e.stopPropagation(); openReview(req); }}>
-                    Review
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant={req.status === "pending" ? "default" : "outline"}
+                  className={req.status === "pending" ? "bg-green-600 hover:bg-green-700 text-white h-8 px-3" : "h-8 px-3 text-xs"}
+                  onClick={e => { e.stopPropagation(); openReview(req); }}
+                >
+                  {req.status === "pending" ? "Review" : "Edit"}
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -190,7 +193,9 @@ export default function AccessRequestsPanel() {
       <Dialog open={!!reviewingReq} onOpenChange={() => setReviewingReq(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Review Access Request</DialogTitle>
+            <DialogTitle>
+            {reviewingReq?.status === "rejected" ? "Re-review Rejected Request" : reviewingReq?.status === "approved" ? "Edit Approved Request" : "Review Access Request"}
+          </DialogTitle>
           </DialogHeader>
           {reviewingReq && (
             <div className="space-y-4 py-1">
@@ -304,7 +309,8 @@ export default function AccessRequestsPanel() {
               onClick={() => handleAction("approve")}
               className="bg-green-600 hover:bg-green-700 text-white gap-1"
             >
-              <CheckCircle2 className="w-4 h-4" /> Approve & Invite
+              <CheckCircle2 className="w-4 h-4" />
+              {reviewingReq?.status === "rejected" ? "Approve (Override)" : reviewingReq?.status === "approved" ? "Re-approve & Sync" : "Approve & Invite"}
             </Button>
           </DialogFooter>
         </DialogContent>

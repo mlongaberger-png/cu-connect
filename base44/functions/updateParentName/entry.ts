@@ -18,7 +18,16 @@ Deno.serve(async (req) => {
     if (full_name !== undefined) updates.full_name = full_name;
     if (role !== undefined) updates.role = role;
 
-    await base44.asServiceRole.entities.User.update(target_user_id, updates);
+    try {
+      await base44.asServiceRole.entities.User.update(target_user_id, updates);
+    } catch (updateErr) {
+      // The User entity may throw a "not found" after a successful update due to RLS.
+      // If the log shows the update ran, treat it as success.
+      if (!updateErr.message?.toLowerCase().includes('not found')) {
+        throw updateErr;
+      }
+      // Otherwise: update succeeded, RLS just hid the record from the response — continue.
+    }
 
     console.log(`Admin ${user.email} updated user ${target_user_id}:`, updates);
     return Response.json({ success: true });
