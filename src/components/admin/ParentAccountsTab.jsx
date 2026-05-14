@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2, Link2 } from "lucide-react";
+import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2, Link2, Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
@@ -19,6 +19,7 @@ export default function ParentAccountsTab() {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [deletingUser, setDeletingUser] = useState(null);
+  const [reinviting, setReinviting] = useState(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -72,6 +73,17 @@ export default function ParentAccountsTab() {
     onError: (e) => toast({ title: "Update failed", description: e.message, variant: "destructive" }),
   });
 
+  const handleReinvite = async (user) => {
+    setReinviting(user.id);
+    const res = await base44.functions.invoke("inviteParent", { email: user.email, players: [] });
+    setReinviting(null);
+    if (res.data?.success) {
+      toast({ title: "Invite sent", description: `A new invite link was sent to ${user.email}` });
+    } else {
+      toast({ title: "Failed to send invite", description: res.data?.error || "Something went wrong.", variant: "destructive" });
+    }
+  };
+
   const [appleRelayEmail, setAppleRelayEmail] = useState("");
   const [linkingRelay, setLinkingRelay] = useState(false);
 
@@ -108,7 +120,7 @@ export default function ParentAccountsTab() {
 
       <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
         <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span><strong>Password resets</strong> must be initiated by the parent via "Forgot Password" on the login page. You can update their display name and role here.</span>
+        <span><strong>Password issues?</strong> Use the <Send className="w-3 h-3 inline mx-0.5" /> button on any account to resend an invite link — the parent can set their password directly through it.</span>
       </div>
 
       <div className="relative">
@@ -149,6 +161,9 @@ export default function ParentAccountsTab() {
                     </div>
                   )}
                 </div>
+                <Button size="sm" variant="ghost" title="Resend invite link" onClick={() => handleReinvite(user)} disabled={reinviting === user.id}>
+                  <Send className={`w-4 h-4 ${reinviting === user.id ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
+                </Button>
                 <Button size="sm" variant="ghost" onClick={() => openEdit(user)}>
                   <Edit2 className="w-4 h-4" />
                 </Button>
@@ -249,7 +264,7 @@ export default function ParentAccountsTab() {
               </div>
               <div className="flex items-start gap-2 text-xs text-muted-foreground p-3 rounded-lg bg-surface border border-border">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-yellow-400" />
-                Password changes must be initiated by the parent via "Forgot Password" on the login page.
+                To help a parent set their password, close this dialog and click the <Send className="w-3 h-3 inline mx-0.5" /> button to resend their invite link.
               </div>
             </div>
           )}

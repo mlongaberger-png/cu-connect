@@ -36,6 +36,9 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.NotificationPreference.delete(pref.id);
   }
 
+  // Delete the User entity record
+  await base44.asServiceRole.entities.User.delete(target_user_id);
+
   // Audit log
   await base44.asServiceRole.entities.AuditLog.create({
     action: 'admin_account_deleted',
