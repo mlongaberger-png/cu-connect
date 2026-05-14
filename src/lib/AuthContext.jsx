@@ -91,10 +91,11 @@ export const AuthProvider = ({ children }) => {
   const enrichUser = async (authUser) => {
     if (!authUser) return authUser;
     try {
-      const entityUsers = await base44.entities.User.filter({ id: authUser.id });
+      // Filter by email — more reliable than filtering by id for User entity
+      const entityUsers = await base44.entities.User.filter({ email: authUser.email });
       const entityRecord = entityUsers?.[0];
       if (entityRecord?.display_name) {
-        return { ...authUser, full_name: entityRecord.display_name, display_name: entityRecord.display_name };
+        return { ...authUser, display_name: entityRecord.display_name };
       }
     } catch (e) {
       // Non-critical — fall back to auth profile name

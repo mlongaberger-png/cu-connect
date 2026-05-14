@@ -264,7 +264,7 @@ export default function ParentPortal() {
       </div>
       {user && (
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground hidden sm:block">{user.full_name || user.email}</span>
+          <span className="text-xs text-muted-foreground hidden sm:block">{user.display_name || user.full_name || user.email}</span>
           <button onClick={() => base44.auth.logout(window.location.href)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
             <LogOut className="w-4 h-4" /> Sign out
           </button>
@@ -674,7 +674,7 @@ export default function ParentPortal() {
       {/* Documents Tab */}
       {activeTab === "documents" && (
         <div className="space-y-4">
-          <ParentSignatureRequests myKids={myKids} userEmail={userEmail} userName={user?.full_name} />
+          <ParentSignatureRequests myKids={myKids} userEmail={userEmail} userName={user?.display_name || user?.full_name} />
           <p className="text-sm text-muted-foreground">Upload required documents for each player (birth certificates, physicals, insurance cards, etc.)</p>
           {myKids.map(kid => <PlayerDocuments key={kid.id} player={kid} />)}
         </div>
@@ -692,7 +692,7 @@ export default function ParentPortal() {
           user={user}
           myKids={myKids}
           userEmail={userEmail}
-          userName={user?.full_name}
+          userName={user?.display_name || user?.full_name}
           myTeamIds={myTeamIds}
           myTeams={myTeams}
           events={myEvents}

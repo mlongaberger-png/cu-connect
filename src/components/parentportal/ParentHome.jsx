@@ -144,7 +144,7 @@ export default function ParentHome() {
     return (
       <div className="p-6 text-center space-y-4">
         <UserCircle className="w-12 h-12 text-muted-foreground mx-auto" />
-        <p className="text-foreground font-semibold">Welcome, {user?.full_name?.split(" ")[0] || "there"}!</p>
+        <p className="text-foreground font-semibold">Welcome, {(user?.display_name || user?.full_name)?.split(" ")[0] || "there"}!</p>
         <p className="text-sm text-muted-foreground">Your athlete profiles will appear here once your account is linked.</p>
         <Button onClick={() => navigate("/ParentPortal")} variant="outline" className="gap-2">
           Complete Setup <ChevronRight className="w-4 h-4" />
@@ -169,7 +169,7 @@ export default function ParentHome() {
       {/* 1. Welcome */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          Hey, {user?.full_name?.split(" ")[0] || "there"}! 👋
+          Hey, {(user?.display_name || user?.full_name)?.split(" ")[0] || "there"}! 👋
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {myTeams.map(t => t.name).join(" · ")}
