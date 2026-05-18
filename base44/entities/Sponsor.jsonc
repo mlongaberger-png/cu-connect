@@ -1,0 +1,36 @@
+{
+  "name": "Sponsor",
+  "type": "object",
+  "properties": {
+    "business_name": {
+      "type": "string",
+      "description": "Name of the sponsoring business"
+    },
+    "website_url": {
+      "type": "string",
+      "description": "Absolute URL (http/https) for the sponsor's website"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Logo image URL"
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "Gold",
+        "Silver",
+        "Bronze"
+      ],
+      "default": "Bronze",
+      "description": "Sponsorship tier level"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether sponsor appears in the live rotation"
+    }
+  },
+  "required": [
+    "business_name"
+  ]
+}
