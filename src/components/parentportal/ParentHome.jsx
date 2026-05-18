@@ -14,6 +14,7 @@ import AthleteCard from "@/components/parentportal/AthleteCard";
 import AthleteProfileModal from "@/components/parentportal/AthleteProfileModal";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
+import FieldStatusBanner from "@/components/parentportal/FieldStatusBanner";
 import { Button } from "@/components/ui/button";
 
 const TYPE_COLORS = {
@@ -165,6 +166,7 @@ export default function ParentHome() {
     )}
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6 pb-24">
       <PushNotificationBanner />
+      <FieldStatusBanner />
 
       {/* 1. Welcome */}
       <div>

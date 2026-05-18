@@ -1,0 +1,40 @@
+{
+  "name": "FieldStatus",
+  "type": "object",
+  "properties": {
+    "location_name": {
+      "type": "string",
+      "description": "Name of the field or facility"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "delayed",
+        "closed"
+      ],
+      "default": "open",
+      "description": "Current field status"
+    },
+    "alert_message": {
+      "type": "string",
+      "description": "Custom alert or note shown to parents"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "ISO timestamp of last status update"
+    },
+    "updated_by_name": {
+      "type": "string",
+      "description": "Name of staff member who last updated this"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this location is actively monitored"
+    }
+  },
+  "required": [
+    "location_name"
+  ]
+}

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, Pencil, Trash2, ShieldCheck, Mail, MessageSquare, Phone, UserCircle,
-  ClipboardList, FileText, DollarSign, Settings, Users2
+  ClipboardList, FileText, DollarSign, Settings, Users2, MapPin
 } from "lucide-react";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
 import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
@@ -22,6 +22,7 @@ import DataExport from "@/pages/DataExport";
 import LegalPages from "@/pages/LegalPages";
 import AuditLog from "@/pages/AuditLog";
 import AdminFinanceConsole from "@/components/admin/AdminFinanceConsole";
+import FieldStatusManager from "@/components/admin/FieldStatusManager";
 
 const empty = { name: "", email: "", google_chat_url: "", sport_id: "", sport_name: "", phone: "", title: "Athletic Director" };
 
@@ -30,6 +31,7 @@ const TABS = [
   { id: "registrations", label: "Registrations", icon: ClipboardList, desc: "Athlete & leadership applications" },
   { id: "finance",       label: "Finance",       icon: DollarSign,    desc: "Payments & invoices" },
   { id: "content",       label: "Content",       icon: FileText,      desc: "Documents & legal pages" },
+  { id: "fields",        label: "Field Status",  icon: MapPin,         desc: "Field & facility alerts" },
   { id: "settings",      label: "Settings",      icon: Settings,      desc: "Seasons, data & audit log" },
 ];
 
@@ -212,6 +214,11 @@ export default function AthleticDirectors() {
           </div>
           <LegalPages embedded />
         </div>
+      )}
+
+      {/* ── FIELD STATUS ── */}
+      {activeTab === "fields" && (
+        <FieldStatusManager />
       )}
 
       {/* ── SETTINGS ── */}
