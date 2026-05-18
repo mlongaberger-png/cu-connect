@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle } from "lucide-react";
 import SnackManagerPanel from "@/components/snacks/SnackManagerPanel";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
@@ -49,6 +49,7 @@ export default function TeamDetail() {
     setInviting(null);
   };
   const [form, setForm] = useState({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" });
+  const [jerseyConflict, setJerseyConflict] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const queryClient = useQueryClient();
 
@@ -67,11 +68,17 @@ export default function TeamDetail() {
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
   });
+
+  const { data: uniformInventory = [] } = useQuery({
+    queryKey: ["uniform-inventory", team?.sport_id],
+    queryFn: () => base44.entities.UniformInventory.filter({ sport_id: team?.sport_id }),
+    enabled: !!team?.sport_id,
+  });
   const players = allPlayers
     .filter(p => p.team_id === teamId)
     .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`));
 
-  const resetForm = () => setForm({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" });
+  const resetForm = () => { setForm({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" }); setJerseyConflict(false); };
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Player.create(data),
@@ -123,12 +130,45 @@ export default function TeamDetail() {
     setShowTeamForm(true);
   };
 
+  const decrementJerseyInventory = async () => {
+    const jerseyItem = uniformInventory.find(
+      inv => inv.item_type === "jersey" && inv.quantity_assigned < inv.quantity_total
+    );
+    if (jerseyItem) {
+      await base44.entities.UniformInventory.update(jerseyItem.id, {
+        quantity_assigned: (jerseyItem.quantity_assigned || 0) + 1,
+      });
+      queryClient.invalidateQueries({ queryKey: ["uniform-inventory", team?.sport_id] });
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    setJerseyConflict(false);
+
+    // Jersey number conflict check
+    if (form.jersey_number) {
+      const conflict = players.find(
+        p => p.jersey_number === form.jersey_number && p.id !== editingPlayer?.id
+      );
+      if (conflict) {
+        setJerseyConflict(true);
+        return;
+      }
+    }
+
+    const isNewJersey = form.jersey_number && form.jersey_number !== editingPlayer?.jersey_number;
+
     if (editingPlayer) {
-      updateMutation.mutate({ id: editingPlayer.id, data: { ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" } });
+      updateMutation.mutate(
+        { id: editingPlayer.id, data: { ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" } },
+        { onSuccess: () => { if (isNewJersey) decrementJerseyInventory(); } }
+      );
     } else {
-      createMutation.mutate({ ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" });
+      createMutation.mutate(
+        { ...form, team_id: teamId, team_name: team?.name || "", sport_name: team?.sport_name || "" },
+        { onSuccess: () => { if (form.jersey_number) decrementJerseyInventory(); } }
+      );
     }
   };
 
@@ -483,7 +523,7 @@ export default function TeamDetail() {
       </Dialog>
 
       {/* Add/Edit Player Dialog */}
-      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); resetForm(); } }}>
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) { setEditingPlayer(null); resetForm(); setJerseyConflict(false); } }}>
         <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader><DialogTitle>{editingPlayer ? "Edit Player" : "Add Player"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -508,7 +548,20 @@ export default function TeamDetail() {
               <div><Label>Last Name</Label><Input value={form.last_name} onChange={e => setForm({...form, last_name: e.target.value})} className="bg-surface border-border" required /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Jersey #</Label><Input value={form.jersey_number} onChange={e => setForm({...form, jersey_number: e.target.value})} className="bg-surface border-border" /></div>
+              <div>
+                <Label>Jersey #</Label>
+                <Input
+                  value={form.jersey_number}
+                  onChange={e => { setForm({...form, jersey_number: e.target.value}); setJerseyConflict(false); }}
+                  className={`bg-surface border-border ${jerseyConflict ? "border-red-500/70" : ""}`}
+                />
+                {jerseyConflict && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-red-400">
+                    <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                    Number conflict: This jersey number is already claimed on this roster.
+                  </p>
+                )}
+              </div>
               <div><Label>Position</Label><Input value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="bg-surface border-border" /></div>
             </div>
             <div><Label>Parent Name</Label><Input value={form.parent_name} onChange={e => setForm({...form, parent_name: e.target.value})} className="bg-surface border-border" /></div>

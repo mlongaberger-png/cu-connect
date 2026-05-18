@@ -1,0 +1,37 @@
+{
+  "name": "UniformInventory",
+  "type": "object",
+  "properties": {
+    "sport_id": {
+      "type": "string"
+    },
+    "sport_name": {
+      "type": "string"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "jersey",
+        "pads",
+        "skirt"
+      ],
+      "description": "Type of uniform item"
+    },
+    "size": {
+      "type": "string",
+      "description": "e.g. YS, YM, YL, AS, AM, AL, AXL"
+    },
+    "quantity_total": {
+      "type": "number",
+      "default": 0
+    },
+    "quantity_assigned": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "sport_id",
+    "item_type"
+  ]
+}
