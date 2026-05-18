@@ -28,6 +28,7 @@ import PromoteAthleteModal from "@/components/parentportal/PromoteAthleteModal";
 import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
 import RsvpVolunteerTab from "@/components/parentportal/RsvpVolunteerTab";
 import AthleteProfileModal from "@/components/parentportal/AthleteProfileModal";
+import OpenRegistrationsPanel from "@/components/parentportal/OpenRegistrationsPanel";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -528,6 +529,9 @@ export default function ParentPortal() {
           {!isRestrictedFamily && myKids.length > 0 && (
             <FamilyAccessManager players={myKids} currentUserEmail={userEmail} />
           )}
+
+          {/* Open Registrations */}
+          <OpenRegistrationsPanel myKids={myKids} userEmail={userEmail} />
 
           {/* Upcoming Events */}
           <div className="bg-card rounded-2xl border border-border p-6">
