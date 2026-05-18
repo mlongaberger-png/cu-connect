@@ -655,10 +655,11 @@ export default function ChatPanel({
         )}
       </div>
 
-      {/* Fixed input bar */}
+      {/* Fixed input bar — anchored at bottom with safe-area support */}
       <form
         onSubmit={handleSend}
-        className="flex-shrink-0 px-3 pt-3 pb-3 border-t border-border bg-card"
+        className="flex-shrink-0 px-3 pt-3 border-t border-border bg-card"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 16px))" }}
       >
         <div className="flex gap-2 items-center">
           <Input

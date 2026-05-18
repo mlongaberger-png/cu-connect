@@ -55,13 +55,8 @@ export default function AppLayout() {
         >
           <PageTransition>
             {isFullscreen ? (
-              /* Full-height pages (e.g. Messages) manage their own internal scroll */
-              <div
-                className="flex flex-col overflow-hidden h-full"
-                style={{
-                  paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
-                }}
-              >
+              /* Full-height pages (e.g. Messages) manage their own internal scroll and safe-area insets */
+              <div className="flex flex-col overflow-hidden h-full">
                 <Outlet />
               </div>
             ) : (

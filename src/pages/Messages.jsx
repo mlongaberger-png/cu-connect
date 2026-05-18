@@ -251,7 +251,7 @@ export default function Messages() {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <MessagingTermsGate>
-    <div className="flex overflow-hidden" style={{ height: "100%", maxHeight: "100%" }}>
+    <div className="flex flex-col h-full overflow-hidden md:flex-row">
 
       {/* ── Desktop sidebar ── */}
       <div className="hidden md:flex flex-col w-64 bg-card border-r border-border flex-shrink-0">
@@ -290,7 +290,7 @@ export default function Messages() {
       </div>
 
       {/* ── Mobile: channel list view ── */}
-      <div className={`md:hidden flex-1 flex-col bg-background overflow-hidden ${mobileView === "list" ? "flex" : "hidden"}`}>
+      <div className={`md:hidden flex-1 flex flex-col bg-background overflow-hidden ${mobileView === "list" ? "" : "hidden"}`}>
         <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-2 flex-shrink-0">
           <MessageSquare className="w-4 h-4 text-primary" />
           <h2 className="font-semibold text-foreground text-sm">Messages</h2>
@@ -307,7 +307,7 @@ export default function Messages() {
       </div>
 
       {/* ── Mobile: chat view ── */}
-      <div className={`md:hidden flex-1 flex-col overflow-hidden ${mobileView === "chat" ? "flex" : "hidden"}`}>
+      <div className={`md:hidden flex-1 flex flex-col overflow-hidden ${mobileView === "chat" ? "" : "hidden"}`}>
         {activeTab === "direct"
           ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
           : <ChatPanel {...chatPanelProps} onBack={() => setMobileView("list")} />
