@@ -55,10 +55,8 @@ export default function AppLayout() {
         >
           <PageTransition>
             {isFullscreen ? (
-              /* Full-height pages (e.g. Messages) manage their own internal scroll and safe-area insets */
-              <div className="flex flex-col overflow-hidden h-full">
-                <Outlet />
-              </div>
+              /* Full-height pages (e.g. Messages) manage their own internal scroll and safe-area insets — no padding */
+              <Outlet />
             ) : (
               /* Normal pages: ONE scrollable container — no nested overflow on children */
               <div

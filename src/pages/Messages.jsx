@@ -258,7 +258,7 @@ export default function Messages() {
     <div className="flex flex-col h-full overflow-hidden md:flex-row">
 
       {/* ── Desktop sidebar ── */}
-      <div className="hidden md:flex flex-col w-64 bg-card border-r border-border flex-shrink-0">
+      <div className="hidden md:flex md:h-full flex-col w-64 bg-card border-r border-border flex-shrink-0">
         <div className="flex border-b border-border">
           <button onClick={() => setActiveTab("channels")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
@@ -294,7 +294,7 @@ export default function Messages() {
       </div>
 
       {/* ── Mobile: channel list view ── */}
-      <div className={`md:hidden flex-1 flex flex-col bg-background overflow-hidden ${mobileView === "list" ? "" : "hidden"}`}>
+      <div className={`md:hidden flex-1 h-full flex flex-col bg-background overflow-hidden ${mobileView === "list" ? "" : "hidden"}`}>
         <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-2 flex-shrink-0">
           <MessageSquare className="w-4 h-4 text-primary" />
           <h2 className="font-semibold text-foreground text-sm">Messages</h2>
@@ -311,7 +311,7 @@ export default function Messages() {
       </div>
 
       {/* ── Mobile: chat view ── */}
-      <div className={`md:hidden flex-1 flex flex-col overflow-hidden ${mobileView === "chat" ? "" : "hidden"}`}>
+      <div className={`md:hidden flex-1 h-full flex flex-col overflow-hidden ${mobileView === "chat" ? "" : "hidden"}`}>
         {activeTab === "direct"
           ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
           : <ChatPanel {...chatPanelProps} onBack={() => setMobileView("list")} />
@@ -319,7 +319,7 @@ export default function Messages() {
       </div>
 
       {/* ── Desktop: chat area ── */}
-      <div className="hidden md:flex flex-1 flex-col min-w-0 overflow-hidden">
+      <div className="hidden md:flex md:h-full flex-1 flex-col min-w-0 overflow-hidden">
         {activeTab === "direct"
           ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
           : <ChatPanel {...chatPanelProps} />
