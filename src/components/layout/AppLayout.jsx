@@ -55,26 +55,25 @@ export default function AppLayout() {
         >
           <PageTransition>
             {isFullscreen ? (
-              /* Full-height pages (e.g. Messages) manage their own scroll */
+              /* Full-height pages (e.g. Messages) manage their own internal scroll */
               <div
-                className="flex flex-col overflow-hidden"
+                className="flex flex-col overflow-hidden h-full"
                 style={{
-                  height: "100%",
                   paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
                 }}
               >
                 <Outlet />
               </div>
             ) : (
-              /* Normal pages: single scrollable area, padded to clear bottom tab bar */
+              /* Normal pages: ONE scrollable container — no nested overflow on children */
               <div
                 className="overflow-y-auto overflow-x-hidden h-full"
                 style={{
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  /* 56px tab bar + safe area bottom */
                   paddingBottom: "calc(56px + env(safe-area-inset-bottom, 16px))",
                 }}
+                id="main-scroll-container"
               >
                 <Outlet />
               </div>

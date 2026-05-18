@@ -103,9 +103,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   main {
+    /* overflow is managed by #main-scroll-container, not here */
     overscroll-behavior: contain;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
   }
   #root {
     overflow: hidden;
@@ -129,11 +129,13 @@ body:has([data-radix-dialog-overlay]) {
   touch-action: none;
 }
 
-/* Ensure modals always respect the visible viewport height */
+/* Ensure modals always respect the visible viewport height
+   Accounts for: top safe area + TopBar (56px) + bottom nav (56px) + bottom safe area */
 .modal-safe {
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 112px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Radix Dialog Content — always fits in viewport */
@@ -145,6 +147,11 @@ body:has([data-radix-dialog-overlay]) {
 /* Bottom padding helper for modal content above nav bar */
 .pb-safe-nav {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Single scroll container — pages must NOT add overflow-y-auto/scroll inside */
+#main-scroll-container {
+  scroll-behavior: smooth;
 }
 
 /* Disable text selection on interactive controls */
