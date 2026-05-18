@@ -661,7 +661,7 @@ export default function ChatPanel({
       <form
         onSubmit={handleSend}
         className="flex-shrink-0 px-3 pt-3 border-t border-border bg-card"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 16px))" }}
+        style={{ paddingBottom: "0.75rem" }}
       >
         <div className="flex gap-2 items-center">
           <Input

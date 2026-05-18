@@ -64,8 +64,14 @@ export default function AppLayout() {
         >
           <PageTransition>
             {isFullscreen ? (
-              /* Full-height pages (e.g. Messages) manage their own internal scroll and safe-area insets — no padding */
-              <Outlet />
+              /* Full-height pages (e.g. Messages) manage their own internal scroll and safe-area insets */
+              /* On mobile, reserve space for the fixed BottomTabBar (56px) + safe area */
+              <div
+                className="h-full overflow-hidden flex flex-col"
+                style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+              >
+                <Outlet />
+              </div>
             ) : (
               /* Normal pages: ONE scrollable container — no nested overflow on children */
               <div
