@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 
 import AppLayout from "@/components/layout/AppLayout";
+import StaffRoute from "@/components/StaffRoute";
 import Dashboard from "@/pages/Dashboard";
 import Sports from "@/pages/Sports";
 import Teams from "@/pages/Teams";
@@ -120,31 +121,38 @@ export default function AppShell() {
       <Route path="/welcome" element={<Navigate to={homeRoute} replace />} />
       <Route path="/pending-access" element={<PendingAccess />} />
 
-      {/* Staff layout (with sidebar) */}
+      {/* Shared layout wrapper */}
       <Route element={<AppLayout />}>
+
+        {/* ── All-roles routes ── */}
         <Route path="/Portal" element={<Dashboard />} />
-        <Route path="/Sports" element={<Sports />} />
-        <Route path="/Teams" element={<Teams />} />
-        <Route path="/TeamDetail" element={<TeamDetail />} />
-        <Route path="/Schedule" element={<Schedule />} />
-        <Route path="/Messages" element={<Messages />} />
-        <Route path="/Announcements" element={<Announcements />} />
-        <Route path="/Documents" element={<Documents />} />
         <Route path="/ParentPortal" element={<ParentPortal />} />
-        <Route path="/AthleticDirectors" element={<AthleticDirectors />} />
-        <Route path="/Volunteers" element={<Volunteers />} />
-        <Route path="/AuditLog" element={<AuditLog />} />
+        <Route path="/ParentCalendar" element={<ParentCalendar />} />
         <Route path="/NotificationSettings" element={<NotificationSettings />} />
         <Route path="/HelpCenter" element={<HelpCenter />} />
-        <Route path="/SeasonManager" element={<SeasonManager />} />
-        <Route path="/DataExport" element={<DataExport />} />
         <Route path="/LegalPages" element={<LegalPages />} />
         <Route path="/AccountSettings" element={<AccountSettings />} />
         <Route path="/Gallery" element={<Gallery />} />
-        <Route path="/PracticePlans" element={<PracticePlans />} />
         <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
-        <Route path="/ParentCalendar" element={<ParentCalendar />} />
         <Route path="/Playbooks" element={<Playbooks />} />
+
+        {/* ── Staff-only routes — redirects non-staff to /Portal ── */}
+        <Route element={<StaffRoute />}>
+          <Route path="/Sports" element={<Sports />} />
+          <Route path="/Teams" element={<Teams />} />
+          <Route path="/TeamDetail" element={<TeamDetail />} />
+          <Route path="/Schedule" element={<Schedule />} />
+          <Route path="/Messages" element={<Messages />} />
+          <Route path="/Announcements" element={<Announcements />} />
+          <Route path="/Documents" element={<Documents />} />
+          <Route path="/AthleticDirectors" element={<AthleticDirectors />} />
+          <Route path="/Volunteers" element={<Volunteers />} />
+          <Route path="/AuditLog" element={<AuditLog />} />
+          <Route path="/SeasonManager" element={<SeasonManager />} />
+          <Route path="/DataExport" element={<DataExport />} />
+          <Route path="/PracticePlans" element={<PracticePlans />} />
+        </Route>
+
       </Route>
 
       {/* Public legal pages — always accessible */}
