@@ -176,10 +176,15 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60" onClick={editing ? undefined : onClose}>
       <div
-        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg p-6 space-y-4 overflow-y-auto"
-        style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 4.5rem)", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg flex flex-col"
+        style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 44px) - 56px - env(safe-area-inset-bottom, 0px) - 56px)" }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Scrollable content with fade-bottom indicator */}
+        <div
+          className="overflow-y-auto overscroll-contain p-6 space-y-4 flex-1 min-h-0"
+          style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", WebkitOverflowScrolling: "touch" }}
+        >
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 flex-wrap">
@@ -536,6 +541,9 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             </div>
           </div>
         )}
+        </div>
+        {/* Scroll hint — subtle gradient at bottom */}
+        <div className="h-4 bg-gradient-to-t from-card to-transparent flex-shrink-0 pointer-events-none rounded-b-3xl sm:rounded-b-2xl" />
       </div>
     </div>
   );
