@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, CheckCircle2, Clock, Send, ExternalLink, Bell } from "lucide-react";
+import { ChevronDown, ChevronRight, CheckCircle2, Clock, Send, ExternalLink, Bell, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ComplianceMatrix from "./ComplianceMatrix";
 
 const DOC_CATEGORIES = [
   { key: "birth_certificate", label: "Birth Certificates" },
@@ -233,6 +234,7 @@ function CategoryRow({ category, players, docs, teamId, teamName, coachName }) {
 
 // ─── Main export ───────────────────────────────────────────────────────────
 export default function TeamComplianceTab({ team, players }) {
+  const [viewMode, setViewMode] = useState("matrix"); // "matrix" | "list"
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["player-docs-team", team.id],
     queryFn: async () => {
@@ -267,6 +269,29 @@ export default function TeamComplianceTab({ team, players }) {
 
   return (
     <div className="space-y-4">
+      {/* View toggle */}
+      <div className="flex items-center justify-end gap-1">
+        <button
+          onClick={() => setViewMode("matrix")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${viewMode === "matrix" ? "bg-primary/10 text-primary border border-primary/30" : "text-muted-foreground hover:text-foreground border border-transparent"}`}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" /> Matrix
+        </button>
+        <button
+          onClick={() => setViewMode("list")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${viewMode === "list" ? "bg-primary/10 text-primary border border-primary/30" : "text-muted-foreground hover:text-foreground border border-transparent"}`}
+        >
+          <List className="w-3.5 h-3.5" /> By Category
+        </button>
+      </div>
+
+      {/* Matrix view */}
+      {viewMode === "matrix" && (
+        <ComplianceMatrix team={team} players={players} docs={docs} />
+      )}
+
+      {/* List / accordion view */}
+      {viewMode === "list" && (<>
       {/* Summary banner */}
       <div className={`rounded-2xl border p-4 flex items-center gap-4 ${
         fullyCompliantCount === totalPlayers && totalPlayers > 0
@@ -314,6 +339,7 @@ export default function TeamComplianceTab({ team, players }) {
         Documents are uploaded by parents. Coaches can view but not edit or delete files.
         Reminders are limited to once every 24 hours per document type.
       </p>
+      </>)}
     </div>
   );
 }
