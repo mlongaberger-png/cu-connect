@@ -83,29 +83,34 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Check if user already exists — skip inviteUser if so (prevents 500 on duplicate invite)
-      let userAlreadyExists = false;
+      // Pre-flight: check each email independently before attempting any invite
+      let primaryExists = false;
       for (const linkEmail of emailsToLink) {
         try {
           const existingUsers = await base44.asServiceRole.entities.User.filter({ email: linkEmail });
           if (existingUsers.length > 0) {
-            userAlreadyExists = true;
-            await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role: 'user' });
-            console.log(`Existing user found for ${linkEmail} — skipping invite, updated role.`);
+            if (linkEmail === accessReq.parent_email) primaryExists = true;
+            // Ensure the existing user has at minimum 'user' role
+            const existing = existingUsers[0];
+            if (!existing.role || existing.role === 'pending') {
+              await base44.asServiceRole.entities.User.update(existing.id, { role: 'user' });
+            }
+            console.log(`Existing user found for ${linkEmail} — skipping invite.`);
           }
-        } catch (roleErr) {
-          console.warn(`Could not update role for ${linkEmail}:`, roleErr.message);
+        } catch (lookupErr) {
+          console.warn(`User lookup failed for ${linkEmail}:`, lookupErr.message);
         }
       }
 
-      // Only invite if no existing account was found
-      if (!userAlreadyExists) {
+      // Only invite the primary email if no account exists for it
+      let userAlreadyExists = primaryExists;
+      if (!primaryExists) {
         try {
           await base44.users.inviteUser(accessReq.parent_email, 'user');
           console.log(`Invite sent to new user: ${accessReq.parent_email}`);
         } catch (inviteErr) {
-          // If invite fails because user already exists, treat as existing user
-          console.warn(`inviteUser failed (user may already exist): ${inviteErr.message}`);
+          // Treat any invite failure as "already exists" to avoid cascading 500s
+          console.warn(`inviteUser failed (likely duplicate): ${inviteErr.message}`);
           userAlreadyExists = true;
         }
       }
