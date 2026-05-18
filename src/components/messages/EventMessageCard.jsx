@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Clock, MapPin, CheckCircle2, XCircle, HelpCircle, Lock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { formatTime12h } from "@/utils/dateTime";
+import CarpoolHub from "./CarpoolHub";
 
 const RSVP_OPTIONS = [
   { status: "attending",     Icon: CheckCircle2, label: "Going",     cls: "bg-green-500/20 border-green-500/50 text-green-400" },
@@ -144,6 +145,15 @@ export default function EventMessageCard({ attendanceRequestId, currentUser, isS
           </>
         )}
       </div>
+      <CarpoolHub
+        eventId={request.event_id || attendanceRequestId}
+        eventTitle={request.label}
+        eventDate={request.event_date}
+        eventTime={request.event_time}
+        teamId={request.team_id}
+        teamName={request.channel_name || ""}
+        currentUser={currentUser}
+      />
     </div>
   );
 }

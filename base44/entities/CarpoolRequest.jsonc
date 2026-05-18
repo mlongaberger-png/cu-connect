@@ -28,9 +28,25 @@
     "requester_email": {
       "type": "string"
     },
+    "phone_number": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "neighborhood_zip": {
+      "type": "string",
+      "description": "ZIP code for grouping nearby drivers/riders"
+    },
+    "carpool_type": {
+      "type": "string",
+      "enum": [
+        "offering_ride",
+        "seeking_ride"
+      ],
+      "description": "Whether this parent is offering seats or seeking a ride"
+    },
     "seats_available": {
       "type": "number",
-      "description": "0 = needs a ride, >0 = offering a ride"
+      "description": "Number of seats offered (0 if seeking a ride)"
     },
     "pickup_location": {
       "type": "string"
@@ -51,6 +67,7 @@
   "required": [
     "team_id",
     "requester_email",
-    "event_date"
+    "event_date",
+    "carpool_type"
   ]
 }
