@@ -29,6 +29,7 @@ import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
 import RsvpVolunteerTab from "@/components/parentportal/RsvpVolunteerTab";
 import AthleteProfileModal from "@/components/parentportal/AthleteProfileModal";
 import OpenRegistrationsPanel from "@/components/parentportal/OpenRegistrationsPanel";
+import SmartRsvpPanel from "@/components/parentportal/SmartRsvpPanel";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", icon: Trophy },
@@ -455,27 +456,14 @@ export default function ParentPortal() {
             onStatClick={(tab) => setActiveTab(tab)}
           />
 
-          {/* Open RSVP Requests */}
-          {myAttendanceRequests.filter(r => !r.is_locked).length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                Open RSVPs — Action Needed
-              </h3>
-              <div className="space-y-3">
-                {myAttendanceRequests.filter(r => !r.is_locked).slice(0, 5).map(req => (
-                  <AttendanceCard
-                    key={req.id}
-                    request={req}
-                    isStaff={false}
-                    currentUser={user}
-                    myPlayers={myKids}
-                    allPlayers={[]}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Smart RSVP Panel — 7-day action-driven view */}
+          <SmartRsvpPanel
+            myAttendanceRequests={myAttendanceRequests}
+            myUpcomingEvents={myUpcomingEvents}
+            user={user}
+            myKids={myKids}
+            userEmail={userEmail}
+          />
 
           {/* My Kids */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
