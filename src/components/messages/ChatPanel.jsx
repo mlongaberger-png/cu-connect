@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useOptimisticMutation } from "@/hooks/useOptimisticMutation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -126,7 +125,6 @@ export default function ChatPanel({
   onBlockUser,
   locallyBlockedEmails,
 }) {
-  const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const [atBottom, setAtBottom] = useState(true);
   const [newMsgCount, setNewMsgCount] = useState(0);
@@ -134,6 +132,7 @@ export default function ChatPanel({
   const [editForm, setEditForm] = useState(null); // null = not editing
   const [showIconPicker, setShowIconPicker] = useState(false);
 
+  const queryClient = useQueryClient();
   const isAdmin = ["admin", "athletic_director"].includes(user?.role);
 
   // Load current room/sport/team data for editing
@@ -220,27 +219,70 @@ export default function ChatPanel({
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const inputFocused = useRef(false);
-  const prevMessageCount = useRef(0);
   const lastReadTs = useRef(getLastRead(channelId));
   const didInitialScroll = useRef(false);
+  const userSentRef = useRef(false); // tracks explicit send — triggers scroll
 
-  // ── Data ──────────────────────────────────────────────────────────────────
-  const { data: messages = [] } = useQuery({
-    queryKey: ["messages", channelId],
+  // ── Local message cache — keyed by channelId ──────────────────────────────
+  const [messageCache, setMessageCache] = useState({}); // { [channelId]: Message[] }
+
+  const cachedMessages = messageCache[channelId] || [];
+
+  // ── Initial fetch — runs ONCE per channelId change ───────────────────────
+  const { data: fetchedMessages } = useQuery({
+    queryKey: ["messages-init", channelId],
     queryFn: () => base44.entities.Message.filter({ channel_id: channelId }, "-created_date", 50),
-    refetchInterval: 12000,         // poll every 12s
-    refetchIntervalInBackground: false, // stop polling when tab is hidden
-    staleTime: 10000,               // don't refetch if data is < 10s old
+    staleTime: Infinity,      // never auto-refetch; real-time subscription handles updates
+    gcTime: 0,                // don't keep stale cache across channel switches
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
+
+  // Seed the local cache when the initial fetch completes
+  useEffect(() => {
+    if (!fetchedMessages) return;
+    setMessageCache(prev => ({ ...prev, [channelId]: fetchedMessages }));
+  }, [fetchedMessages, channelId]);
+
+  // ── Real-time subscription — appends deltas, never re-fetches ─────────────
+  useEffect(() => {
+    const unsub = base44.entities.Message.subscribe((event) => {
+      if (event.data?.channel_id !== channelId) return;
+      if (event.type === "create") {
+        setMessageCache(prev => {
+          const existing = prev[channelId] || [];
+          // Deduplicate: skip if already in cache (optimistic temp or real id)
+          if (existing.some(m => m.id === event.id || (event.data.sender_email === m.sender_email && m.id?.startsWith("temp-") && m.content === event.data.content))) {
+            // Replace temp optimistic message with real one
+            return {
+              ...prev,
+              [channelId]: existing.map(m =>
+                m.id?.startsWith("temp-") && m.content === event.data.content && m.sender_email === event.data.sender_email
+                  ? event.data
+                  : m
+              ),
+            };
+          }
+          return { ...prev, [channelId]: [...existing, event.data] };
+        });
+      } else if (event.type === "delete") {
+        setMessageCache(prev => ({
+          ...prev,
+          [channelId]: (prev[channelId] || []).filter(m => m.id !== event.id),
+        }));
+      }
+    });
+    return () => unsub();
+  }, [channelId]);
 
   // ── Batch read-receipt tracking (once per channel, not per poll) ──────────
   const trackedChannelRef = useRef(null);
   useEffect(() => {
-    if (!user?.email || messages.length === 0) return;
+    if (!user?.email || cachedMessages.length === 0) return;
     if (trackedChannelRef.current === channelId) return; // only on channel change
     trackedChannelRef.current = channelId;
 
-    const unreadMsgs = messages.filter(m => m.sender_email !== user.email && m.id && !m.id.startsWith("temp-"));
+    const unreadMsgs = cachedMessages.filter(m => m.sender_email !== user.email && m.id && !m.id.startsWith("temp-"));
     if (unreadMsgs.length === 0) return;
 
     base44.entities.MessageReadReceipt.filter({ channel_id: channelId, reader_email: user.email })
@@ -264,14 +306,19 @@ export default function ChatPanel({
     queryKey: ["blocked-users", user?.email],
     queryFn: () => base44.entities.BlockedUser.filter({ blocker_email: user?.email }),
     enabled: !!user?.email,
-    staleTime: 60000, // blocked list rarely changes — cache for 60s
+    staleTime: 60000,
   });
-  const allBlockedEmails = new Set([
+  const allBlockedEmails = useMemo(() => new Set([
     ...blockedUsers.map(b => b.blocked_email),
     ...(locallyBlockedEmails || []),
-  ]);
+  ]), [blockedUsers, locallyBlockedEmails]);
 
-  const sortedMessages = [...messages].reverse().filter(m => !allBlockedEmails.has(m.sender_email));
+  // cachedMessages arrives newest-first from the API — reverse for display
+  const sortedMessages = useMemo(() =>
+    [...cachedMessages].sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
+      .filter(m => !allBlockedEmails.has(m.sender_email)),
+    [cachedMessages, allBlockedEmails]
+  );
 
   // ── Scroll helpers ─────────────────────────────────────────────────────────
   const scrollToBottom = useCallback((behavior = "smooth") => {
@@ -292,60 +339,70 @@ export default function ChatPanel({
     }
   }, [channelId]);
 
-  // Initial scroll to bottom (instant, no animation)
-  useEffect(() => {
-    if (sortedMessages.length > 0 && !didInitialScroll.current) {
-      didInitialScroll.current = true;
-      // Use instant scroll so users always land at the bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-      }, 50);
-    }
-  }, [sortedMessages.length]);
-
-  // When channel changes, reset and scroll to bottom
+  // Reset state when channel changes
   useEffect(() => {
     didInitialScroll.current = false;
+    userSentRef.current = false;
     lastReadTs.current = getLastRead(channelId);
     setNewMsgCount(0);
     setAtBottom(true);
-    prevMessageCount.current = 0;
   }, [channelId]);
 
-  // Track new messages when user is scrolled up
+  // Initial scroll — fires exactly once after the first batch of messages loads
   useEffect(() => {
-    const current = sortedMessages.length;
-    const prev = prevMessageCount.current;
-    if (prev > 0 && current > prev) {
-      if (!atBottom) {
-        setNewMsgCount(n => n + (current - prev));
-      } else {
-        // At bottom — smooth scroll to new messages
-        scrollToBottom("smooth");
-      }
+    if (sortedMessages.length > 0 && !didInitialScroll.current) {
+      didInitialScroll.current = true;
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "instant" }), 50);
     }
-    prevMessageCount.current = current;
-  }, [sortedMessages.length, atBottom, scrollToBottom]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedMessages.length === 0]); // only re-evaluate when transitioning from empty → non-empty
+
+  // After user explicitly sends — always scroll to bottom
+  useEffect(() => {
+    if (!userSentRef.current) return;
+    userSentRef.current = false;
+    setTimeout(() => scrollToBottom("smooth"), 80);
+  });
+
+  // New incoming messages (not sent by user) — show badge or auto-scroll
+  const prevLengthRef = useRef(0);
+  useEffect(() => {
+    const prev = prevLengthRef.current;
+    const curr = sortedMessages.length;
+    prevLengthRef.current = curr;
+    if (prev === 0 || curr <= prev) return; // ignore initial load / deletions
+    if (atBottom) {
+      scrollToBottom("smooth");
+    } else {
+      setNewMsgCount(n => n + (curr - prev));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedMessages.length]);
 
   // ── Send ──────────────────────────────────────────────────────────────────
-  const sendMutation = useOptimisticMutation(
-    (data) => base44.entities.Message.create(data),
-    {
-      queryClient,
-      queryKey: ["messages", channelId],
-      updater: (old, newMsg) => [
-        ...old,
-        { ...newMsg, id: "temp-" + Date.now(), created_date: new Date().toISOString() },
-      ],
-      onSuccess: () => {
-        scrollToBottom("smooth");
-      },
-    }
-  );
+  const sendMutation = useMutation({
+    mutationFn: (data) => base44.entities.Message.create(data),
+    onMutate: (newMsg) => {
+      // Optimistically append to local cache
+      const tempMsg = { ...newMsg, id: "temp-" + Date.now(), created_date: new Date().toISOString() };
+      setMessageCache(prev => ({ ...prev, [channelId]: [...(prev[channelId] || []), tempMsg] }));
+    },
+    onError: () => {
+      // Remove optimistic message on failure
+      setMessageCache(prev => ({
+        ...prev,
+        [channelId]: (prev[channelId] || []).filter(m => !m.id?.startsWith("temp-")),
+      }));
+    },
+    // onSuccess: real message arrives via subscription — temp msg gets replaced there
+  });
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
+    userSentRef.current = true;
+    setAtBottom(true);
+    setNewMessage("");
     sendMutation.mutate({
       content: newMessage.trim(),
       channel,
@@ -355,10 +412,6 @@ export default function ChatPanel({
       sender_email: user?.email || "",
       sender_avatar: user?.avatar_url || "",
     });
-    setNewMessage("");
-    // Ensure we stay at bottom after send
-    setAtBottom(true);
-    setTimeout(() => scrollToBottom("smooth"), 100);
   };
 
   // Channel icon — resolve from the freshest data source per channel type
