@@ -83,28 +83,67 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Pre-flight: check each email independently before attempting any invite
-      let primaryExists = false;
+      // Pre-flight: check each email (primary + relay) for an existing account.
+      // Also check the AccessRequest.alternate_email stored on existing approved requests
+      // in case the relay was registered previously via linkRelayEmail.
+      let existingUserId = null; // the system id of a matched existing user, if any
+
       for (const linkEmail of emailsToLink) {
+        if (existingUserId) break; // already found one — no need to keep searching
         try {
           const existingUsers = await base44.asServiceRole.entities.User.filter({ email: linkEmail });
           if (existingUsers.length > 0) {
-            if (linkEmail === accessReq.parent_email) primaryExists = true;
-            // Ensure the existing user has at minimum 'user' role
             const existing = existingUsers[0];
+            existingUserId = existing.id;
+            // Ensure the existing user has at minimum 'user' role
             if (!existing.role || existing.role === 'pending') {
               await base44.asServiceRole.entities.User.update(existing.id, { role: 'user' });
             }
-            console.log(`Existing user found for ${linkEmail} — skipping invite.`);
+            console.log(`Existing user found for ${linkEmail} (id: ${existing.id}) — skipping invite.`);
           }
         } catch (lookupErr) {
           console.warn(`User lookup failed for ${linkEmail}:`, lookupErr.message);
         }
       }
 
-      // Only invite the primary email if no account exists for it
-      let userAlreadyExists = primaryExists;
-      if (!primaryExists) {
+      // If still no match by email, check relay via existing AccessRequest records that
+      // already have an alternate_email resolving to a known user.
+      if (!existingUserId && alternate_email) {
+        try {
+          const relayUsers = await base44.asServiceRole.entities.User.filter({ email: alternate_email });
+          if (relayUsers.length > 0) {
+            const existing = relayUsers[0];
+            existingUserId = existing.id;
+            if (!existing.role || existing.role === 'pending') {
+              await base44.asServiceRole.entities.User.update(existing.id, { role: 'user' });
+            }
+            console.log(`Existing user found via relay email ${alternate_email} (id: ${existing.id}) — skipping invite.`);
+          }
+        } catch (relayLookupErr) {
+          console.warn(`Relay user lookup failed for ${alternate_email}:`, relayLookupErr.message);
+        }
+      }
+
+      // If an existing user was found, backfill their user_id onto all PlayerGuardian links we just created
+      if (existingUserId && player_ids && player_ids.length > 0) {
+        for (const linkEmail of emailsToLink) {
+          try {
+            const guardianLinks = await base44.asServiceRole.entities.PlayerGuardian.filter({ user_email: linkEmail });
+            for (const link of guardianLinks) {
+              if (!link.user_id) {
+                await base44.asServiceRole.entities.PlayerGuardian.update(link.id, { user_id: existingUserId });
+                console.log(`Backfilled user_id ${existingUserId} on PlayerGuardian ${link.id}`);
+              }
+            }
+          } catch (backfillErr) {
+            console.warn(`Guardian backfill failed for ${linkEmail}:`, backfillErr.message);
+          }
+        }
+      }
+
+      // Only invite the primary email if no existing account was found anywhere
+      let userAlreadyExists = !!existingUserId;
+      if (!userAlreadyExists) {
         try {
           await base44.users.inviteUser(accessReq.parent_email, 'user');
           console.log(`Invite sent to new user: ${accessReq.parent_email}`);
