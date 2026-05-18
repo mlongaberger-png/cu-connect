@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
+      // Persist relay email onto the request record immediately
       if (alternate_email) {
         await base44.asServiceRole.entities.AccessRequest.update(request_id, { alternate_email });
       }
@@ -52,7 +53,71 @@ Deno.serve(async (req) => {
         emailsToLink.push(alternate_email);
       }
 
-      // Create PlayerGuardian links for all relevant emails
+      // ── STEP 1: Pre-flight existence check — runs BEFORE any writes ──────────
+      // Check primary + relay emails directly in User table.
+      // Also cross-reference AccessRequest records that may have stored a relay
+      // for this user (e.g. previously linked via linkRelayEmail).
+      let existingUserId = null;
+
+      for (const emailCandidate of emailsToLink) {
+        if (existingUserId) break;
+        try {
+          const found = await base44.asServiceRole.entities.User.filter({ email: emailCandidate });
+          if (found.length > 0) {
+            existingUserId = found[0].id;
+            if (!found[0].role || found[0].role === 'pending') {
+              await base44.asServiceRole.entities.User.update(found[0].id, { role: 'user' });
+            }
+            console.log(`Pre-flight: existing user found for ${emailCandidate} (id: ${existingUserId})`);
+          }
+        } catch (e) {
+          console.warn(`Pre-flight lookup failed for ${emailCandidate}:`, e.message);
+        }
+      }
+
+      // Cross-reference: look for any approved AccessRequest whose alternate_email
+      // matches the primary email (covers relay-registered accounts that signed up
+      // before this request was submitted).
+      if (!existingUserId) {
+        try {
+          const relayMatches = await base44.asServiceRole.entities.AccessRequest.filter({
+            alternate_email: accessReq.parent_email,
+            status: 'approved',
+          });
+          if (relayMatches.length > 0) {
+            // The primary email was previously stored as a relay — find that user
+            const relayOwnerEmail = relayMatches[0].parent_email;
+            const found = await base44.asServiceRole.entities.User.filter({ email: relayOwnerEmail });
+            if (found.length > 0) {
+              existingUserId = found[0].id;
+              console.log(`Pre-flight relay cross-ref: found user ${relayOwnerEmail} (id: ${existingUserId}) via alternate_email match`);
+            }
+          }
+        } catch (e) {
+          console.warn('Pre-flight relay cross-reference failed:', e.message);
+        }
+      }
+
+      // ── STEP 2: Branch — link-only vs fresh invite ────────────────────────────
+      let userAlreadyExists = !!existingUserId;
+
+      if (!userAlreadyExists) {
+        // New user — send invite. Treat any failure as "already exists" to avoid 500s.
+        try {
+          await base44.users.inviteUser(accessReq.parent_email, 'user');
+          console.log(`Invite sent to: ${accessReq.parent_email}`);
+        } catch (inviteErr) {
+          console.warn(`inviteUser failed (likely duplicate): ${inviteErr.message}`);
+          userAlreadyExists = true;
+          // Re-fetch in case the account was created between our check and invite
+          try {
+            const retry = await base44.asServiceRole.entities.User.filter({ email: accessReq.parent_email });
+            if (retry.length > 0) existingUserId = retry[0].id;
+          } catch (_) {}
+        }
+      }
+
+      // ── STEP 3: Create / backfill PlayerGuardian links ────────────────────────
       if (player_ids && player_ids.length > 0) {
         for (const pid of player_ids) {
           let player;
@@ -74,83 +139,17 @@ Deno.serve(async (req) => {
                 player_id: pid,
                 player_name: `${player.first_name} ${player.last_name}`,
                 user_email: linkEmail,
+                user_id: existingUserId || undefined,
                 relationship: 'Guardian',
                 invited_by: user.email,
               });
               console.log(`Guardian link created: ${linkEmail} → ${player.first_name} ${player.last_name}`);
+            } else if (existingUserId && !existing[0].user_id) {
+              // Backfill user_id onto an existing guardian record that's missing it
+              await base44.asServiceRole.entities.PlayerGuardian.update(existing[0].id, { user_id: existingUserId });
+              console.log(`Backfilled user_id on existing guardian link ${existing[0].id}`);
             }
           }
-        }
-      }
-
-      // Pre-flight: check each email (primary + relay) for an existing account.
-      // Also check the AccessRequest.alternate_email stored on existing approved requests
-      // in case the relay was registered previously via linkRelayEmail.
-      let existingUserId = null; // the system id of a matched existing user, if any
-
-      for (const linkEmail of emailsToLink) {
-        if (existingUserId) break; // already found one — no need to keep searching
-        try {
-          const existingUsers = await base44.asServiceRole.entities.User.filter({ email: linkEmail });
-          if (existingUsers.length > 0) {
-            const existing = existingUsers[0];
-            existingUserId = existing.id;
-            // Ensure the existing user has at minimum 'user' role
-            if (!existing.role || existing.role === 'pending') {
-              await base44.asServiceRole.entities.User.update(existing.id, { role: 'user' });
-            }
-            console.log(`Existing user found for ${linkEmail} (id: ${existing.id}) — skipping invite.`);
-          }
-        } catch (lookupErr) {
-          console.warn(`User lookup failed for ${linkEmail}:`, lookupErr.message);
-        }
-      }
-
-      // If still no match by email, check relay via existing AccessRequest records that
-      // already have an alternate_email resolving to a known user.
-      if (!existingUserId && alternate_email) {
-        try {
-          const relayUsers = await base44.asServiceRole.entities.User.filter({ email: alternate_email });
-          if (relayUsers.length > 0) {
-            const existing = relayUsers[0];
-            existingUserId = existing.id;
-            if (!existing.role || existing.role === 'pending') {
-              await base44.asServiceRole.entities.User.update(existing.id, { role: 'user' });
-            }
-            console.log(`Existing user found via relay email ${alternate_email} (id: ${existing.id}) — skipping invite.`);
-          }
-        } catch (relayLookupErr) {
-          console.warn(`Relay user lookup failed for ${alternate_email}:`, relayLookupErr.message);
-        }
-      }
-
-      // If an existing user was found, backfill their user_id onto all PlayerGuardian links we just created
-      if (existingUserId && player_ids && player_ids.length > 0) {
-        for (const linkEmail of emailsToLink) {
-          try {
-            const guardianLinks = await base44.asServiceRole.entities.PlayerGuardian.filter({ user_email: linkEmail });
-            for (const link of guardianLinks) {
-              if (!link.user_id) {
-                await base44.asServiceRole.entities.PlayerGuardian.update(link.id, { user_id: existingUserId });
-                console.log(`Backfilled user_id ${existingUserId} on PlayerGuardian ${link.id}`);
-              }
-            }
-          } catch (backfillErr) {
-            console.warn(`Guardian backfill failed for ${linkEmail}:`, backfillErr.message);
-          }
-        }
-      }
-
-      // Only invite the primary email if no existing account was found anywhere
-      let userAlreadyExists = !!existingUserId;
-      if (!userAlreadyExists) {
-        try {
-          await base44.users.inviteUser(accessReq.parent_email, 'user');
-          console.log(`Invite sent to new user: ${accessReq.parent_email}`);
-        } catch (inviteErr) {
-          // Treat any invite failure as "already exists" to avoid cascading 500s
-          console.warn(`inviteUser failed (likely duplicate): ${inviteErr.message}`);
-          userAlreadyExists = true;
         }
       }
 
