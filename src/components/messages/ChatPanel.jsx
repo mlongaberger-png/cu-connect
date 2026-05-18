@@ -339,14 +339,16 @@ export default function ChatPanel({
     }
   }, [channelId]);
 
-  // Reset state when channel changes
+  // Reset state when channel changes — also cancel any in-flight fetches for the previous channel
   useEffect(() => {
     didInitialScroll.current = false;
     userSentRef.current = false;
     lastReadTs.current = getLastRead(channelId);
     setNewMsgCount(0);
     setAtBottom(true);
-  }, [channelId]);
+    // Cancel any still-pending queries keyed to other channels to stop rate-limit pileup
+    queryClient.cancelQueries({ queryKey: ["messages-init"] });
+  }, [channelId, queryClient]);
 
   // Initial scroll — fires exactly once after the first batch of messages loads
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -119,13 +119,17 @@ export default function Messages() {
     if (mobileView === "chat") markChannelRead(channelId);
   }, [mobileView, channelId]);
 
-  const selectChannel = (type, id, name) => {
+  // Guard: skip if same channel already active to prevent duplicate in-flight requests
+  const selectChannel = useCallback((type, id, name) => {
+    setChannelId(prev => {
+      if (prev === id) return prev; // no-op — already on this channel
+      markChannelRead(id);
+      return id;
+    });
     setChannel(type);
-    setChannelId(id);
     setChannelName(name);
     setMobileView("chat");
-    markChannelRead(id);
-  };
+  }, []);
 
   const currentTeam = teams.find(t => t.id === channelId);
 

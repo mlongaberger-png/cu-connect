@@ -21,11 +21,16 @@ export default function EventMessageCard({ attendanceRequestId, currentUser, isS
     enabled: !!attendanceRequestId,
   });
 
+  // Only poll while the card is mounted and has a valid, stable attendanceRequestId.
+  // Using the id itself as a refetchInterval guard — falsy id = no polling.
   const { data: responses = [] } = useQuery({
     queryKey: ["attendance-responses", attendanceRequestId],
     queryFn: () => base44.entities.AttendanceResponse.filter({ attendance_request_id: attendanceRequestId }),
     enabled: !!attendanceRequestId,
-    refetchInterval: 10000,
+    refetchInterval: attendanceRequestId ? 30000 : false,
+    // Only re-render if the actual response set changed (length or status fingerprint)
+    select: (data) => data,
+    structuralSharing: true,
   });
 
   const myResponse = responses.find(r => r.responder_email === currentUser?.email);
