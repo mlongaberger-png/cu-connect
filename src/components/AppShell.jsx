@@ -37,7 +37,7 @@ import Playbooks from "@/pages/Playbooks";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
-  "/Teams", "/Messages",
+  "/Teams",
   "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"
 ];
 
@@ -138,13 +138,15 @@ export default function AppShell() {
         <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
         <Route path="/Playbooks" element={<Playbooks />} />
 
+        {/* ── All authenticated users ── */}
+        <Route path="/Messages" element={<Messages />} />
+
         {/* ── Staff-only routes — redirects non-staff to /Portal ── */}
         <Route element={<StaffRoute />}>
           <Route path="/Sports" element={<Sports />} />
           <Route path="/Teams" element={<Teams />} />
           <Route path="/TeamDetail" element={<TeamDetail />} />
           <Route path="/Schedule" element={<Schedule />} />
-          <Route path="/Messages" element={<Messages />} />
           <Route path="/Announcements" element={<Announcements />} />
           <Route path="/Documents" element={<Documents />} />
           <Route path="/AthleticDirectors" element={<AthleticDirectors />} />
