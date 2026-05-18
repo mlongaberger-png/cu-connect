@@ -5,6 +5,8 @@ import TopBar from "./TopBar";
 import OfflineIndicator from "./OfflineIndicator";
 import BottomTabBar from "./BottomTabBar";
 import PageTransition from "./PageTransition";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
 // Pages that manage their own full-height layout (no scroll wrapper)
 const FULLSCREEN_PAGES = ["/Messages"];
@@ -12,6 +14,13 @@ const FULLSCREEN_PAGES = ["/Messages"];
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+
+  // Live sponsor rotator — only approved + active sponsors
+  const { data: liveSponsors = [] } = useQuery({
+    queryKey: ["layout-sponsors"],
+    queryFn: () => base44.entities.Sponsor.filter({ approval_status: "approved", is_active: true }),
+    staleTime: 60_000,
+  });
 
   const pageTitles = {
     "/Portal": "Portal",

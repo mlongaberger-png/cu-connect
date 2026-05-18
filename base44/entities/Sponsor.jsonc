@@ -26,8 +26,30 @@
     },
     "is_active": {
       "type": "boolean",
-      "default": true,
-      "description": "Whether sponsor appears in the live rotation"
+      "default": false,
+      "description": "Whether sponsor appears in the live rotation (set true on admin approval)"
+    },
+    "approval_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Admin verification state"
+    },
+    "submitted_by_email": {
+      "type": "string",
+      "description": "Email of the user who submitted the prospect"
+    },
+    "reviewed_by_email": {
+      "type": "string",
+      "description": "Email of the admin who approved or rejected"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "description": "ISO timestamp of admin review"
     }
   },
   "required": [
