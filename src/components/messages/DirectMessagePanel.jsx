@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -20,12 +20,48 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
     ? makeThreadId(currentUser.email, contact.email)
     : null;
 
-  const { data: messages = [] } = useQuery({
+  // Use real-time subscription instead of polling to avoid rate-limit pileup
+  const [dmMessages, setDmMessages] = useState([]);
+
+  const { data: fetchedDms } = useQuery({
     queryKey: ["dm", threadId],
     queryFn: () => base44.entities.DirectMessage.filter({ thread_id: threadId }, "-created_date", 50),
     enabled: !!threadId,
-    refetchInterval: 5000,
+    staleTime: Infinity,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
+
+  // Seed local state from initial fetch
+  useEffect(() => {
+    if (!fetchedDms) return;
+    setDmMessages(fetchedDms);
+  }, [fetchedDms]);
+
+  // Reset local state when thread changes
+  useEffect(() => {
+    setDmMessages([]);
+  }, [threadId]);
+
+  // Real-time subscription — no polling
+  useEffect(() => {
+    if (!threadId) return;
+    const unsub = base44.entities.DirectMessage.subscribe((event) => {
+      if (event.data?.thread_id !== threadId) return;
+      if (event.type === "create") {
+        setDmMessages(prev => {
+          if (prev.some(m => m.id === event.id)) return prev;
+          return [event.data, ...prev];
+        });
+      } else if (event.type === "delete") {
+        setDmMessages(prev => prev.filter(m => m.id !== event.id));
+      }
+    });
+    return () => unsub();
+  }, [threadId]);
+
+  const messages = dmMessages;
 
   const sorted = [...messages].reverse();
 
@@ -37,7 +73,6 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
   const sendMutation = useMutation({
     mutationFn: (data) => base44.entities.DirectMessage.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dm", threadId] });
       setNewMsg("");
     },
   });

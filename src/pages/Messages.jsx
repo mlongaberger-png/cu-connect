@@ -36,6 +36,8 @@ export default function Messages() {
   const [activeTab, setActiveTab] = useState("channels");
   const [dmContact, setDmContact] = useState(null);
   const [locallyBlockedEmails, setLocallyBlockedEmails] = useState(new Set());
+  const selectChannelTimer = useRef(null);
+  const pendingChannelRef = useRef(null);
 
   const queryClient = useQueryClient();
 
@@ -119,17 +121,29 @@ export default function Messages() {
     if (mobileView === "chat") markChannelRead(channelId);
   }, [mobileView, channelId]);
 
-  // Guard: skip if same channel already active to prevent duplicate in-flight requests
   const selectChannel = useCallback((type, id, name) => {
-    setChannelId(prev => {
-      if (prev === id) return prev; // no-op — already on this channel
-      markChannelRead(id);
-      return id;
-    });
-    setChannel(type);
-    setChannelName(name);
-    setMobileView("chat");
-  }, []);
+    // If same channel — no-op immediately
+    if (pendingChannelRef.current === id) return;
+    pendingChannelRef.current = id;
+
+    // Cancel any queued switch that hasn't fired yet
+    if (selectChannelTimer.current) clearTimeout(selectChannelTimer.current);
+
+    selectChannelTimer.current = setTimeout(() => {
+      selectChannelTimer.current = null;
+      setChannelId(prev => {
+        if (prev === id) return prev;
+        markChannelRead(id);
+        // Cancel in-flight fetches for the previous channel before switching
+        queryClient.cancelQueries({ queryKey: ["messages-init", prev] });
+        queryClient.removeQueries({ queryKey: ["messages-init", prev] });
+        return id;
+      });
+      setChannel(type);
+      setChannelName(name);
+      setMobileView("chat");
+    }, 120); // 120ms debounce — absorbs double-taps without feeling laggy
+  }, [queryClient]);
 
   const currentTeam = teams.find(t => t.id === channelId);
 
