@@ -77,13 +77,14 @@ export default function Sidebar({ isOpen, onClose }) {
       }
       
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-sidebar border-r border-sidebar-border z-50
+        fixed top-0 left-0 h-full w-64 bg-sidebar/95 backdrop-blur-xl border-r border-sidebar-border z-50
         flex flex-col transition-transform duration-300
         lg:translate-x-0 lg:static lg:z-auto
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Logo */}
-        <div className="p-4 border-b border-sidebar-border">
+        <div className="p-4 border-b border-sidebar-border relative overflow-hidden">
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
@@ -120,9 +121,12 @@ export default function Sidebar({ isOpen, onClose }) {
                         key={item.path + item.label}
                         to={item.path}
                         onClick={onClose}
-                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-0.5
+                        className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-0.5 active:scale-[0.98]
                           ${isActive ? 'bg-primary/15 text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
                       >
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />
+                        )}
                         <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : ''}`} />
                         {item.label}
                         {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}

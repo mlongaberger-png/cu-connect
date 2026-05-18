@@ -11,8 +11,8 @@ export default function TopBar({ onMenuToggle, title }) {
 
   return (
     <header
-      className="shrink-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border safe-area-top"
-      style={{ transform: "translateZ(0)", willChange: "transform" }}
+      className="shrink-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60 safe-area-top"
+      style={{ transform: "translateZ(0)", willChange: "transform", boxShadow: "0 1px 0 0 hsl(var(--border) / 0.4)" }}
     >
       <div className="flex items-center justify-between px-4 md:px-6 h-14">
         <div className="flex items-center gap-4">

@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, MessageSquare, UserCircle,
@@ -89,20 +90,33 @@ export default function BottomTabBar({ onOpenSidebar }) {
           }
 
           return (
-            <button
+            <motion.button
               key={tab.root}
               onClick={() => handleTabPress(tab)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-none relative ${
-                isActive ? "text-primary" : "text-muted-foreground active:bg-white/5"
+              whileTap={{ scale: 0.88 }}
+              transition={{ duration: 0.12 }}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 relative ${
+                isActive ? "text-primary" : "text-muted-foreground"
               }`}
               style={{ minHeight: 56 }}
             >
-              <Icon className="w-5 h-5" />
+              <AnimatePresence>
+                {isActive && (
+                  <motion.span
+                    layoutId="tab-indicator"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary rounded-full"
+                    initial={{ opacity: 0, scaleX: 0.5 }}
+                    animate={{ opacity: 1, scaleX: 1 }}
+                    exit={{ opacity: 0, scaleX: 0.5 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  />
+                )}
+              </AnimatePresence>
+              <motion.div animate={{ scale: isActive ? 1.1 : 1 }} transition={{ duration: 0.15 }}>
+                <Icon className="w-5 h-5" />
+              </motion.div>
               <span className="text-[10px] font-medium">{tab.label}</span>
-              {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
+            </motion.button>
           );
         })}
       </div>

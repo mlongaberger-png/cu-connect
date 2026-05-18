@@ -11,15 +11,23 @@ const priorityStyles = {
 export default function RecentAnnouncements({ announcements }) {
   if (!announcements || announcements.length === 0) {
     return (
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm rounded-2xl border border-border p-6">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <h3 className="text-lg font-semibold text-foreground mb-4">Announcements</h3>
-        <p className="text-muted-foreground text-sm text-center py-8">No announcements yet</p>
+        <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Megaphone className="w-7 h-7 text-primary/60" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">No announcements yet</p>
+          <p className="text-xs text-muted-foreground/60">New announcements will appear here</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-6">
+    <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm rounded-2xl border border-border p-6">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <h3 className="text-lg font-semibold text-foreground mb-4">Announcements</h3>
       <div className="space-y-3">
         {announcements.slice(0, 4).map((ann) => (

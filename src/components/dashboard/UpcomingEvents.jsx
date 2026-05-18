@@ -17,21 +17,29 @@ export default function UpcomingEvents({ events }) {
 
   if (!events || events.length === 0) {
     return (
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm rounded-2xl border border-border p-6">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Events</h3>
-        <p className="text-muted-foreground text-sm text-center py-8">No upcoming events</p>
+        <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Calendar className="w-7 h-7 text-primary/60" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">No upcoming events</p>
+          <p className="text-xs text-muted-foreground/60">Events will appear here when scheduled</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-6">
+    <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm rounded-2xl border border-border p-6">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Events</h3>
       <div className="space-y-3">
         {events.slice(0, 5).map((event) => (
           <div
             key={event.id}
-            className="flex items-start gap-4 p-3 rounded-xl bg-surface hover:bg-surface-hover transition-colors"
+            className="flex items-start gap-4 p-3 rounded-xl bg-surface hover:bg-surface-hover active:scale-[0.99] transition-all duration-150"
           >
             <div className="flex flex-col items-center min-w-[48px]">
               <span className="text-xs text-muted-foreground">

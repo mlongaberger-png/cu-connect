@@ -165,6 +165,12 @@ button, a, [role="tab"] {
   min-height: 44px;
 }
 
+/* Native-feel haptic press on interactive elements */
+button:not(:disabled), a, [role="button"], [role="tab"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 /* Allow selection in inputs/textareas */
 input, textarea, [contenteditable] {
   -webkit-user-select: text;
