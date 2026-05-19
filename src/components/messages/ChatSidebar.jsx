@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, Users, MessageCircle, Megaphone } from "lucide-react";
+import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus } from "lucide-react";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
@@ -156,18 +156,10 @@ export default function ChatSidebar({ activeChannelId }) {
         </div>
         <div className="px-4 pb-3">
           <TabsList className="grid w-full grid-cols-4 bg-muted">
-            <TabsTrigger value="teams" className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> Teams
-            </TabsTrigger>
-            <TabsTrigger value="direct" className="flex items-center gap-1">
-              <MessageCircle className="w-3.5 h-3.5" /> DMs
-            </TabsTrigger>
-            <TabsTrigger value="carpool" className="flex items-center gap-1">
-              <Car className="w-3.5 h-3.5" /> Carpool
-            </TabsTrigger>
-            <TabsTrigger value="announce" className="flex items-center gap-1">
-              <Megaphone className="w-3.5 h-3.5" /> News
-            </TabsTrigger>
+            <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
+            <TabsTrigger value="direct">💬 DMs</TabsTrigger>
+            <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
+            <TabsTrigger value="announce">📢 News</TabsTrigger>
           </TabsList>
         </div>
       </div>
