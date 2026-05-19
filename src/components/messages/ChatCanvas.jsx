@@ -8,6 +8,50 @@ import { format } from "date-fns";
 import Composer from "./Composer";
 import EventCard from "./cards/EventCard";
 
+async function subscribeToNativePush(userEmail, userId) {
+  try {
+    const permResult = await Notification.requestPermission();
+    if (permResult !== "granted") return false;
+
+    // Fetch VAPID public key from backend
+    const res = await base44.functions.invoke("getPushConfig", {});
+    const vapidPublicKey = res?.data?.publicKey;
+    if (!vapidPublicKey) return false;
+
+    const registration = await navigator.serviceWorker.ready;
+
+    // Convert base64 VAPID key to Uint8Array
+    const urlBase64ToUint8Array = (base64String) => {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+    };
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    const subJson = subscription.toJSON();
+    await base44.entities.PushSubscription.create({
+      user_email: userEmail,
+      user_id: userId,
+      endpoint: subJson.endpoint,
+      p256dh_key: subJson.keys?.p256dh,
+      auth_key: subJson.keys?.auth,
+      is_active: true,
+      device_type: "web",
+    });
+
+    localStorage.setItem("in_app_alerts", "true");
+    return true;
+  } catch (err) {
+    console.error("Push subscription failed:", err);
+    return false;
+  }
+}
+
 function MessageBubble({ msg, isOwn }) {
   if (msg.message_type === "event") {
     return (
@@ -72,6 +116,7 @@ export default function ChatCanvas({ channelId }) {
   const topSentinelRef = useRef(null);
   const queryClient = useQueryClient();
   const [isMuted, setIsMuted] = useState(false);
+  const [alertsOn, setAlertsOn] = useState(() => localStorage.getItem("in_app_alerts") === "true");
 
   const { data: channel } = useQuery({
     queryKey: ["channel", channelId],
@@ -149,26 +194,59 @@ export default function ChatCanvas({ channelId }) {
             {channel?.name || "Loading…"}
           </span>
         </div>
-        <button
-          onClick={() => toggleMuteMutation.mutate(!isMuted)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
-            isMuted 
-              ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20" 
-              : "text-muted-foreground hover:text-foreground hover:bg-surface"
-          }`}
-        >
-          {isMuted ? (
-            <>
-              <BellOff className="w-3.5 h-3.5" />
-              <span className="text-xs font-semibold">Mute On</span>
-            </>
-          ) : (
-            <>
-              <Bell className="w-3.5 h-3.5" />
-              <span className="text-xs">Mute</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Alerts On/Off toggle */}
+          <button
+            onClick={async () => {
+              if (!alertsOn) {
+                const success = await subscribeToNativePush(user?.email, myId);
+                if (success) setAlertsOn(true);
+              } else {
+                localStorage.setItem("in_app_alerts", "false");
+                setAlertsOn(false);
+              }
+            }}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
+              alertsOn
+                ? "bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-surface"
+            }`}
+          >
+            {alertsOn ? (
+              <>
+                <Bell className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">Alerts On</span>
+              </>
+            ) : (
+              <>
+                <BellOff className="w-3.5 h-3.5" />
+                <span className="text-xs">Alerts Off</span>
+              </>
+            )}
+          </button>
+
+          {/* Mute toggle */}
+          <button
+            onClick={() => toggleMuteMutation.mutate(!isMuted)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
+              isMuted
+                ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-surface"
+            }`}
+          >
+            {isMuted ? (
+              <>
+                <BellOff className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">Mute On</span>
+              </>
+            ) : (
+              <>
+                <Bell className="w-3.5 h-3.5" />
+                <span className="text-xs">Mute</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Messages — flex-col-reverse keeps latest at bottom */}
