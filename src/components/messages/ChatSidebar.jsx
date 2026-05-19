@@ -89,30 +89,36 @@ export default function ChatSidebar({ activeChannelId }) {
 
   return (
     <div className="flex flex-col h-full w-full min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-primary" /> Messages
-        </h2>
-        {canCreate && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="p-1.5 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        )}
+      {/* Header & Tabs — Locked to top */}
+      <div className="relative z-10 bg-card shrink-0">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-primary" /> Messages
+          </h2>
+          {canCreate && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="p-1.5 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Tabs List */}
+        <Tabs defaultValue="teams" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 p-2 bg-muted mx-0 rounded-none border-b border-border">
+            <TabsTrigger value="teams" className="text-xs px-1">🛡️ Teams</TabsTrigger>
+            <TabsTrigger value="direct" className="text-xs px-1">💬 DMs</TabsTrigger>
+            <TabsTrigger value="carpool" className="text-xs px-1">🚗 Rides</TabsTrigger>
+            <TabsTrigger value="announce" className="text-xs px-1">📢 News</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Tabs */}
+      {/* Scrollable Content */}
       <Tabs defaultValue="teams" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="grid w-full grid-cols-4 p-2 bg-muted mx-0 rounded-none border-b border-border shrink-0">
-          <TabsTrigger value="teams" className="text-xs px-1">🛡️ Teams</TabsTrigger>
-          <TabsTrigger value="direct" className="text-xs px-1">💬 DMs</TabsTrigger>
-          <TabsTrigger value="carpool" className="text-xs px-1">🚗 Rides</TabsTrigger>
-          <TabsTrigger value="announce" className="text-xs px-1">📢 News</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="teams" className="flex-1 overflow-y-auto p-2 space-y-1 mt-0">
           {teamChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
