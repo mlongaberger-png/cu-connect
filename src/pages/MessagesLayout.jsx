@@ -11,14 +11,14 @@ export default function MessagesLayout() {
 
   return (
     <MessagingTermsGate>
-      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-background text-foreground">
+      <div className="flex h-[calc(100dvh-4rem)] min-h-0 w-full overflow-hidden bg-background text-foreground">
         {/* Left Pane — Sidebar */}
-        <div className={`flex-shrink-0 border-r border-border bg-card w-full md:w-80 flex-col ${channelId ? "hidden md:flex" : "flex"}`}>
+        <div className={`flex-shrink-0 min-h-0 border-r border-border bg-card w-full md:w-80 flex-col ${channelId ? "hidden md:flex" : "flex"}`}>
           <ChatSidebar activeChannelId={channelId} />
         </div>
 
         {/* Right Pane — Canvas */}
-        <div className={`flex-1 flex-col min-w-0 bg-background ${!channelId ? "hidden md:flex" : "flex"}`}>
+        <div className={`flex-1 min-h-0 flex-col min-w-0 bg-background ${!channelId ? "hidden md:flex" : "flex"}`}>
           {channelId
             ? <ChatCanvas channelId={channelId} />
             : <EmptyState text="Select a conversation to start messaging" />
