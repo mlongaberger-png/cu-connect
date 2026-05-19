@@ -157,9 +157,9 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="px-4 pb-3">
           <TabsList className="grid w-full grid-cols-4 bg-muted">
             <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
-            <TabsTrigger value="direct">💬 DMs</TabsTrigger>
-            <TabsTrigger value="carpool">🚗</TabsTrigger>
-            <TabsTrigger value="announce">📢</TabsTrigger>
+            <TabsTrigger value="direct">💬 Direct</TabsTrigger>
+            <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
+            <TabsTrigger value="announce">📢 News</TabsTrigger>
           </TabsList>
         </div>
       </div>
@@ -177,7 +177,7 @@ export default function ChatSidebar({ activeChannelId }) {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground mb-1"
+            className="w-full justify-start gap-2 text-primary mb-1 hover:bg-primary/10"
             onClick={() => setShowNewDm(true)}
           >
             <MessageSquarePlus className="w-4 h-4" /> New Direct Message
