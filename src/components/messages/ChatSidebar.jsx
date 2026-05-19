@@ -120,7 +120,7 @@ export default function ChatSidebar({ activeChannelId }) {
           {teamAvatarUrl ? (
             <img src={teamAvatarUrl} alt="" className="w-full h-full object-cover" />
           ) : linkedTeam ? (
-            <span className="text-sm">{getTeamAvatarEmoji(teamAvatarType)}</span>
+            <span className="text-sm">{getTeamAvatarEmoji(teamAvatarType, linkedTeam?.sport_name)}</span>
           ) : pinned ? (
             <Crown className="w-3.5 h-3.5 text-yellow-400" />
           ) : ch.type === "carpool" ? (

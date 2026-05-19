@@ -10,9 +10,30 @@ const DEFAULTS = [
   { type: "default_pom", emoji: "🎀", label: "Pom" },
 ];
 
-export function getTeamAvatarEmoji(avatarType) {
-  const found = DEFAULTS.find(d => d.type === avatarType);
-  return found ? found.emoji : "🛡️";
+export function getTeamAvatarEmoji(avatarType, sportName) {
+  if (avatarType) {
+    const found = DEFAULTS.find(d => d.type === avatarType);
+    if (found) return found.emoji;
+  }
+  // Fall back to sport name detection
+  if (sportName) {
+    const s = sportName.toLowerCase();
+    if (s.includes("baseball") || s.includes("softball")) return "⚾";
+    if (s.includes("football")) return "🏈";
+    if (s.includes("cheer")) return "📣";
+    if (s.includes("pom") || s.includes("dance")) return "🎀";
+    if (s.includes("soccer")) return "⚽";
+    if (s.includes("basketball")) return "🏀";
+    if (s.includes("volleyball")) return "🏐";
+    if (s.includes("lacrosse")) return "🥍";
+    if (s.includes("hockey")) return "🏒";
+    if (s.includes("swim")) return "🏊";
+    if (s.includes("track") || s.includes("cross")) return "🏃";
+    if (s.includes("wrestling")) return "🤼";
+    if (s.includes("golf")) return "⛳";
+    if (s.includes("tennis")) return "🎾";
+  }
+  return "🛡️";
 }
 
 export default function TeamAvatarPicker({ avatarUrl, avatarType, onChange }) {
