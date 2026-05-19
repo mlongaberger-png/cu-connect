@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle } from "lucide-react";
+import TeamAvatarPicker from "@/components/teams/TeamAvatarPicker";
 import SnackManagerPanel from "@/components/snacks/SnackManagerPanel";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
@@ -34,6 +35,7 @@ export default function TeamDetail() {
   const [assignSelected, setAssignSelected] = useState([]);
   const [assigning, setAssigning] = useState(false);
   const [teamForm, setTeamForm] = useState({});
+  const [uploadingTeamAvatar, setUploadingTeamAvatar] = useState(false);
   const [invitedEmails, setInvitedEmails] = useState({});
   const [inviting, setInviting] = useState(null);
 
@@ -126,6 +128,8 @@ export default function TeamDetail() {
       year: team.year || "",
       practice_location: team.practice_location || "",
       practice_schedule: team.practice_schedule || "",
+      avatar_url: team.avatar_url || null,
+      avatar_type: team.avatar_type || null,
     });
     setShowTeamForm(true);
   };
@@ -438,6 +442,11 @@ export default function TeamDetail() {
         <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>Edit Team</DialogTitle></DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); updateTeamMutation.mutate({ id: teamId, data: teamForm }); }} className="space-y-4">
+            <TeamAvatarPicker
+              avatarUrl={teamForm.avatar_url}
+              avatarType={teamForm.avatar_type}
+              onChange={(vals) => setTeamForm(f => ({ ...f, ...vals }))}
+            />
             <div>
               <Label>Team Name</Label>
               <Input value={teamForm.name || ""} onChange={e => setTeamForm({...teamForm, name: e.target.value})} className="bg-surface border-border" required />

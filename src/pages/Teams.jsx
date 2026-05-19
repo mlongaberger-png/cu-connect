@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Users, ChevronRight, Filter, Trash2 } from "lucide-react";
-
+import TeamAvatarPicker, { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
 
 const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
@@ -18,7 +18,7 @@ export default function Teams() {
   const { isAdmin } = useAdminOrADGuard();
   const [showForm, setShowForm] = useState(false);
   const [filterSport, setFilterSport] = useState("all");
-  const [form, setForm] = useState({ name: "", sport_id: "", sport_name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: "2026" });
+  const [form, setForm] = useState({ name: "", sport_id: "", sport_name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: "2026", avatar_url: null, avatar_type: null });
   const queryClient = useQueryClient();
 
   const { data: teams = [], isLoading } = useQuery({
@@ -103,11 +103,19 @@ export default function Teams() {
               <Link to={`/TeamDetail?id=${team.id}`}>
                 <div className="bg-card rounded-2xl border border-border p-5 hover:border-primary/30 transition-all cursor-pointer">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{team.name}</h3>
-                      <p className="text-sm text-primary mt-0.5">{team.sport_name}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                        {team.avatar_url
+                          ? <img src={team.avatar_url} alt={team.name} className="w-full h-full object-cover" />
+                          : <span className="text-lg">{getTeamAvatarEmoji(team.avatar_type)}</span>
+                        }
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{team.name}</h3>
+                        <p className="text-sm text-primary mt-0.5">{team.sport_name}</p>
+                      </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                   </div>
                   <div className="flex items-center gap-3 mt-4 flex-wrap">
                     {team.age_group && (
@@ -137,6 +145,11 @@ export default function Teams() {
             <DialogTitle>Add Team</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <TeamAvatarPicker
+              avatarUrl={form.avatar_url}
+              avatarType={form.avatar_type}
+              onChange={(vals) => setForm(f => ({ ...f, ...vals }))}
+            />
             <div>
               <Label>Team Name</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-surface border-border" required />

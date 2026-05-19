@@ -1,0 +1,97 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Team name"
+    },
+    "sport_id": {
+      "type": "string",
+      "description": "ID of the sport this team belongs to"
+    },
+    "sport_name": {
+      "type": "string",
+      "description": "Name of the sport (denormalized)"
+    },
+    "age_group": {
+      "type": "string",
+      "enum": [
+        "6U",
+        "8U",
+        "10U",
+        "12U",
+        "14U",
+        "16U",
+        "18U",
+        "Adult"
+      ],
+      "description": "Age group"
+    },
+    "head_coach": {
+      "type": "string",
+      "description": "Head coach name"
+    },
+    "coach_email": {
+      "type": "string",
+      "description": "Coach contact email"
+    },
+    "coach_phone": {
+      "type": "string",
+      "description": "Coach phone number"
+    },
+    "season": {
+      "type": "string",
+      "enum": [
+        "fall",
+        "winter",
+        "spring",
+        "summer"
+      ],
+      "description": "Team season"
+    },
+    "year": {
+      "type": "string",
+      "description": "Season year"
+    },
+    "max_roster": {
+      "type": "number",
+      "description": "Maximum roster size"
+    },
+    "practice_location": {
+      "type": "string",
+      "description": "Default practice location"
+    },
+    "practice_schedule": {
+      "type": "string",
+      "description": "Regular practice schedule"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "roster_published": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, parents can download the team roster PDF"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Custom team logo URL"
+    },
+    "avatar_type": {
+      "type": "string",
+      "enum": [
+        "custom",
+        "default_football",
+        "default_baseball",
+        "default_cheer"
+      ],
+      "description": "Type of avatar selected"
+    }
+  },
+  "required": [
+    "name",
+    "sport_id"
+  ]
+}
