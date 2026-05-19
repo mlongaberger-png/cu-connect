@@ -55,13 +55,13 @@ export default function ChatSidebar({ activeChannelId }) {
   }, {});
 
   const resetUnreadMutation = useMutation({
-    mutationFn: async (channelId) => {
+    mutationFn: (channelId) => {
       const membership = myMemberships.find(m => m.channel_id === channelId);
       if (membership && membership.unread_count > 0) {
-        await base44.entities.ChannelMember.update(membership.id, { unread_count: 0 });
+        return base44.entities.ChannelMember.update(membership.id, { unread_count: 0 });
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channel-members", user?.email] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channel-members"] }),
   });
 
   const select = (id) => {
