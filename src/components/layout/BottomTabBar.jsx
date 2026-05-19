@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, MessageSquare, UserCircle,
-  Trophy, Users, Menu, Image
+  Image, Users, Menu, Car
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -76,7 +76,7 @@ const parentTabs = [
   { root: "/ParentCalendar", label: "Calendar", icon: Calendar },
   { root: "/Messages", label: "Messages", icon: MessageSquare },
   { root: "/ParentPortal", label: "My Family", icon: UserCircle },
-  { root: "/Sports",   label: "Sports",   icon: Trophy },
+  { root: "/Gallery",  label: "Photos",   icon: Image },
 ];
 
 const STORAGE_KEY = "tab_last_path";
