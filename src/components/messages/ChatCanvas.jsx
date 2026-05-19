@@ -44,7 +44,7 @@ async function subscribeToNativePush(userEmail, userId) {
       device_type: "web",
     });
 
-    localStorage.setItem("in_app_alerts", "true");
+    localStorage.setItem("alerts_enabled", "true");
     return true;
   } catch (err) {
     console.error("Push subscription failed:", err);
@@ -116,7 +116,7 @@ export default function ChatCanvas({ channelId }) {
   const topSentinelRef = useRef(null);
   const queryClient = useQueryClient();
   const [isMuted, setIsMuted] = useState(false);
-  const [alertsOn, setAlertsOn] = useState(() => localStorage.getItem("in_app_alerts") === "true");
+  const [alertsOn, setAlertsOn] = useState(() => localStorage.getItem("alerts_enabled") === "true");
 
   const { data: channel } = useQuery({
     queryKey: ["channel", channelId],
@@ -202,7 +202,7 @@ export default function ChatCanvas({ channelId }) {
                 const success = await subscribeToNativePush(user?.email, myId);
                 if (success) setAlertsOn(true);
               } else {
-                localStorage.setItem("in_app_alerts", "false");
+                localStorage.setItem("alerts_enabled", "false");
                 setAlertsOn(false);
               }
             }}

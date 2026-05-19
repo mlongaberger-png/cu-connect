@@ -61,7 +61,7 @@ export default function MessagesLayout() {
     queryKey: ["global-latest-messages"],
     queryFn: () => base44.entities.Message.list("-created_date", 5),
     refetchInterval: 5000,
-    enabled: !!user && localStorage.getItem("in_app_alerts") === "true",
+    enabled: !!user && localStorage.getItem("alerts_enabled") === "true",
   });
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function MessagesLayout() {
     if (newest.id === lastSeenMessageId.current) return;
     lastSeenMessageId.current = newest.id;
 
-    const alertsEnabled = localStorage.getItem("in_app_alerts") === "true";
+    const alertsEnabled = localStorage.getItem("alerts_enabled") === "true";
     const isOwnMessage = newest.sender_user_id === myId || newest.sender_user_id === user?.email;
     const isActiveChannel = newest.channel_id === channelId;
 

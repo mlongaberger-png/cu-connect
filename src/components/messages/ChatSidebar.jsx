@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus } from "lucide-react";
+import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye } from "lucide-react";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
@@ -21,6 +21,17 @@ export default function ChatSidebar({ activeChannelId }) {
   const [showNewDm, setShowNewDm] = useState(false);
   const [showCarpoolRequest, setShowCarpoolRequest] = useState(false);
   const [newChannelForm, setNewChannelForm] = useState({ name: "", type: "team", team_id: "" });
+  const [hiddenChannels, setHiddenChannels] = useState(() => JSON.parse(localStorage.getItem("cu_hidden_channels") || "[]"));
+  const [showHiddenRecords, setShowHiddenRecords] = useState(false);
+
+  const toggleHideChannel = (id, e) => {
+    e.stopPropagation();
+    const updated = hiddenChannels.includes(id)
+      ? hiddenChannels.filter(cid => cid !== id)
+      : [...hiddenChannels, id];
+    setHiddenChannels(updated);
+    localStorage.setItem("cu_hidden_channels", JSON.stringify(updated));
+  };
 
   const { data: currentUser } = useQuery({
     queryKey: ["me"],
@@ -103,6 +114,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const ChannelBtn = ({ ch, pinned }) => {
     const isActive = ch.id === activeChannelId;
     const unread = unreadMap[ch.id] || 0;
+    const isHidden = hiddenChannels.includes(ch.id);
     const linkedTeam = (ch.type === "team" || ch.type === "announcement") && ch.team_id
       ? orgTeams.find(t => t.id === ch.team_id)
       : null;
@@ -112,10 +124,11 @@ export default function ChatSidebar({ activeChannelId }) {
     return (
       <button
         onClick={() => select(ch.id)}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors
+        className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors
           ${isActive ? "bg-primary/15 text-primary font-medium" : "hover:bg-surface text-muted-foreground"}
           ${pinned ? "border border-yellow-500/30 bg-yellow-500/5" : ""}
-          ${unread > 0 ? "border-l-4 border-l-red-500" : ""}`}
+          ${unread > 0 ? "border-l-4 border-l-red-500" : ""}
+          ${isHidden ? "opacity-50" : ""}`}
       >
         <div className="w-7 h-7 rounded-full overflow-hidden bg-surface flex items-center justify-center shrink-0 border border-border/50">
           {teamAvatarUrl ? (
@@ -131,12 +144,29 @@ export default function ChatSidebar({ activeChannelId }) {
           )}
         </div>
         <span className="truncate text-sm flex-1">{ch.name || "Unnamed"}</span>
-        {pinned && !unread && <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />}
-        {unread > 0 && (
+
+        {/* Status / badge area */}
+        {unread > 0 ? (
           <span className="ml-auto shrink-0 bg-red-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-md animate-in zoom-in">
             {unread > 99 ? "99+" : unread}
           </span>
+        ) : pinned ? (
+          <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />
+        ) : (
+          <span className="text-[10px] text-green-500/60 ml-auto shrink-0 hidden group-hover:hidden">✓</span>
         )}
+
+        {/* Hide/unhide button — appears on hover */}
+        <span
+          onClick={(e) => toggleHideChannel(ch.id, e)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 p-1 rounded hover:bg-background shrink-0"
+          title={isHidden ? "Unhide" : "Hide"}
+        >
+          {isHidden
+            ? <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+            : <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
+          }
+        </span>
       </button>
     );
   };
@@ -165,54 +195,68 @@ export default function ChatSidebar({ activeChannelId }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
-        <TabsContent value="teams" className="m-0 space-y-1">
-          {teamChannels.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-4 text-center">No team channels yet</p>
-          ) : (
-            teamChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)
-          )}
-        </TabsContent>
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col">
+        <div className="flex-1">
+          <TabsContent value="teams" className="m-0 space-y-1">
+            {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No team channels yet</p>
+            ) : (
+              teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
+            )}
+          </TabsContent>
 
-        <TabsContent value="direct" className="m-0 space-y-1">
+          <TabsContent value="direct" className="m-0 space-y-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-primary mb-1 hover:bg-primary/10"
+              onClick={() => setShowNewDm(true)}
+            >
+              <MessageSquarePlus className="w-4 h-4" /> New Direct Message
+            </Button>
+            {directChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No direct messages yet</p>
+            ) : (
+              directChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
+            )}
+          </TabsContent>
+
+          <TabsContent value="carpool" className="m-0 space-y-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-primary mb-1 hover:bg-primary/10"
+              onClick={() => setShowCarpoolRequest(true)}
+            >
+              <Car className="w-4 h-4" /> Request a Ride
+            </Button>
+            {carpoolChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No carpool channels yet</p>
+            ) : (
+              carpoolChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
+            )}
+          </TabsContent>
+
+          <TabsContent value="announce" className="m-0 space-y-1">
+            {announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No announcement channels yet</p>
+            ) : (
+              announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
+            )}
+          </TabsContent>
+        </div>
+
+        {/* Manage hidden channels */}
+        <div className="pt-2 border-t border-border mt-2">
           <Button
-            variant="ghost"
+            variant="link"
             size="sm"
-            className="w-full justify-start gap-2 text-primary mb-1 hover:bg-primary/10"
-            onClick={() => setShowNewDm(true)}
+            className="w-full text-xs text-muted-foreground"
+            onClick={() => setShowHiddenRecords(!showHiddenRecords)}
           >
-            <MessageSquarePlus className="w-4 h-4" /> New Direct Message
+            {showHiddenRecords ? "Hide Archived Lists" : `Manage Hidden Channels (${hiddenChannels.length})`}
           </Button>
-          {directChannels.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-4 text-center">No direct messages yet</p>
-          ) : (
-            directChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)
-          )}
-        </TabsContent>
-
-        <TabsContent value="carpool" className="m-0 space-y-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2 text-primary mb-1 hover:bg-primary/10"
-            onClick={() => setShowCarpoolRequest(true)}
-          >
-            <Car className="w-4 h-4" /> Request a Ride
-          </Button>
-          {carpoolChannels.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-4 text-center">No carpool channels yet</p>
-          ) : (
-            carpoolChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)
-          )}
-        </TabsContent>
-
-        <TabsContent value="announce" className="m-0 space-y-1">
-          {announceChannels.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-4 text-center">No announcement channels yet</p>
-          ) : (
-            announceChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)
-          )}
-        </TabsContent>
+        </div>
       </div>
 
       {/* Create Channel Dialog */}
