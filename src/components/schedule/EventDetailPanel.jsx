@@ -11,6 +11,7 @@ import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import RsvpBreakdown from "@/components/schedule/RsvpBreakdown";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import UniformSelector from "@/components/schedule/UniformSelector";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -251,7 +252,12 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             </div>
             <div>
               <Label className="text-xs">Location</Label>
-              <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="bg-surface border-border mt-0.5" />
+              <AddressAutocomplete
+                value={form.location}
+                onChange={val => setForm(f => ({ ...f, location: val }))}
+                placeholder="Search address…"
+                className="bg-surface border-border mt-0.5"
+              />
             </div>
 
             {isCompetition && (

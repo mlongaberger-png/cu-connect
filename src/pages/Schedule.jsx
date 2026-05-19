@@ -14,6 +14,7 @@ import { format as formatDateFns, parse } from "date-fns";
 import BulkEventImporter from "@/components/schedule/BulkEventImporter";
 import UniformSelector from "@/components/schedule/UniformSelector";
 import SuggestionsInput from "@/components/schedule/SuggestionsInput";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import TimePickerPopup from "@/components/schedule/TimePickerPopup";
 import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
@@ -445,11 +446,10 @@ export default function Schedule() {
             </div>
             <div>
               <Label>Location</Label>
-              <SuggestionsInput
+              <AddressAutocomplete
                 value={form.location}
                 onChange={v => setForm(f => ({ ...f, location: v }))}
-                suggestions={locationSuggestions}
-                placeholder="Location"
+                placeholder="Search address…"
                 className="bg-surface border-border mt-1"
               />
             </div>
