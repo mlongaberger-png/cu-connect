@@ -1,0 +1,31 @@
+{
+  "name": "MessageReaction",
+  "type": "object",
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "description": "Foreign key to Message"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "reaction_type": {
+      "type": "string",
+      "enum": [
+        "going",
+        "not_going",
+        "need_ride",
+        "heart",
+        "thumbs_up"
+      ]
+    }
+  },
+  "required": [
+    "message_id",
+    "user_id",
+    "reaction_type"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "Channel",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "team",
+        "direct",
+        "carpool",
+        "announcement"
+      ],
+      "default": "team"
+    },
+    "name": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "pinned_role": {
+      "type": "string"
+    },
+    "is_broadcast_only": {
+      "type": "boolean",
+      "default": false
+    },
+    "member_emails": {
+      "type": "string",
+      "description": "JSON array of member emails (for direct channels)"
+    },
+    "last_message_at": {
+      "type": "string",
+      "description": "ISO timestamp of most recent message"
+    }
+  },
+  "required": [
+    "type"
+  ]
+}
