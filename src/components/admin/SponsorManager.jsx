@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Pencil, Star, Globe, Building2, Clock, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { Trash2, Plus, Pencil, Star, Globe, Building2, Clock, CheckCircle2, XCircle, ShieldCheck, ImagePlus, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
+import { useRef } from "react";
 
 const TIER_COLORS = {
   Gold: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -91,6 +92,8 @@ export default function SponsorManager() {
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null);
   const [urlError, setUrlError] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoFileRef = useRef();
 
   const { data: sponsors = [], isLoading } = useQuery({
     queryKey: ["sponsors"],
@@ -142,7 +145,17 @@ export default function SponsorManager() {
     onSuccess: () => { invalidateAll(); toast({ title: "Prospect declined" }); },
   });
 
-  const resetForm = () => { setForm(emptyForm); setEditing(null); setUrlError(false); };
+  const resetForm = () => { setForm(emptyForm); setEditing(null); setUrlError(false); setUploadingLogo(false); };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(f => ({ ...f, logo_url: file_url }));
+    setUploadingLogo(false);
+    toast({ title: "Logo uploaded" });
+  };
 
   const startEdit = (s) => {
     setEditing(s);
@@ -240,8 +253,23 @@ export default function SponsorManager() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Logo URL</Label>
-            <Input value={form.logo_url} onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))} placeholder="https://cdn.example.com/logo.png" className="bg-surface border-border" />
+            <Label>Logo</Label>
+            <div className="flex gap-2 items-center">
+              <Input value={form.logo_url} onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))} placeholder="https://cdn.example.com/logo.png" className="bg-surface border-border flex-1" />
+              <button
+                type="button"
+                onClick={() => logoFileRef.current?.click()}
+                disabled={uploadingLogo}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-surface hover:bg-surface-hover text-sm text-muted-foreground hover:text-foreground transition-colors"
+                title="Upload from gallery"
+              >
+                {uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+              </button>
+              <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            </div>
+            {form.logo_url && (
+              <img src={form.logo_url} alt="Logo preview" className="h-10 mt-1 object-contain rounded border border-border bg-surface p-1" />
+            )}
           </div>
 
           <div className="space-y-1.5">
