@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 export default function ChatSidebar({ activeChannelId }) {
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [showNewDm, setShowNewDm] = useState(false);
   const [showCarpoolRequest, setShowCarpoolRequest] = useState(false);
@@ -62,7 +64,34 @@ export default function ChatSidebar({ activeChannelId }) {
     },
   });
 
-  const select = (id) => setSearchParams({ channelId: id });
+  // Fetch unread counts for current user
+  const { data: myMemberships = [] } = useQuery({
+    queryKey: ["channel-members", user?.email],
+    queryFn: () => base44.entities.ChannelMember.filter({ user_email: user?.email }),
+    enabled: !!user?.email,
+    refetchInterval: 30000, // poll every 30s as a fallback
+  });
+
+  // Map channel_id -> unread_count for quick lookup
+  const unreadMap = myMemberships.reduce((acc, m) => {
+    if (m.unread_count > 0) acc[m.channel_id] = m.unread_count;
+    return acc;
+  }, {});
+
+  const resetUnreadMutation = useMutation({
+    mutationFn: async (channelId) => {
+      const membership = myMemberships.find(m => m.channel_id === channelId);
+      if (membership && membership.unread_count > 0) {
+        await base44.entities.ChannelMember.update(membership.id, { unread_count: 0 });
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channel-members", user?.email] }),
+  });
+
+  const select = (id) => {
+    setSearchParams({ channelId: id });
+    resetUnreadMutation.mutate(id);
+  };
 
   const handleCreate = (e) => {
     e.preventDefault();
@@ -77,6 +106,7 @@ export default function ChatSidebar({ activeChannelId }) {
 
   const ChannelBtn = ({ ch, pinned }) => {
     const isActive = ch.id === activeChannelId;
+    const unread = unreadMap[ch.id] || 0;
     // For team channels, look up the team avatar from orgTeams
     const linkedTeam = ch.type === "team" && ch.team_id
       ? orgTeams.find(t => t.id === ch.team_id)
@@ -102,8 +132,13 @@ export default function ChatSidebar({ activeChannelId }) {
             <Hash className="w-3.5 h-3.5 text-primary" />
           )}
         </div>
-        <span className="truncate text-sm">{ch.name || "Unnamed"}</span>
-        {pinned && <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />}
+        <span className="truncate text-sm flex-1">{ch.name || "Unnamed"}</span>
+        {pinned && !unread && <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />}
+        {unread > 0 && (
+          <span className="ml-auto shrink-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
       </button>
     );
   };

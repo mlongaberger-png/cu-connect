@@ -1,0 +1,30 @@
+{
+  "name": "ChannelMember",
+  "type": "object",
+  "properties": {
+    "channel_id": {
+      "type": "string",
+      "description": "Foreign key to Channel"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Member's email"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Member's user ID"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "unread_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of unread messages for this user in this channel"
+    }
+  },
+  "required": [
+    "channel_id",
+    "user_email"
+  ]
+}
