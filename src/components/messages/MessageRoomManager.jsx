@@ -50,7 +50,7 @@ export default function MessageRoomManager({ currentUser }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.MessageRoom.update(id, { is_active: false }),
+    mutationFn: (id) => base44.entities.MessageRoom.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
       setDeleteConfirm(null);

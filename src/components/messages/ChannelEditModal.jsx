@@ -68,7 +68,7 @@ export default function ChannelEditModal({ channel, open, onOpenChange, onDelete
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.MessageRoom.update(channel.id, { is_active: false }),
+    mutationFn: () => base44.entities.MessageRoom.delete(channel.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
       onOpenChange(false);
