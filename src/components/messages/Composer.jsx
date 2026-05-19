@@ -12,7 +12,9 @@ export default function Composer({ channelId, channel }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [showCarpool, setShowCarpool] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fetch current user full profile to pass into the Carpool Modal
   const { data: currentUser } = useQuery({
@@ -33,6 +35,23 @@ export default function Composer({ channelId, channel }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["messages", channelId] }),
   });
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    sendMutation.mutate({
+      channel_id: channelId,
+      sender_user_id: user?.id || user?.email,
+      sender_name: user?.full_name || user?.email,
+      sender_avatar: user?.profile_photo_url || "",
+      content_text: `![photo](${file_url})`,
+      message_type: "text",
+    });
+    setUploading(false);
+    e.target.value = "";
+  };
+
   const handleSend = async (e) => {
     e?.preventDefault();
     if (!text.trim()) return;
@@ -52,8 +71,9 @@ export default function Composer({ channelId, channel }) {
 
   return (
     <form onSubmit={handleSend} className="border-t border-border bg-card p-3 flex gap-2 items-end">
-      {/* Photo Button - Add your upload trigger here */}
-      <button type="button" onClick={() => console.log("Photo upload clicked")} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors shrink-0">
+      {/* Photo Upload */}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors shrink-0 disabled:opacity-50">
         <Image className="w-4 h-4" />
       </button>
 

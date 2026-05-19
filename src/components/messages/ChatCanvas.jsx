@@ -36,16 +36,26 @@ function MessageBubble({ msg, isOwn }) {
       )}
 
       {/* Bubble */}
-      <div
-        className={`px-4 py-2 text-sm leading-relaxed break-words
-          ${isOwn
-            ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
-            : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
-          }
-          ${msg.isPending ? "opacity-60" : "opacity-100"}`}
-      >
-        {msg.content_text}
-      </div>
+      {/^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim()) ? (
+        <div className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
+          <img
+            src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
+            alt="photo"
+            className="max-w-[220px] max-h-[300px] object-cover rounded-2xl"
+          />
+        </div>
+      ) : (
+        <div
+          className={`px-4 py-2 text-sm leading-relaxed break-words
+            ${isOwn
+              ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
+              : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
+            }
+            ${msg.isPending ? "opacity-60" : "opacity-100"}`}
+        >
+          {msg.content_text}
+        </div>
+      )}
 
       {/* Timestamp for own messages */}
       {isOwn && timestamp && (
