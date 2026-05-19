@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import MessagingTermsGate from "@/components/messages/MessagingTermsGate";
 import ChatSidebar from "@/components/messages/ChatSidebar";
 import ChatCanvas from "@/components/messages/ChatCanvas";
+import ThreadSidebar from "@/components/messages/ThreadSidebar";
 import EmptyState from "@/components/messages/EmptyState";
 import { X } from "lucide-react";
 
@@ -54,6 +55,7 @@ export default function MessagesLayout() {
   const { user } = useAuth();
   const myId = user?.id || user?.email;
   const [banner, setBanner] = useState(null);
+  const [activeThreadParent, setActiveThreadParent] = useState(null);
   const lastSeenMessageId = useRef(null);
 
   // Poll latest messages across all channels to detect new ones
@@ -105,13 +107,22 @@ export default function MessagesLayout() {
           <ChatSidebar activeChannelId={channelId} />
         </div>
 
-        {/* Right Pane — Canvas */}
-        <div className={`flex-1 min-h-0 flex-col min-w-0 bg-background ${!channelId ? "hidden md:flex" : "flex"}`}>
+        {/* Center Pane — Canvas */}
+        <div className={`flex-1 min-h-0 flex-col min-w-0 bg-background ${!channelId ? "hidden md:flex" : "flex"} ${activeThreadParent ? "hidden lg:flex" : ""}`}>
           {channelId
-            ? <ChatCanvas channelId={channelId} />
+            ? <ChatCanvas channelId={channelId} onOpenThread={setActiveThreadParent} />
             : <EmptyState text="Select a conversation to start messaging" />
           }
         </div>
+
+        {/* Right Pane — Thread Sidebar */}
+        {activeThreadParent && channelId && (
+          <ThreadSidebar
+            parentMessage={activeThreadParent}
+            channelId={channelId}
+            onClose={() => setActiveThreadParent(null)}
+          />
+        )}
       </div>
     </MessagingTermsGate>
   );

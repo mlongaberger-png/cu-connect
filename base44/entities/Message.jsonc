@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Foreign key to Channel"
     },
+    "parent_message_id": {
+      "type": "string",
+      "description": "If set, this message is a reply in a thread under that parent message"
+    },
     "sender_user_id": {
       "type": "string"
     },

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft } from "lucide-react";
+import { BellOff, Bell, ArrowLeft, MessageSquareText } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -52,7 +52,9 @@ async function subscribeToNativePush(userEmail, userId) {
   }
 }
 
-function MessageBubble({ msg, isOwn }) {
+function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
+  const [hovered, setHovered] = useState(false);
+
   if (msg.message_type === "event") {
     return (
       <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
@@ -62,9 +64,14 @@ function MessageBubble({ msg, isOwn }) {
   }
 
   const timestamp = msg.created_date ? format(new Date(msg.created_date), "h:mm a") : null;
+  const isPhoto = /^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim());
 
   return (
-    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"} max-w-[80%] ${isOwn ? "self-end" : "self-start"}`}>
+    <div
+      className={`relative flex flex-col ${isOwn ? "items-end" : "items-start"} max-w-[80%] ${isOwn ? "self-end" : "self-start"}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {/* Sender info — shown for others only */}
       {!isOwn && (
         <div className="flex items-center gap-1.5 mb-0.5 pl-1">
@@ -79,37 +86,63 @@ function MessageBubble({ msg, isOwn }) {
         </div>
       )}
 
-      {/* Bubble */}
-      {/^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim()) ? (
-        <div className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
-          <img
-            src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
-            alt="photo"
-            className="max-w-[220px] max-h-[300px] object-cover rounded-2xl"
-          />
-        </div>
-      ) : (
-        <div
-          className={`px-4 py-2 text-sm leading-relaxed break-words
-            ${isOwn
-              ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
-              : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
-            }
-            ${msg.isPending ? "opacity-60" : "opacity-100"}`}
-        >
-          {msg.content_text}
-        </div>
-      )}
+      {/* Bubble + hover action */}
+      <div className="relative">
+        {isPhoto ? (
+          <div className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
+            <img
+              src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
+              alt="photo"
+              className="max-w-[220px] max-h-[300px] object-cover rounded-2xl"
+            />
+          </div>
+        ) : (
+          <div
+            className={`px-4 py-2 text-sm leading-relaxed break-words
+              ${isOwn
+                ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
+                : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
+              }
+              ${msg.isPending ? "opacity-60" : "opacity-100"}`}
+          >
+            {msg.content_text}
+          </div>
+        )}
+
+        {/* Hover: Reply in Thread button */}
+        {hovered && !msg.parent_message_id && (
+          <button
+            onClick={() => onOpenThread(msg)}
+            className={`absolute -top-3 ${isOwn ? "-left-8" : "-right-8"} 
+              bg-card border border-border shadow-md rounded-full p-1.5 
+              text-muted-foreground hover:text-primary hover:border-primary/40 
+              transition-colors z-10`}
+            title="Reply in thread"
+          >
+            <MessageSquareText className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
 
       {/* Timestamp for own messages */}
       {isOwn && timestamp && (
         <span className="text-[10px] text-muted-foreground mt-0.5 pr-1">{timestamp}</span>
       )}
+
+      {/* Thread reply count */}
+      {replyCount > 0 && !msg.parent_message_id && (
+        <button
+          onClick={() => onOpenThread(msg)}
+          className="text-xs text-primary font-semibold mt-1 hover:underline cursor-pointer pl-1"
+        >
+          💬 {replyCount} {replyCount === 1 ? "reply" : "replies"}
+        </button>
+      )}
     </div>
   );
 }
 
-export default function ChatCanvas({ channelId }) {
+export default function ChatCanvas({ channelId, onOpenThread }) {
   const { user } = useAuth();
   const [, setSearchParams] = useSearchParams();
   const myId = user?.id || user?.email;
@@ -175,6 +208,17 @@ export default function ChatCanvas({ channelId }) {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const allMessages = data?.pages.flat() ?? [];
+
+  // Build a map of parent_message_id -> reply count for thread badges
+  const replyCountMap = allMessages.reduce((acc, msg) => {
+    if (msg.parent_message_id) {
+      acc[msg.parent_message_id] = (acc[msg.parent_message_id] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  // Only show top-level messages in the main canvas
+  const topLevelMessages = allMessages.filter(msg => !msg.parent_message_id);
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -255,7 +299,7 @@ export default function ChatCanvas({ channelId }) {
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
           </div>
-        ) : allMessages.length === 0 ? (
+        ) : topLevelMessages.length === 0 ? (
           <div className="flex justify-center py-8">
             <p className="text-sm text-muted-foreground">No messages yet. Say hello! 👋</p>
           </div>
@@ -268,11 +312,13 @@ export default function ChatCanvas({ channelId }) {
                 <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
               </div>
             )}
-            {allMessages.map((msg) => (
+            {topLevelMessages.map((msg) => (
               <MessageBubble
                 key={msg.id}
                 msg={msg}
                 isOwn={msg.sender_user_id === myId}
+                onOpenThread={onOpenThread || (() => {})}
+                replyCount={replyCountMap[msg.id] || 0}
               />
             ))}
           </>
