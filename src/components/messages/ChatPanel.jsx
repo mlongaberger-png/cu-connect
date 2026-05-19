@@ -342,14 +342,22 @@ export default function ChatPanel({
       }));
     },
     onSuccess: (_, sentData) => {
-      // Fire push notifications to team members (non-blocking)
+      // Fire push notifications (non-blocking)
       if (sentData.channel === "team" && sentData.channel_id) {
         base44.functions.invoke("sendPushNotification", {
-          user_emails: [], // sendPushNotification with team_id will figure out recipients
+          user_emails: [],
           title: `${sentData.channel_name || "Team"}: ${sentData.sender_name || "Staff"}`,
           body: sentData.content,
           url: "/Messages",
           team_id: sentData.channel_id,
+        }).catch(() => {});
+      } else if (sentData.channel === "room" && sentData.channel_id) {
+        base44.functions.invoke("sendPushNotification", {
+          user_emails: [],
+          title: `${sentData.channel_name || "Room"}: ${sentData.sender_name || "Staff"}`,
+          body: sentData.content,
+          url: "/Messages",
+          room_id: sentData.channel_id,
         }).catch(() => {});
       }
     },

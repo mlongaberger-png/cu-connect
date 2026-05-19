@@ -27,6 +27,10 @@
       "type": "string",
       "description": "JSON array of specific user emails allowed in private rooms"
     },
+    "allowed_team_ids": {
+      "type": "string",
+      "description": "JSON array of team IDs \u2014 all parents/guardians of those teams can access this room"
+    },
     "created_by": {
       "type": "string",
       "description": "Admin email who created the room"

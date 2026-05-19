@@ -292,7 +292,7 @@ export default function Messages() {
         <div className="flex border-b border-border">
           <button onClick={() => setActiveTab("channels")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            <MessageSquare className="w-3.5 h-3.5" /> Channels
+            <MessageSquare className="w-3.5 h-3.5" /> Chats
           </button>
           <button onClick={() => setActiveTab("direct")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${activeTab === "direct" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
@@ -304,7 +304,6 @@ export default function Messages() {
               <Settings2 className="w-3.5 h-3.5" /> Rooms
             </button>
           )}
-          {/* New DM button for all roles on desktop */}
           <button
             onClick={() => setShowNewDm(true)}
             className="w-10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
@@ -345,7 +344,7 @@ export default function Messages() {
           </button>
         </div>
         <div className="flex border-b border-border flex-shrink-0">
-          <button onClick={() => setActiveTab("channels")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Channels</button>
+          <button onClick={() => setActiveTab("channels")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Chats</button>
           <button onClick={() => setActiveTab("direct")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "direct" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Direct</button>
           {(role === "admin" || role === "athletic_director") && (
             <button onClick={() => setActiveTab("rooms")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "rooms" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Rooms</button>

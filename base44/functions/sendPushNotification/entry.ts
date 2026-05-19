@@ -2,12 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import webpush from 'npm:web-push@3.6.7';
 
 // Sends a push notification to one or more users by email.
-// Payload: { user_emails: string[], title: string, body: string, url?: string, team_id?: string }
-// If team_id is provided, only sends to users who have a guardian link for a player on that team.
+// Payload: { user_emails: string[], title: string, body: string, url?: string, team_id?: string, room_id?: string }
+// If team_id provided, only sends to guardians of players on that team.
+// If room_id provided, resolves room access (allowed_team_ids, allowed_emails, allowed_roles) and only sends to those users.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { user_emails, title, body, url, team_id } = await req.json();
+    const { user_emails, title, body, url, team_id, room_id } = await req.json();
 
     if (!user_emails?.length || !title) {
       return Response.json({ error: 'user_emails and title are required' }, { status: 400 });
@@ -34,9 +35,37 @@ Deno.serve(async (req) => {
           .map(g => g.user_email)
           .filter(Boolean)
       );
-      // Also include direct parent_email from player record as fallback
       players.forEach(p => { if (p.parent_email) allowedEmails.add(p.parent_email); });
-      console.log(`team_id filter active: ${allowedEmails.size} allowed email(s) for team ${team_id}`);
+      console.log(`team_id filter: ${allowedEmails.size} allowed emails for team ${team_id}`);
+    }
+
+    // If room_id is provided, build allowed emails from room access rules
+    if (room_id) {
+      const rooms = await base44.asServiceRole.entities.MessageRoom.filter({ is_active: true });
+      const room = rooms.find(r => r.id === room_id);
+      if (room) {
+        allowedEmails = new Set();
+        // Add emails from allowed_team_ids
+        if (room.allowed_team_ids) {
+          try {
+            const tids = JSON.parse(room.allowed_team_ids);
+            if (tids.length > 0) {
+              for (const tid of tids) {
+                const players = await base44.asServiceRole.entities.Player.filter({ team_id: tid, is_active: true });
+                const playerIds = new Set(players.map(p => p.id));
+                const guardians = await base44.asServiceRole.entities.PlayerGuardian.filter({});
+                guardians.filter(g => playerIds.has(g.player_id)).forEach(g => { if (g.user_email) allowedEmails.add(g.user_email); });
+                players.forEach(p => { if (p.parent_email) allowedEmails.add(p.parent_email); });
+              }
+            }
+          } catch {}
+        }
+        // Add directly allowed emails
+        if (room.allowed_emails) {
+          try { JSON.parse(room.allowed_emails).forEach(e => allowedEmails.add(e)); } catch {}
+        }
+        console.log(`room_id filter: ${allowedEmails.size} allowed emails for room ${room_id}`);
+      }
     }
 
     const payload = JSON.stringify({ title, body: body || '', url: url || '' });

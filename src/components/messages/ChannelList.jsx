@@ -69,25 +69,35 @@ export default function ChannelList({ sports: sportsProp, teams: teamsProp, filt
     return teams;
   }, [teams, filterTeamIds, isCoach, userEmail]);
 
-  const visibleRooms = useMemo(() => allRooms.filter(room => {
-    if (!room.is_private) return true;
-    if (room.allowed_roles) {
-      try { if (JSON.parse(room.allowed_roles).includes(userRole)) return true; } catch { }
-    }
-    if (room.allowed_emails) {
-      try { if (JSON.parse(room.allowed_emails).includes(userEmail)) return true; } catch { }
-    }
-    return isAdmin || room.created_by === userEmail;
-  }), [allRooms, userRole, userEmail, isAdmin]);
+  const visibleRooms = useMemo(() => {
+    // Build the set of team IDs this user belongs to (for parent team-based room access)
+    const myTeamIds = new Set((filterTeamIds || visibleTeams.map(t => t.id)));
+
+    return allRooms.filter(room => {
+      // Check team-based access first (works for parents)
+      if (room.allowed_team_ids) {
+        try {
+          const tids = JSON.parse(room.allowed_team_ids);
+          if (Array.isArray(tids) && tids.some(tid => myTeamIds.has(tid))) return true;
+        } catch {}
+      }
+      if (!room.is_private) {
+        // Public rooms: staff always; parents only if they have team access (covered above) or no team filter
+        if (!isParent) return true;
+        return false; // parents only see public rooms if they have team membership (handled above)
+      }
+      if (room.allowed_roles) {
+        try { if (JSON.parse(room.allowed_roles).includes(userRole)) return true; } catch {}
+      }
+      if (room.allowed_emails) {
+        try { if (JSON.parse(room.allowed_emails).includes(userEmail)) return true; } catch {}
+      }
+      return isAdmin || room.created_by === userEmail;
+    });
+  }, [allRooms, userRole, userEmail, isAdmin, isParent, filterTeamIds, visibleTeams]);
 
   const allChannels = useMemo(() => {
     const channels = [];
-
-    // Org + sport channels: only for admins/athletic directors
-    if (isAdmin || isAthlDir) {
-      channels.push({ id: "org", name: "Organization", type: "org", icon: null, canEditIcon: false });
-      sports.forEach(s => channels.push({ id: s.id, name: s.name, type: "sport", icon: s.icon, canEditIcon: isAdmin }));
-    }
 
     // Team channels: everyone sees their relevant teams
     visibleTeams.forEach(t => channels.push({
@@ -98,17 +108,15 @@ export default function ChannelList({ sports: sportsProp, teams: teamsProp, filt
       canEditIcon: isAdmin,
     }));
 
-    // Rooms: not shown to parents (only org admins/AD create official rooms)
-    if (!isParent) {
-      visibleRooms.forEach(r => channels.push({
-        id: r.id,
-        name: r.name,
-        type: "room",
-        icon: r.icon || null,
-        isPrivate: r.is_private,
-        canEditIcon: isAdmin,
-      }));
-    }
+    // Rooms: staff always see all; parents see rooms they have access to
+    visibleRooms.forEach(r => channels.push({
+      id: r.id,
+      name: r.name,
+      type: "room",
+      icon: r.icon || null,
+      isPrivate: r.is_private,
+      canEditIcon: isAdmin,
+    }));
 
     return channels.map(ch => {
       const chMsgs = recentMessages.filter(m => m.channel_id === ch.id || (ch.id === "org" && m.channel === "org"));
