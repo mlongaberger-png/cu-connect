@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Send, MessageSquare, ClipboardList, Globe,
-  ChevronLeft, ChevronDown, MoreVertical, Lock, X, Check
+  ChevronLeft, ChevronDown, MoreVertical, Lock, X, Check, ImagePlus, Loader2, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
@@ -131,6 +131,8 @@ export default function ChatPanel({
   const [showEditMenu, setShowEditMenu] = useState(false);
   const [editForm, setEditForm] = useState(null); // null = not editing
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const editFileInputRef = useRef(null);
 
   const queryClient = useQueryClient();
   // Only admins can rename/edit channels; coaches & parents cannot
@@ -214,6 +216,27 @@ export default function ChatPanel({
     if (!editForm) return;
     if (editForm.type === "org") return; // org not editable
     updateMutation.mutate({ type: editForm.type, id: channelId, data: editForm });
+  };
+
+  const handleEditIconUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingIcon(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setEditForm(f => ({ ...f, icon: file_url }));
+    } finally {
+      setUploadingIcon(false);
+      e.target.value = "";
+    }
+  };
+
+  const deleteRoom = () => {
+    if (!confirm(`Delete room "${channelName}"? This cannot be undone.`)) return;
+    base44.entities.MessageRoom.update(channelId, { is_active: false }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
+      setEditForm(null);
+    });
   };
 
   const messagesEndRef = useRef(null);
@@ -397,7 +420,18 @@ export default function ChatPanel({
         [channelId]: (prev[channelId] || []).filter(m => !m.id?.startsWith("temp-")),
       }));
     },
-    // onSuccess: real message arrives via subscription — temp msg gets replaced there
+    onSuccess: (_, sentData) => {
+      // Fire push notifications to team members (non-blocking)
+      if (sentData.channel === "team" && sentData.channel_id) {
+        base44.functions.invoke("sendPushNotification", {
+          user_emails: [], // sendPushNotification with team_id will figure out recipients
+          title: `${sentData.channel_name || "Team"}: ${sentData.sender_name || "Staff"}`,
+          body: sentData.content,
+          url: "/Messages",
+          team_id: sentData.channel_id,
+        }).catch(() => {});
+      }
+    },
   });
 
   const handleSend = (e) => {
@@ -535,17 +569,33 @@ export default function ChatPanel({
           </div>
 
           {/* Icon picker */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowIconPicker(p => !p)}
-              className="w-10 h-10 rounded-xl border border-border bg-surface flex items-center justify-center text-xl hover:border-primary/50 transition-colors flex-shrink-0"
+              className="w-10 h-10 rounded-xl border border-border bg-surface flex items-center justify-center text-xl hover:border-primary/50 transition-colors flex-shrink-0 overflow-hidden"
             >
-              {editForm.icon || <span className="text-muted-foreground text-sm">+</span>}
+              {uploadingIcon ? (
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              ) : editForm.icon && (editForm.icon.startsWith("http://") || editForm.icon.startsWith("https://")) ? (
+                <img src={editForm.icon} alt="" className="w-full h-full object-cover" />
+              ) : editForm.icon ? (
+                editForm.icon
+              ) : (
+                <span className="text-muted-foreground text-sm">+</span>
+              )}
             </button>
-            {editForm.icon && (
-              <button onClick={() => setEditForm(f => ({ ...f, icon: "" }))} className="text-xs text-muted-foreground hover:text-red-400">Remove icon</button>
-            )}
-            {!editForm.icon && <span className="text-xs text-muted-foreground">Tap to set icon</span>}
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={() => editFileInputRef.current?.click()}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                <ImagePlus className="w-3 h-3" /> Upload photo
+              </button>
+              {editForm.icon && (
+                <button onClick={() => setEditForm(f => ({ ...f, icon: "" }))} className="text-xs text-muted-foreground hover:text-red-400 text-left">Remove icon</button>
+              )}
+            </div>
+            <input ref={editFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditIconUpload} />
           </div>
 
           {showIconPicker && (
@@ -607,12 +657,19 @@ export default function ChatPanel({
             </>
           )}
 
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={() => setEditForm(null)} className="border-border">Cancel</Button>
-            <Button size="sm" onClick={saveEdit} disabled={!editForm.name || updateMutation.isPending} className="bg-primary text-primary-foreground">
-              <Check className="w-3.5 h-3.5 mr-1" />
-              {updateMutation.isPending ? "Saving…" : "Save"}
-            </Button>
+          <div className="flex gap-2 justify-between items-center">
+            {editForm.type === "room" ? (
+              <Button variant="ghost" size="sm" onClick={deleteRoom} className="text-red-400 hover:text-red-400 hover:bg-red-500/10 gap-1">
+                <Trash2 className="w-3.5 h-3.5" /> Delete Room
+              </Button>
+            ) : <div />}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEditForm(null)} className="border-border">Cancel</Button>
+              <Button size="sm" onClick={saveEdit} disabled={!editForm.name || updateMutation.isPending} className="bg-primary text-primary-foreground">
+                <Check className="w-3.5 h-3.5 mr-1" />
+                {updateMutation.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -3,14 +3,14 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Lock } from "lucide-react";
+import { Send, Lock, ChevronLeft } from "lucide-react";
 import { format } from "date-fns";
 
 function makeThreadId(emailA, emailB) {
   return [emailA, emailB].sort().join("__");
 }
 
-export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
+export default function DirectMessagePanel({ currentUser, contact, isStaff, onBack }) {
   const queryClient = useQueryClient();
   const [newMsg, setNewMsg] = useState("");
   const endRef = useRef(null);
@@ -101,15 +101,23 @@ export default function DirectMessagePanel({ currentUser, contact, isStaff }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <div className="px-4 md:px-6 py-3 border-b border-border bg-card flex items-center gap-3 flex-shrink-0">
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-border text-xs font-bold text-primary">
+      <div className="px-3 py-2.5 border-b border-border bg-card flex items-center gap-2 flex-shrink-0 min-h-[48px]">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors flex-shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 text-xs font-bold text-primary flex-shrink-0">
           {(contact.name || contact.email)[0].toUpperCase()}
         </div>
-        <div>
-          <p className="font-semibold text-foreground text-sm">{contact.name || contact.email}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground text-sm truncate">{contact.name || contact.email}</p>
           <p className="text-xs text-muted-foreground capitalize">{contact.role || "Parent"}</p>
         </div>
-        <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
           <Lock className="w-3 h-3" /> Private
         </div>
       </div>

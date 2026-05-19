@@ -246,7 +246,7 @@ export default function Messages() {
     const col = roleColor[c.role] || "bg-surface text-muted-foreground";
     return (
       <button
-        onClick={() => { setDmContact(c); setActiveTab("direct"); setMobileView("chat"); }}
+        onClick={() => { setDmContact(c); setMobileView("chat"); }}
         className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}
       >
         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${col}`}>
@@ -371,7 +371,7 @@ export default function Messages() {
       {/* ── Mobile: chat view ── */}
       <div className={`md:hidden flex-1 h-full flex flex-col overflow-hidden ${mobileView === "chat" ? "" : "hidden"}`}>
         {activeTab === "direct"
-          ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} />
+          ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} onBack={() => setMobileView("list")} />
           : <ChatPanel {...chatPanelProps} onBack={() => setMobileView("list")} />
         }
       </div>
@@ -391,7 +391,7 @@ export default function Messages() {
         contacts={allDmContacts}
         onStart={(contact) => {
           setDmContact(contact);
-          setActiveTab("direct");
+          setActiveTab("direct"); 
           setMobileView("chat");
         }}
       />

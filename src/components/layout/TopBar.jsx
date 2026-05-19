@@ -24,11 +24,13 @@ export default function TopBar({ onMenuToggle, title }) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <img
-            src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/61ac4d66c_file_0000000089d071f8be26c9f306ac7ce1.png"
-            alt="CU"
-            className="lg:hidden w-8 h-8 object-contain shrink-0"
-          />
+          <Link to="/" className="lg:hidden">
+            <img
+              src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/61ac4d66c_file_0000000089d071f8be26c9f306ac7ce1.png"
+              alt="CU"
+              className="w-8 h-8 object-contain shrink-0"
+            />
+          </Link>
           <h2 className="text-lg font-semibold text-foreground hidden lg:block">{title}</h2>
         </div>
 

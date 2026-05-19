@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -6,6 +6,29 @@ import {
   Trophy, Users, Menu, Image
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
+
+function useUnreadMessageCount(userEmail) {
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!userEmail) return;
+    const check = async () => {
+      try {
+        const msgs = await base44.entities.Message.list("-created_date", 100);
+        const count = msgs.filter(m => {
+          if (m.sender_email === userEmail) return false;
+          const lastRead = parseInt(localStorage.getItem(`msg_read_${m.channel_id}`) || "0", 10);
+          return new Date(m.created_date).getTime() > lastRead;
+        }).length;
+        setUnread(count);
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 30000);
+    return () => clearInterval(interval);
+  }, [userEmail]);
+  return unread;
+}
 
 // Tab root paths — used to identify which tab is active
 const staffTabs = [
@@ -42,6 +65,7 @@ export default function BottomTabBar({ onOpenSidebar }) {
   const role = user?.role || "";
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const tabs = isStaff ? staffTabs : parentTabs;
+  const unreadMessages = useUnreadMessageCount(user?.email);
 
   // Remember current path for the active tab whenever location changes
   const activeTab = tabs.find(t => t.root && location.pathname.startsWith(t.root));
@@ -112,8 +136,13 @@ export default function BottomTabBar({ onOpenSidebar }) {
                   />
                 )}
               </AnimatePresence>
-              <motion.div animate={{ scale: isActive ? 1.1 : 1 }} transition={{ duration: 0.15 }}>
+              <motion.div animate={{ scale: isActive ? 1.1 : 1 }} transition={{ duration: 0.15 }} className="relative">
                 <Icon className="w-5 h-5" />
+                {tab.root === "/Messages" && unreadMessages > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
               </motion.div>
               <span className="text-[10px] font-medium">{tab.label}</span>
             </motion.button>
