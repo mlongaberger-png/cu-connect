@@ -5,11 +5,13 @@ import { useAuth } from "@/lib/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SendHorizonal, Image, Car } from "lucide-react";
+import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 
 export default function Composer({ channelId, channel }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
+  const [showCarpool, setShowCarpool] = useState(false);
   const textareaRef = useRef(null);
 
   const isBroadcastOnly = channel?.is_broadcast_only && user?.role === "parent";
@@ -91,6 +93,7 @@ export default function Composer({ channelId, channel }) {
       </button>
       <button
         type="button"
+        onClick={() => setShowCarpool(true)}
         className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors shrink-0"
       >
         <Car className="w-4 h-4" />
@@ -114,6 +117,7 @@ export default function Composer({ channelId, channel }) {
       >
         <SendHorizonal className="w-4 h-4" />
       </Button>
+      <CarpoolRequestModal open={showCarpool} onOpenChange={setShowCarpool} />
     </form>
   );
 }

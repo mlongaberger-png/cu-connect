@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,9 +24,19 @@ export default function NewDmDialog({ open, onOpenChange, currentUser, onChannel
 
   const leadership = contacts.filter(c => LEADERSHIP_ROLES.includes(c.role));
   const parents = contacts.filter(c => !LEADERSHIP_ROLES.includes(c.role));
-  const filteredParents = parents.filter(c =>
-    (c.full_name || c.email).toLowerCase().includes(search.toLowerCase())
-  );
+
+  const filteredParents = useMemo(() => {
+    if (!search.trim()) return parents;
+    const q = search.toLowerCase();
+    return parents.filter(c => (c.full_name || c.email).toLowerCase().includes(q));
+  }, [parents, search]);
+
+  // When searching, also show leadership matches
+  const filteredLeadership = useMemo(() => {
+    if (!search.trim()) return leadership;
+    const q = search.toLowerCase();
+    return leadership.filter(c => (c.full_name || c.email).toLowerCase().includes(q));
+  }, [leadership, search]);
 
   const createMutation = useMutation({
     mutationFn: async (contact) => {
@@ -90,28 +100,28 @@ export default function NewDmDialog({ open, onOpenChange, currentUser, onChannel
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-1 pr-1">
+          {/* Search — filters both sections */}
+          <Input
+            placeholder="Search by name…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="mb-3"
+          />
+
           {/* Leadership Section */}
-          {leadership.length > 0 && (
+          {filteredLeadership.length > 0 && (
             <div>
               <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                 Staff & Coaches
               </h3>
               <div className="space-y-1">
-                {leadership.map(c => <ContactRow key={c.id} contact={c} isLeadership />)}
+                {filteredLeadership.map(c => <ContactRow key={c.id} contact={c} isLeadership />)}
               </div>
             </div>
           )}
 
           {/* Divider */}
-          {leadership.length > 0 && <div className="border-t border-border my-3" />}
-
-          {/* Search */}
-          <Input
-            placeholder="Search parents…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="mb-2"
-          />
+          {filteredLeadership.length > 0 && filteredParents.length > 0 && <div className="border-t border-border my-3" />}
 
           {/* Parents Section */}
           <div className="space-y-1">
