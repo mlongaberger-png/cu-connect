@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, CheckCircle2, Lock, Globe, Star, ImagePlus, Loader2 } from "lucide-react";
+import { MessageSquare, CheckCircle2, Lock, Globe, Star, ImagePlus, Loader2, Trash2, MoreVertical } from "lucide-react";
 
 const ICON_OPTIONS = [
   { group: "Sports", icons: ["⚽", "🏀", "🏈", "⚾", "🥎", "🏐", "🏉", "🎾", "🏊", "🏋️", "🤸", "🏇", "⛷️", "🏌️", "🥊", "🏒", "🎿", "🏑", "🥅", "🏟️"] },
@@ -18,6 +18,7 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
   const [userId, setUserId] = useState(null);
   const [iconPickerFor, setIconPickerFor] = useState(null);
   const [uploadingFor, setUploadingFor] = useState(null);
+  const [contextMenuFor, setContextMenuFor] = useState(null);
   const fileInputRef = useRef();
   const pendingUploadChannel = useRef(null);
   const queryClient = useQueryClient();
@@ -28,6 +29,11 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
   const isParent = userRole === "parent" || userRole === "user";
   // Only admins can edit icons/names
   const canEditChannels = isAdmin;
+
+  const deleteRoomMutation = useMutation({
+    mutationFn: (id) => base44.entities.MessageRoom.update(id, { is_active: false }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["message-rooms"] }),
+  });
 
   const updateIconMutation = useMutation({
     mutationFn: ({ type, id, icon }) => {
@@ -48,7 +54,6 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
     const file = e.target.files?.[0];
     if (!file || !pendingUploadChannel.current) return;
     const ch = pendingUploadChannel.current;
-    setIconPickerFor(null); // close picker first
     setUploadingFor(ch.id);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -58,6 +63,13 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
       pendingUploadChannel.current = null;
       e.target.value = "";
     }
+  };
+
+  const triggerPhotoUpload = (ch) => {
+    pendingUploadChannel.current = ch;
+    setIconPickerFor(null);
+    // Small delay so the picker closes before triggering the file dialog
+    setTimeout(() => fileInputRef.current?.click(), 80);
   };
 
   useEffect(() => {
@@ -205,6 +217,57 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
           </div>
         </button>
 
+        {/* Admin context menu for rooms */}
+        {canEditChannels && ch.type === "room" && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-40 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={e => { e.stopPropagation(); setContextMenuFor(contextMenuFor === ch.id ? null : ch.id); }}
+              className="p-1.5 rounded-lg hover:bg-surface text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <MoreVertical className="w-3.5 h-3.5" />
+            </button>
+            {contextMenuFor === ch.id && (
+              <div
+                className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-xl shadow-xl py-1 min-w-[130px] z-50"
+                onClick={e => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => { triggerPhotoUpload(ch); setContextMenuFor(null); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-surface transition-colors"
+                >
+                  <ImagePlus className="w-3.5 h-3.5" /> Upload Photo
+                </button>
+                <button
+                  onClick={() => { setIconPickerFor(ch.id); setContextMenuFor(null); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-surface transition-colors"
+                >
+                  <span className="text-base leading-none">😀</span> Change Emoji
+                </button>
+                {ch.icon && (
+                  <button
+                    onClick={() => { updateIconMutation.mutate({ type: ch.type, id: ch.id, icon: "" }); setContextMenuFor(null); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-surface transition-colors"
+                  >
+                    Remove Icon
+                  </button>
+                )}
+                <div className="h-px bg-border my-1" />
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete room "${ch.name}"? This cannot be undone.`)) {
+                      deleteRoomMutation.mutate(ch.id);
+                      setContextMenuFor(null);
+                    }
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Room
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Inline icon picker — admin only */}
         {showPicker && ch.canEditIcon && (
           <div
@@ -217,11 +280,7 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
               <div className="flex items-center gap-2">
                 {/* Photo upload button */}
                 <button
-                  onClick={() => {
-                    pendingUploadChannel.current = ch;
-                    setIconPickerFor(null);
-                    setTimeout(() => fileInputRef.current?.click(), 50);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); triggerPhotoUpload(ch); }}
                   className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
                 >
                   <ImagePlus className="w-3 h-3" /> Upload Photo

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Lock, Globe, Trash2, Pencil } from "lucide-react";
+import { Plus, Lock, Globe, Trash2, Pencil, ImagePlus, Loader2 } from "lucide-react";
 
 const ICON_OPTIONS = [
   { group: "Sports", icons: ["⚽", "🏀", "🏈", "⚾", "🥎", "🏐", "🏉", "🎾", "🏊", "🏋️", "🤸", "🏇", "⛷️", "🏌️", "🥊", "🏒", "🎿", "🏑", "🥅", "🏟️"] },
@@ -20,6 +20,8 @@ export default function MessageRoomManager({ currentUser }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: "", description: "", icon: "", is_private: false, allowed_roles: "", allowed_emails: "" });
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const fileInputRef = useRef();
 
   const { data: rooms = [] } = useQuery({
     queryKey: ["message-rooms"],
@@ -42,6 +44,19 @@ export default function MessageRoomManager({ currentUser }) {
     mutationFn: (id) => base44.entities.MessageRoom.update(id, { is_active: false }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["message-rooms"] }),
   });
+
+  const handleIconUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingIcon(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, icon: file_url }));
+    } finally {
+      setUploadingIcon(false);
+      e.target.value = "";
+    }
+  };
 
   const openEdit = (room) => {
     setEditing(room);
@@ -71,11 +86,13 @@ export default function MessageRoomManager({ currentUser }) {
         <div className="space-y-2">
           {rooms.map(room => (
             <div key={room.id} className="flex items-center gap-2 bg-surface rounded-xl px-3 py-2.5">
-              {room.icon
-                ? <span className="text-lg leading-none flex-shrink-0">{room.icon}</span>
-                : room.is_private
-                  ? <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                  : <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+              {room.icon && (room.icon.startsWith("http://") || room.icon.startsWith("https://"))
+                ? <img src={room.icon} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                : room.icon
+                  ? <span className="text-lg leading-none flex-shrink-0">{room.icon}</span>
+                  : room.is_private
+                    ? <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    : <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
               }
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{room.name}</p>
@@ -100,17 +117,42 @@ export default function MessageRoomManager({ currentUser }) {
             <div>
               <Label>Icon</Label>
               <div className="flex items-center gap-2 mt-1">
+                {/* Preview */}
                 <button
                   type="button"
                   onClick={() => setShowIconPicker(p => !p)}
-                  className="w-12 h-12 rounded-xl border border-border bg-surface flex items-center justify-center text-2xl hover:border-primary/50 transition-colors"
+                  className="w-12 h-12 rounded-xl border border-border bg-surface flex items-center justify-center text-2xl hover:border-primary/50 transition-colors overflow-hidden flex-shrink-0"
                 >
-                  {form.icon || <span className="text-muted-foreground text-base">+</span>}
+                  {uploadingIcon ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  ) : form.icon && (form.icon.startsWith("http://") || form.icon.startsWith("https://")) ? (
+                    <img src={form.icon} alt="" className="w-full h-full object-cover" />
+                  ) : form.icon ? (
+                    form.icon
+                  ) : (
+                    <span className="text-muted-foreground text-base">+</span>
+                  )}
                 </button>
-                {form.icon && (
-                  <button type="button" onClick={() => setForm(f => ({ ...f, icon: "" }))} className="text-xs text-muted-foreground hover:text-foreground">Remove</button>
-                )}
-                <span className="text-xs text-muted-foreground">Click to pick an emoji</span>
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconPicker(p => !p)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
+                  >
+                    {showIconPicker ? "▲ Hide emojis" : "Pick emoji"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <ImagePlus className="w-3 h-3" /> Upload photo
+                  </button>
+                  {form.icon && (
+                    <button type="button" onClick={() => setForm(f => ({ ...f, icon: "" }))} className="text-xs text-muted-foreground hover:text-red-400 transition-colors text-left">Remove</button>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleIconUpload} />
               </div>
               {showIconPicker && (
                 <div className="mt-2 border border-border rounded-xl bg-surface p-3 space-y-3 max-h-52 overflow-y-auto">
