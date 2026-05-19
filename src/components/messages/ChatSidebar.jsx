@@ -23,7 +23,7 @@ export default function ChatSidebar({ activeChannelId }) {
     queryFn: () => base44.auth.me(),
   });
 
-  const canCreate = ["admin", "athletic_director"].includes(currentUser?.role);
+  const canCreate = currentUser ? ["admin", "athletic_director"].includes(currentUser.role) : false;
 
   const { data: orgTeams = [] } = useQuery({
     queryKey: ["org-teams"],
@@ -134,7 +134,7 @@ export default function ChatSidebar({ activeChannelId }) {
       </div>
 
       {/* 2. SCROLLABLE CONTENT BLOCK */}
-      <div className="flex-1 overflow-y-auto relative z-0 p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto relative z-0 p-2 space-y-1 isolate">
         <TabsContent value="teams" className="m-0 space-y-1">
           {teamChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
