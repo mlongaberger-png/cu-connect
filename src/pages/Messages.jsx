@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  MessageSquare, MessagesSquare, Settings2,
+  MessageSquare, MessagesSquare, Settings2, Plus,
 } from "lucide-react";
+import NewDmDialog from "@/components/messages/NewDmDialog";
 import MessageRoomManager from "@/components/messages/MessageRoomManager";
 import DirectMessagePanel from "@/components/messages/DirectMessagePanel";
 import CreateAttendanceDialog from "@/components/attendance/CreateAttendanceDialog";
@@ -35,6 +36,7 @@ export default function Messages() {
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("channels");
   const [dmContact, setDmContact] = useState(null);
+  const [showNewDm, setShowNewDm] = useState(false);
   const [locallyBlockedEmails, setLocallyBlockedEmails] = useState(new Set());
   const selectChannelTimer = useRef(null);
   const pendingChannelRef = useRef(null);
@@ -211,59 +213,62 @@ export default function Messages() {
     locallyBlockedEmails,
   };
 
+  // All contacts a parent can DM
+  const parentDmContacts = useMemo(() => {
+    if (!isParent) return [];
+    const seen = new Set();
+    const list = [];
+    myCoachContacts.forEach(c => { if (!seen.has(c.email)) { seen.add(c.email); list.push(c); } });
+    sameTeamParents.forEach(c => { if (!seen.has(c.email)) { seen.add(c.email); list.push(c); } });
+    return list;
+  }, [isParent, myCoachContacts, sameTeamParents]);
+
+  // Staff DM contacts
+  const staffDmContacts = useMemo(() => {
+    if (!isStaff) return [];
+    return parentUsers.map(u => ({ email: u.email, name: u.full_name || u.email, role: u.role }));
+  }, [isStaff, parentUsers]);
+
+  const allDmContacts = isParent ? parentDmContacts : staffDmContacts;
+
+  const DmContactBtn = ({ c }) => {
+    const roleColor = { coach: "bg-yellow-500/20 text-yellow-400", admin: "bg-primary/20 text-primary", athletic_director: "bg-primary/20 text-primary", parent: "bg-blue-500/20 text-blue-400", user: "bg-blue-500/20 text-blue-400" };
+    const col = roleColor[c.role] || "bg-surface text-muted-foreground";
+    return (
+      <button
+        onClick={() => { setDmContact(c); setActiveTab("direct"); setMobileView("chat"); }}
+        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}
+      >
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${col}`}>
+          {(c.name || c.email)[0].toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm">{c.name || c.email}</p>
+          {c.teamName && <p className="text-xs text-muted-foreground truncate">{c.teamName}</p>}
+        </div>
+      </button>
+    );
+  };
+
   // ── DM list (desktop sidebar) ─────────────────────────────────────────────
   const DmList = () => (
-    <div className="flex-1 overflow-y-auto p-2">
-      {isStaff && (
-        <>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2">Parents</p>
-          {parentUsers.length === 0 && <p className="text-xs text-muted-foreground px-2">No parents found</p>}
-          {parentUsers.map(u => (
-            <button key={u.id}
-              onClick={() => setDmContact({ email: u.email, name: u.full_name || u.email, role: u.role })}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === u.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}>
-              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
-                {(u.full_name || u.email)[0].toUpperCase()}
-              </div>
-              <span className="truncate">{u.full_name || u.email}</span>
-            </button>
-          ))}
-        </>
-      )}
-      {isParent && (
-        <>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2">Coaches</p>
-          {myCoachContacts.length === 0 && <p className="text-xs text-muted-foreground px-2">No coaches found</p>}
-          {myCoachContacts.map((c, i) => (
-            <button key={i}
-              onClick={() => setDmContact(c)}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}>
-              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
-                {(c.name || c.email)[0].toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm">{c.name || c.email}</p>
-                <p className="text-xs text-muted-foreground truncate">{c.teamName}</p>
-              </div>
-            </button>
-          ))}
-          {sameTeamParents.length > 0 && (
-            <>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mt-4 mb-2">Team Parents</p>
-              {sameTeamParents.map((c, i) => (
-                <button key={i}
-                  onClick={() => setDmContact(c)}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-left transition-colors mb-0.5 ${dmContact?.email === c.email ? "bg-primary/15 text-primary font-medium" : "text-muted-foreground hover:bg-surface hover:text-foreground"}`}>
-                  <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 flex-shrink-0">
-                    {(c.name || c.email)[0].toUpperCase()}
-                  </div>
-                  <span className="truncate">{c.name || c.email}</span>
-                </button>
-              ))}
-            </>
-          )}
-        </>
-      )}
+    <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between flex-shrink-0">
+        <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Direct Messages</span>
+        <button
+          onClick={() => setShowNewDm(true)}
+          className="w-7 h-7 rounded-lg bg-primary/20 hover:bg-primary/30 flex items-center justify-center text-primary transition-colors"
+          title="New message"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2">
+        {allDmContacts.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-8">No contacts yet.<br/>Tap + to start a new message.</p>
+        )}
+        {allDmContacts.map((c, i) => <DmContactBtn key={i} c={c} />)}
+      </div>
     </div>
   );
 
@@ -289,6 +294,14 @@ export default function Messages() {
               <Settings2 className="w-3.5 h-3.5" /> Rooms
             </button>
           )}
+          {/* New DM button for all roles on desktop */}
+          <button
+            onClick={() => setShowNewDm(true)}
+            className="w-10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+            title="New direct message"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
 
         {activeTab === "channels" && (
@@ -312,17 +325,37 @@ export default function Messages() {
       <div className={`md:hidden flex-1 h-full flex flex-col bg-background overflow-hidden ${mobileView === "list" ? "" : "hidden"}`}>
         <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-2 flex-shrink-0">
           <MessageSquare className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold text-foreground text-sm">Messages</h2>
+          <h2 className="font-semibold text-foreground text-sm flex-1">Messages</h2>
+          <button
+            onClick={() => setShowNewDm(true)}
+            className="w-8 h-8 rounded-lg bg-primary/20 hover:bg-primary/30 flex items-center justify-center text-primary transition-colors"
+            title="New direct message"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
-        <ChannelList
-          sports={sports}
-          teams={teams}
-          filterTeamIds={myFilterTeamIds}
-          userRole={role}
-          userEmail={user?.email}
-          activeChannelId={channelId}
-          onSelectChannel={selectChannel}
-        />
+        <div className="flex border-b border-border flex-shrink-0">
+          <button onClick={() => setActiveTab("channels")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "channels" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Channels</button>
+          <button onClick={() => setActiveTab("direct")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "direct" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Direct</button>
+          {(role === "admin" || role === "athletic_director") && (
+            <button onClick={() => setActiveTab("rooms")} className={`flex-1 py-2 text-xs font-medium transition-colors ${activeTab === "rooms" ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}>Rooms</button>
+          )}
+        </div>
+        {activeTab === "channels" && (
+          <ChannelList
+            sports={sports}
+            teams={teams}
+            filterTeamIds={myFilterTeamIds}
+            userRole={role}
+            userEmail={user?.email}
+            activeChannelId={channelId}
+            onSelectChannel={selectChannel}
+          />
+        )}
+        {activeTab === "direct" && <DmList />}
+        {activeTab === "rooms" && (
+          <div className="flex-1 overflow-y-auto"><MessageRoomManager currentUser={user} /></div>
+        )}
       </div>
 
       {/* ── Mobile: chat view ── */}
@@ -340,6 +373,18 @@ export default function Messages() {
           : <ChatPanel {...chatPanelProps} />
         }
       </div>
+
+      {/* New DM Dialog */}
+      <NewDmDialog
+        open={showNewDm}
+        onOpenChange={setShowNewDm}
+        contacts={allDmContacts}
+        onStart={(contact) => {
+          setDmContact(contact);
+          setActiveTab("direct");
+          setMobileView("chat");
+        }}
+      />
 
       {/* Create Attendance Dialog */}
       {showAttendanceDialog && (

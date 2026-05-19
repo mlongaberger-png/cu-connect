@@ -5,14 +5,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Sparkles, Loader2, Trash2, Check, AlertCircle, UserPlus } from "lucide-react";
+import { Upload, Sparkles, Loader2, Trash2, Check, AlertCircle, UserPlus, Mail } from "lucide-react";
 
 export default function RosterImporter({ open, onOpenChange, team }) {
-  const [step, setStep] = useState("upload"); // upload | review
+  const [step, setStep] = useState("upload"); // upload | review | done
   const [file, setFile] = useState(null);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [players, setPlayers] = useState([]);
+  const [inviteParents, setInviteParents] = useState(true);
+  const [inviteResults, setInviteResults] = useState([]);
   const [error, setError] = useState(null);
   const fileRef = useRef();
   const queryClient = useQueryClient();
@@ -56,11 +58,27 @@ export default function RosterImporter({ open, onOpenChange, team }) {
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const valid = players.filter(p => p.first_name && p.last_name);
       await base44.entities.Player.bulkCreate(valid);
       queryClient.invalidateQueries({ queryKey: ["players"] });
-      handleClose();
+
+      // Invite parents with emails
+      if (inviteParents) {
+        const withEmails = valid.filter(p => p.parent_email);
+        const results = await Promise.allSettled(
+          withEmails.map(p => base44.users.inviteUser(p.parent_email, "user"))
+        );
+        setInviteResults(withEmails.map((p, i) => ({
+          name: p.parent_name || p.parent_email,
+          email: p.parent_email,
+          ok: results[i].status === "fulfilled",
+        })));
+        setStep("done");
+      } else {
+        handleClose();
+      }
     } catch (err) {
       setError(err.message || "Failed to save players");
     } finally {
@@ -72,6 +90,8 @@ export default function RosterImporter({ open, onOpenChange, team }) {
     setStep("upload");
     setFile(null);
     setPlayers([]);
+    setInviteParents(true);
+    setInviteResults([]);
     setError(null);
     onOpenChange(false);
   };
@@ -231,6 +251,22 @@ export default function RosterImporter({ open, onOpenChange, team }) {
               ))}
             </div>
 
+            {/* Invite parents toggle */}
+            {players.some(p => p.parent_email) && (
+              <div className="flex items-center gap-3 px-4 py-3 bg-surface rounded-xl border border-border">
+                <Mail className="w-4 h-4 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Invite parents to the app</p>
+                  <p className="text-xs text-muted-foreground">
+                    {players.filter(p => p.parent_email).length} parent emails found — they'll get an invite and be placed in their child's team rooms automatically.
+                  </p>
+                </div>
+                <label className="flex items-center cursor-pointer">
+                  <input type="checkbox" checked={inviteParents} onChange={e => setInviteParents(e.target.checked)} className="w-4 h-4 accent-primary" />
+                </label>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2 border-t border-border">
               <Button variant="outline" onClick={handleClose} className="border-border">Cancel</Button>
               <Button
@@ -243,6 +279,37 @@ export default function RosterImporter({ open, onOpenChange, team }) {
                   : <><Check className="w-4 h-4" /> Add {players.filter(p => p.first_name && p.last_name).length} Player{players.filter(p => p.first_name && p.last_name).length !== 1 ? "s" : ""}</>
                 }
               </Button>
+            </div>
+          </div>
+        )}
+        {/* Step 3: Done — invite results */}
+        {step === "done" && (
+          <div className="space-y-4">
+            <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-start gap-3">
+              <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Roster saved!</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Players added. {inviteResults.length > 0 ? "Parent invite results below." : ""}
+                </p>
+              </div>
+            </div>
+
+            {inviteResults.length > 0 && (
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Parent Invites</p>
+                {inviteResults.map((r, i) => (
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${r.ok ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
+                    {r.ok ? <Check className="w-3.5 h-3.5 flex-shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />}
+                    <span className="flex-1 truncate">{r.name}</span>
+                    <span className="text-xs opacity-70 truncate">{r.ok ? "Invited" : "Already exists or failed"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button onClick={handleClose} className="bg-primary text-primary-foreground">Done</Button>
             </div>
           </div>
         )}
