@@ -10,7 +10,6 @@ import Sports from "@/pages/Sports";
 import Teams from "@/pages/Teams";
 import TeamDetail from "@/pages/TeamDetail";
 import Schedule from "@/pages/Schedule";
-import Messages from "@/pages/Messages";
 import Announcements from "@/pages/Announcements";
 import Documents from "@/pages/Documents";
 import ParentPortal from "@/pages/ParentPortal";
@@ -137,9 +136,6 @@ export default function AppShell() {
         <Route path="/Gallery" element={<Gallery />} />
         <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
         <Route path="/Playbooks" element={<Playbooks />} />
-
-        {/* ── All authenticated users ── */}
-        <Route path="/Messages" element={<Messages />} />
 
         {/* ── Staff-only routes — redirects non-staff to /Portal ── */}
         <Route element={<StaffRoute />}>
