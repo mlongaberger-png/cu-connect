@@ -7,12 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Hash, MessageSquare, Car, Megaphone, Crown } from "lucide-react";
+import { Plus, Hash, MessageSquare, Car, Megaphone, Crown, MessageSquarePlus } from "lucide-react";
+import NewDmDialog from "@/components/messages/NewDmDialog";
 
 export default function ChatSidebar({ activeChannelId }) {
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [showNewDm, setShowNewDm] = useState(false);
   const [newChannelForm, setNewChannelForm] = useState({ name: "", type: "team", team_id: "" });
 
   const { data: currentUser } = useQuery({
@@ -130,6 +132,13 @@ export default function ChatSidebar({ activeChannelId }) {
         </TabsContent>
 
         <TabsContent value="direct" className="m-0 space-y-1">
+          <Button
+            className="w-full mb-3 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+            variant="ghost"
+            onClick={() => setShowNewDm(true)}
+          >
+            <MessageSquarePlus className="w-4 h-4 mr-2" /> New Direct Message
+          </Button>
           {directChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
               No direct messages yet.
@@ -155,6 +164,14 @@ export default function ChatSidebar({ activeChannelId }) {
           ) : announceChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
       </div>
+
+      {/* NewDM Dialog */}
+      <NewDmDialog
+        open={showNewDm}
+        onOpenChange={setShowNewDm}
+        currentUser={currentUser}
+        onChannelCreated={(id) => { select(id); }}
+      />
 
       {/* 3. Create Channel Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
