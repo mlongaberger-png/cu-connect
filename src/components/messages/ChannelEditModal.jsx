@@ -341,32 +341,36 @@ export default function ChannelEditModal({ channel, open, onOpenChange, onDelete
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-1 border-t border-border">
-            {deleteConfirm ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-red-400">Confirm delete?</span>
-                <button
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
-                  className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+            {channel.type === "room" ? (
+              deleteConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-400">Confirm delete?</span>
+                  <button
+                    onClick={() => deleteMutation.mutate()}
+                    disabled={deleteMutation.isPending}
+                    className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                  >
+                    {deleteMutation.isPending ? "Deleting…" : "Yes, delete"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(false)}
+                    className="text-xs px-2 py-1 rounded bg-surface text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteConfirm(true)}
+                  className="text-red-400 hover:text-red-400 hover:bg-red-500/10 gap-1.5"
                 >
-                  {deleteMutation.isPending ? "Deleting…" : "Yes, delete"}
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm(false)}
-                  className="text-xs px-2 py-1 rounded bg-surface text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Room
+                </Button>
+              )
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDeleteConfirm(true)}
-                className="text-red-400 hover:text-red-400 hover:bg-red-500/10 gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete {typeLabel}
-              </Button>
+              <div /> 
             )}
 
             <div className="flex gap-2">
