@@ -107,11 +107,10 @@ export default function ChatSidebar({ activeChannelId }) {
   };
 
   return (
-    <Tabs defaultValue="teams" className="flex h-full flex-col bg-card min-h-0">
-      {/* 1. SOLID STICKY HEADER BLOCK (Locks title and tabs together) */}
-      <div className="relative z-20 bg-card flex-shrink-0 border-b border-border shadow-sm">
-        {/* Title Row */}
-        <div className="flex items-center justify-between p-4 pb-2">
+    <Tabs defaultValue="teams" className="flex h-full flex-col bg-card overflow-hidden">
+      {/* Solid Header Unit - z-20 keeps it in front */}
+      <div className="flex-shrink-0 border-b border-border bg-card z-20 relative shadow-sm">
+        <div className="flex items-center justify-between p-4">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-primary" /> Messages
           </h2>
@@ -121,20 +120,18 @@ export default function ChatSidebar({ activeChannelId }) {
             </Button>
           )}
         </div>
-
-        {/* Tabs Row (Now protected by the solid bg-card container) */}
         <div className="px-4 pb-3">
           <TabsList className="grid w-full grid-cols-4 bg-muted">
             <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
             <TabsTrigger value="direct">💬 Direct</TabsTrigger>
-            <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
-            <TabsTrigger value="announce">📢 News</TabsTrigger>
+            <TabsTrigger value="carpool">🚗</TabsTrigger>
+            <TabsTrigger value="announce">📢</TabsTrigger>
           </TabsList>
         </div>
       </div>
 
-      {/* 2. SCROLLABLE CONTENT BLOCK */}
-      <div className="flex-1 overflow-y-auto relative z-0 p-2 space-y-1 isolate">
+      {/* Scrollable Area - z-0 keeps it behind the header */}
+      <div className="flex-1 overflow-y-auto relative z-0 p-2 space-y-1">
         <TabsContent value="teams" className="m-0 space-y-1">
           {teamChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
