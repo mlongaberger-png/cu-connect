@@ -77,11 +77,17 @@ export default function ParentPortal() {
     if (refreshUser) refreshUser();
   }, []);
 
-  // Check for payment return
+  // Check for payment return or game reminder confirm deep link
+  const [highlightAttendanceId, setHighlightAttendanceId] = useState(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
       setActiveTab("payments");
+    }
+    const confirmId = params.get("confirm");
+    if (confirmId) {
+      setHighlightAttendanceId(confirmId);
+      setActiveTab("rsvp-volunteers");
     }
   }, []);
 
@@ -688,6 +694,7 @@ export default function ParentPortal() {
           myTeamIds={myTeamIds}
           myTeams={myTeams}
           events={myEvents}
+          highlightAttendanceId={highlightAttendanceId}
         />
       )}
 

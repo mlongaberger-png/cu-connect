@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Cookie, Car } from "lucide-react";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import SnacksTab from "@/components/snacks/SnacksTab";
@@ -19,9 +19,20 @@ export default function RsvpVolunteerTab({
   myTeamIds,
   myTeams,
   events,
+  highlightAttendanceId,
 }) {
   const [sub, setSub] = useState("rsvp");
+  const highlightRef = useRef(null);
   const openRsvps = myAttendanceRequests.filter(r => !r.is_locked);
+
+  // Scroll to highlighted card when data is ready
+  useEffect(() => {
+    if (highlightAttendanceId && highlightRef.current) {
+      setTimeout(() => {
+        highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 400);
+    }
+  }, [highlightAttendanceId, myAttendanceRequests.length]);
 
   return (
     <div className="space-y-4">
@@ -56,16 +67,24 @@ export default function RsvpVolunteerTab({
             </div>
           ) : (
             <div className="space-y-3">
-              {openRsvps.map(req => (
-                <AttendanceCard
-                  key={req.id}
-                  request={req}
-                  isStaff={false}
-                  currentUser={user}
-                  myPlayers={myKids}
-                  allPlayers={[]}
-                />
-              ))}
+              {openRsvps.map(req => {
+                const isHighlighted = req.id === highlightAttendanceId;
+                return (
+                  <div
+                    key={req.id}
+                    ref={isHighlighted ? highlightRef : null}
+                    className={isHighlighted ? "ring-2 ring-primary rounded-2xl animate-pulse" : ""}
+                  >
+                    <AttendanceCard
+                      request={req}
+                      isStaff={false}
+                      currentUser={user}
+                      myPlayers={myKids}
+                      allPlayers={[]}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
           {myAttendanceRequests.filter(r => r.is_locked).length > 0 && (
