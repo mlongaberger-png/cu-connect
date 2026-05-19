@@ -32,16 +32,41 @@ export default function CarpoolRequestModal({ open, onOpenChange, currentUser, m
   const selectedEvent = events.find(e => e.id === form.event_id);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.CarpoolRequest.create(data),
+    mutationFn: async (data) => {
+      // 1. Create the carpool request record
+      const request = await base44.entities.CarpoolRequest.create(data);
+
+      // 2. Find the carpool channel for this team and post a message
+      const allChannels = await base44.entities.Channel.filter({ type: "carpool" });
+      const carpoolChannel = allChannels.find(ch => ch.team_id === data.team_id) || allChannels[0];
+
+      if (carpoolChannel) {
+        const eventLabel = data.event_title ? `${data.event_title} on ${data.event_date}` : data.event_date;
+        const messageText = `🙋 **${data.requester_name}** needs a ride to **${eventLabel}**${data.neighborhood_zip ? ` (near ${data.neighborhood_zip})` : ""}${data.notes ? `\n📝 ${data.notes}` : ""}`;
+        await base44.entities.Message.create({
+          channel_id: carpoolChannel.id,
+          sender_user_id: data.requester_email,
+          sender_name: data.requester_name,
+          content_text: messageText,
+          message_type: "carpool_request",
+          metadata: JSON.stringify({ carpool_request_id: request.id }),
+        });
+        await base44.entities.Channel.update(carpoolChannel.id, { last_message_at: new Date().toISOString() });
+      }
+
+      return request;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["carpool-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
       // Push notification
       const team = myTeams?.find(t => t.id === selectedEvent?.team_id);
       if (team) {
         base44.functions.invoke("sendPushNotification", {
           title: `🙋 Ride Needed — ${team.name}`,
           body: `${currentUser?.full_name || currentUser?.email} needs a ride to ${selectedEvent?.title || "an event"}`,
-          url: "/ParentPortal",
+          url: "/Messages",
           team_id: team.id,
         });
       }
