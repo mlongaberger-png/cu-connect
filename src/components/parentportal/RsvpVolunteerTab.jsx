@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Cookie, Car } from "lucide-react";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import SnacksTab from "@/components/snacks/SnacksTab";
-import CarpoolBoard from "@/components/parentportal/CarpoolBoard";
+import CarpoolHub from "@/components/carpool/CarpoolHub";
 
 const SUBTABS = [
   { id: "rsvp",    label: "RSVPs",   icon: CheckCircle2 },
@@ -120,10 +120,8 @@ export default function RsvpVolunteerTab({
       )}
 
       {sub === "carpool" && (
-        <CarpoolBoard
-          myKids={myKids}
-          userEmail={userEmail}
-          userName={userName}
+        <CarpoolHub
+          currentUser={user}
           myTeamIds={myTeamIds}
           myTeams={myTeams}
           events={events}
