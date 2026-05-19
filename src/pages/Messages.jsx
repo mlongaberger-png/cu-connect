@@ -53,9 +53,10 @@ export default function Messages() {
   const { data: allUsers = [] } = useQuery({
     queryKey: ["all-users-dm"],
     queryFn: () => base44.entities.User.list(),
-    enabled: isStaff,
+    enabled: isStaff || isParent,
   });
   const parentUsers = allUsers.filter(u => ["parent", "user"].includes(u.role));
+  const staffUsers = allUsers.filter(u => ["admin", "athletic_director", "coach"].includes(u.role));
 
   // Fetch blocked users for the current user
   const { data: blockedUsers = [] } = useQuery({
@@ -218,10 +219,19 @@ export default function Messages() {
     if (!isParent) return [];
     const seen = new Set();
     const list = [];
+    // Coaches from team records
     myCoachContacts.forEach(c => { if (!seen.has(c.email)) { seen.add(c.email); list.push(c); } });
+    // Staff users (admins, athletic directors, coaches) from user list
+    staffUsers.forEach(u => {
+      if (!seen.has(u.email)) {
+        seen.add(u.email);
+        list.push({ email: u.email, name: u.full_name || u.email, role: u.role });
+      }
+    });
+    // Same-team parents
     sameTeamParents.forEach(c => { if (!seen.has(c.email)) { seen.add(c.email); list.push(c); } });
     return list;
-  }, [isParent, myCoachContacts, sameTeamParents]);
+  }, [isParent, myCoachContacts, staffUsers, sameTeamParents]);
 
   // Staff DM contacts
   const staffDmContacts = useMemo(() => {

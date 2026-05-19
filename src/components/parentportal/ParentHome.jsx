@@ -16,7 +16,6 @@ import PushNotificationBanner from "@/components/notifications/PushNotificationB
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import FieldStatusBanner from "@/components/parentportal/FieldStatusBanner";
 import { Button } from "@/components/ui/button";
-import SponsorTicker from "@/components/sponsors/SponsorTicker";
 
 const TYPE_COLORS = {
   practice: "bg-blue-500/20 text-blue-400",
@@ -178,9 +177,6 @@ export default function ParentHome() {
           {myTeams.map(t => t.name).join(" · ")}
         </p>
       </div>
-
-      {/* Sponsor Ticker */}
-      <SponsorTicker />
 
       {/* Action alerts */}
       {(totalOwed > 0 || sigRequests.length > 0 || openRsvps.length > 0 || openVolunteerOpps.length > 0) && (
