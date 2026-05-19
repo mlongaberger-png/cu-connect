@@ -84,19 +84,22 @@ export default function SponsorTicker() {
 
       {/* Content */}
       <div
-        className={`relative z-10 flex items-center gap-3 px-4 py-2.5 jumbotron-content ${animClass}`}
+        className={`relative z-10 flex items-center gap-3 px-3 py-2 jumbotron-content ${animClass}`}
       >
-        {/* LEFT: label */}
-        <div className="flex flex-col items-start shrink-0">
-          <span
-            className="text-[8px] font-black tracking-[0.2em] uppercase"
-            style={{ color: tier.ring, textShadow: `0 0 8px ${tier.glow}` }}
-          >
-            {tier.label}
-          </span>
+        {/* LEFT: label (stacked) */}
+        <div className="flex flex-col items-center justify-center shrink-0 gap-1">
+          {tier.label.split(" ").map((word, i) => (
+            <span
+              key={i}
+              className="text-[7px] font-black tracking-[0.15em] uppercase leading-none"
+              style={{ color: tier.ring, textShadow: `0 0 8px ${tier.glow}` }}
+            >
+              {word}
+            </span>
+          ))}
         </div>
 
-        <div className="w-px h-8 shrink-0" style={{ background: `linear-gradient(to bottom, transparent, ${tier.ring}60, transparent)` }} />
+        <div className="h-px w-8 shrink-0" style={{ background: `linear-gradient(to right, transparent, ${tier.ring}60, transparent)` }} />
 
         {/* Logo or icon */}
         <div
