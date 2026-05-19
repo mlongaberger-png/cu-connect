@@ -45,7 +45,7 @@ export default function SponsorTicker() {
         setAnimClass("jb-flash");
         setTimeout(() => setAnimClass("jb-visible"), 180);
       }, 300);
-    }, 6000);
+    }, 3000);
     return () => clearInterval(intervalRef.current);
   }, [sponsors.length]);
 
