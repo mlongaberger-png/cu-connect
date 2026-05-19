@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Hash, MessageSquare, Car, Megaphone, Crown, MessageSquarePlus } from "lucide-react";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import NewDmDialog from "@/components/messages/NewDmDialog";
+import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 
 export default function ChatSidebar({ activeChannelId }) {
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showNewDm, setShowNewDm] = useState(false);
+  const [showCarpoolRequest, setShowCarpoolRequest] = useState(false);
   const [newChannelForm, setNewChannelForm] = useState({ name: "", type: "team", team_id: "" });
 
   const { data: currentUser } = useQuery({
@@ -158,6 +160,13 @@ export default function ChatSidebar({ activeChannelId }) {
         </TabsContent>
 
         <TabsContent value="carpool" className="m-0 space-y-1">
+          <Button
+            className="w-full mb-3 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+            variant="ghost"
+            onClick={() => setShowCarpoolRequest(true)}
+          >
+            <Car className="w-4 h-4 mr-2" /> Request a Ride
+          </Button>
           {carpoolChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
               No carpool channels yet.
@@ -173,6 +182,15 @@ export default function ChatSidebar({ activeChannelId }) {
           ) : announceChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
       </div>
+
+      {/* Carpool Request Modal */}
+      <CarpoolRequestModal
+        open={showCarpoolRequest}
+        onOpenChange={setShowCarpoolRequest}
+        currentUser={currentUser}
+        myTeams={orgTeams}
+        myTeamIds={orgTeams.map(t => t.id)}
+      />
 
       {/* NewDM Dialog */}
       <NewDmDialog
