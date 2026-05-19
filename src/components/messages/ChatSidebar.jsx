@@ -114,7 +114,7 @@ export default function ChatSidebar({ activeChannelId }) {
             <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
             <TabsTrigger value="direct">💬 Direct</TabsTrigger>
             <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
-            <TabsTrigger value="announce">📢 Announce</TabsTrigger>
+            <TabsTrigger value="announce">📢 News</TabsTrigger>
           </TabsList>
         </div>
       </div>
@@ -150,7 +150,7 @@ export default function ChatSidebar({ activeChannelId }) {
         <TabsContent value="announce" className="m-0 space-y-1">
           {announceChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
-              No announcements yet.
+              No news yet.
             </div>
           ) : announceChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
@@ -174,7 +174,7 @@ export default function ChatSidebar({ activeChannelId }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="team">🛡️ Team</SelectItem>
-                  <SelectItem value="announcement">📢 Announcement</SelectItem>
+                  <SelectItem value="announcement">📢 News</SelectItem>
                   <SelectItem value="carpool">🚗 Carpool</SelectItem>
                 </SelectContent>
               </Select>
