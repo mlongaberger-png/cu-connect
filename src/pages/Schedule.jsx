@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";
+import { Plus, Calendar, MapPin, Clock, Trash2, Filter, List, Download, FileUp, Sheet, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, Upload, Rss } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { format as formatDateFns, parse } from "date-fns";
@@ -23,6 +23,7 @@ import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
 import PdfScheduleImporter from "@/components/schedule/PdfScheduleImporter";
 import TimezoneSelector from "@/components/schedule/TimezoneSelector";
+import CalendarSubscribeModal from "@/components/schedule/CalendarSubscribeModal";
 
 import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
@@ -58,6 +59,7 @@ export default function Schedule() {
   const [calendarView, setCalendarView] = useState(savedView || "month");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showExport, setShowExport] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   // Persist calendar sub-view preference per user
   const handleCalendarViewChange = (view) => {
@@ -192,23 +194,26 @@ export default function Schedule() {
           <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-1">{events.length} events scheduled</p>
         </div>
-        <div className="flex gap-2 flex-wrap items-center">
+        <div className="flex gap-1.5 flex-wrap items-center">
           <TimezoneSelector canEdit={isAdmin || isAD} />
-          <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowExport(true)}>
-            <Download className="w-4 h-4 mr-2" /> Export
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground h-8 px-2.5" onClick={() => setShowExport(true)}>
+            <Download className="w-3.5 h-3.5 mr-1" /> Export
           </Button>
           {(isAdmin || isAD || isCoach) && (
-            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowBulkImport(true)}>
-              <Sheet className="w-4 h-4 mr-2" /> Import CSV/Excel
+            <Button variant="outline" size="sm" className="border-border text-muted-foreground h-8 px-2.5" onClick={() => setShowBulkImport(true)}>
+              <Upload className="w-3.5 h-3.5 mr-1" /> Import
             </Button>
           )}
           {(isAdmin || isAD) && (
-            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowPdfImport(true)}>
-              <FileUp className="w-4 h-4 mr-2" /> Import PDF
+            <Button variant="outline" size="sm" className="border-border text-muted-foreground h-8 px-2.5" onClick={() => setShowPdfImport(true)}>
+              <FileUp className="w-3.5 h-3.5 mr-1" /> Import PDF
             </Button>
           )}
-          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-            <Plus className="w-4 h-4 mr-2" /> Add Event
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground h-8 px-2.5" onClick={() => setShowSubscribeModal(true)}>
+            <Rss className="w-3.5 h-3.5 mr-1" /> Subscribe
+          </Button>
+          <Button size="sm" onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground h-8">
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add Event
           </Button>
         </div>
       </div>
@@ -364,6 +369,14 @@ export default function Schedule() {
         open={showPdfImport}
         onOpenChange={setShowPdfImport}
         teams={myTeams}
+      />
+
+      {/* Calendar Subscribe Modal */}
+      <CalendarSubscribeModal
+        open={showSubscribeModal}
+        onOpenChange={setShowSubscribeModal}
+        teams={myTeams}
+        myTeamIds={myTeamIds}
       />
 
       {/* Add Event Dialog */}
