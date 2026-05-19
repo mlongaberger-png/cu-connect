@@ -209,7 +209,7 @@ export default function TeamDetail() {
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {team.sport_name && <span className="text-sm text-primary font-medium">{team.sport_name}</span>}
               {team.age_group && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{team.age_group}</span>}
-              {team.season && <span className="text-xs text-muted-foreground capitalize">{team.season}{team.year ? ` ${team.year}` : ""}</span>}
+              {team.season && <span className="text-xs text-muted-foreground">{team.season.charAt(0).toUpperCase() + team.season.slice(1)}{team.year ? ` ${team.year}` : ""}</span>}
             </div>
           </div>
           {canManage && (
