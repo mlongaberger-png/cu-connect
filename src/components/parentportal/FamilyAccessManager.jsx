@@ -51,6 +51,12 @@ export default function FamilyAccessManager({ players, currentUserEmail }) {
 
   return (
     <div className="space-y-5">
+      {/* COPPA Consent Banner */}
+      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs text-muted-foreground">
+        <span className="text-base leading-none mt-0.5 flex-shrink-0">🔒</span>
+        <p><span className="font-semibold text-foreground">Verifiable Parental Consent:</span> By maintaining these linked family profiles, you authorize CU Connect to share your athlete's location details, game locations, and team calendar data with the designated accounts.</p>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -119,10 +125,12 @@ export default function FamilyAccessManager({ players, currentUserEmail }) {
                     <button
                       onClick={() => handleRemove(g)}
                       disabled={removingId === g.id}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      title="Remove access"
+                      className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                      title="Revoke access"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {removingId === g.id
+                        ? <span className="text-xs text-muted-foreground">…</span>
+                        : <Trash2 className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
