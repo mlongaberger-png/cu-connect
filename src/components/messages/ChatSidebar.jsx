@@ -89,21 +89,6 @@ export default function ChatSidebar({ activeChannelId }) {
 
   return (
     <div className="flex flex-col h-full w-full min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-primary" /> Messages
-        </h2>
-        {canCreate && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="p-1.5 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {/* Tabs */}
       <Tabs defaultValue="teams" className="flex-1 flex flex-col min-h-0">
         <TabsList className="grid w-full grid-cols-4 p-2 bg-muted mx-0 rounded-none border-b border-border shrink-0">
@@ -147,6 +132,21 @@ export default function ChatSidebar({ activeChannelId }) {
           ) : announceChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
       </Tabs>
+
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-t border-border shrink-0">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-primary" /> Messages
+        </h2>
+        {canCreate && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="p-1.5 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       {/* Create Channel Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
