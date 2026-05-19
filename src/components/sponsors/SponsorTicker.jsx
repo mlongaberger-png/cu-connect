@@ -99,7 +99,7 @@ export default function SponsorTicker() {
           ))}
         </div>
 
-        <div className="h-px w-8 shrink-0" style={{ background: `linear-gradient(to right, transparent, ${tier.ring}60, transparent)` }} />
+        <div className="w-px h-8 shrink-0" style={{ background: `linear-gradient(to bottom, transparent, ${tier.ring}60, transparent)` }} />
 
         {/* Logo or icon */}
         <div
@@ -135,9 +135,9 @@ export default function SponsorTicker() {
               <div
                 key={i}
                 style={{
-                  width: i === activeIdx ? 10 : 5,
-                  height: 5,
-                  borderRadius: 3,
+                  width: i === activeIdx ? 6 : 3,
+                  height: 3,
+                  borderRadius: 1.5,
                   background: i === activeIdx ? tier.ring : "rgba(255,255,255,0.18)",
                   transition: "all 0.3s",
                 }}
