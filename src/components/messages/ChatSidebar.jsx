@@ -93,38 +93,35 @@ export default function ChatSidebar({ activeChannelId }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full min-h-0">
-      {/* Header & Tabs — Locked to top */}
-      <div className="relative z-10 bg-card shrink-0">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+    <Tabs defaultValue="teams" className="flex h-full flex-col bg-card min-h-0">
+      {/* 1. SOLID STICKY HEADER BLOCK (Locks title and tabs together) */}
+      <div className="relative z-20 bg-card flex-shrink-0 border-b border-border shadow-sm">
+        {/* Title Row */}
+        <div className="flex items-center justify-between p-4 pb-2">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-primary" /> Messages
           </h2>
           {canCreate && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="p-1.5 rounded-lg hover:bg-surface transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            <Button variant="ghost" size="icon" onClick={() => setShowCreate(true)}>
+              <Plus className="w-5 h-5" />
+            </Button>
           )}
         </div>
 
-        {/* Tabs List */}
-        <Tabs defaultValue="teams" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 p-2 bg-muted mx-0 rounded-none border-b border-border">
-            <TabsTrigger value="teams" className="text-xs px-1">🛡️ Teams</TabsTrigger>
-            <TabsTrigger value="direct" className="text-xs px-1">💬 DMs</TabsTrigger>
-            <TabsTrigger value="carpool" className="text-xs px-1">🚗 Rides</TabsTrigger>
-            <TabsTrigger value="announce" className="text-xs px-1">📢 News</TabsTrigger>
+        {/* Tabs Row (Now protected by the solid bg-card container) */}
+        <div className="px-4 pb-3">
+          <TabsList className="grid w-full grid-cols-4 bg-muted">
+            <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
+            <TabsTrigger value="direct">💬 Direct</TabsTrigger>
+            <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
+            <TabsTrigger value="announce">📢 Announce</TabsTrigger>
           </TabsList>
-        </Tabs>
+        </div>
       </div>
 
-      {/* Scrollable Content */}
-      <Tabs defaultValue="teams" className="flex-1 flex flex-col min-h-0">
-        <TabsContent value="teams" className="flex-1 overflow-y-auto p-2 space-y-1 mt-0">
+      {/* 2. SCROLLABLE CONTENT BLOCK */}
+      <div className="flex-1 overflow-y-auto relative z-0 p-2 space-y-1">
+        <TabsContent value="teams" className="m-0 space-y-1">
           {teamChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
               No team chats found.{canCreate ? " Click the + above to create one." : ""}
@@ -132,7 +129,7 @@ export default function ChatSidebar({ activeChannelId }) {
           ) : teamChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
 
-        <TabsContent value="direct" className="flex-1 overflow-y-auto p-2 space-y-1 mt-0">
+        <TabsContent value="direct" className="m-0 space-y-1">
           {directChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
               No direct messages yet.
@@ -142,7 +139,7 @@ export default function ChatSidebar({ activeChannelId }) {
               .map(ch => <ChannelBtn key={ch.id} ch={ch} pinned={!!ch.pinned_role} />)}
         </TabsContent>
 
-        <TabsContent value="carpool" className="flex-1 overflow-y-auto p-2 space-y-1 mt-0">
+        <TabsContent value="carpool" className="m-0 space-y-1">
           {carpoolChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
               No carpool channels yet.
@@ -150,16 +147,16 @@ export default function ChatSidebar({ activeChannelId }) {
           ) : carpoolChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
 
-        <TabsContent value="announce" className="flex-1 overflow-y-auto p-2 space-y-1 mt-0">
+        <TabsContent value="announce" className="m-0 space-y-1">
           {announceChannels.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg m-2">
               No announcements yet.
             </div>
           ) : announceChannels.map(ch => <ChannelBtn key={ch.id} ch={ch} />)}
         </TabsContent>
-      </Tabs>
+      </div>
 
-      {/* Create Channel Dialog */}
+      {/* 3. Create Channel Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -226,6 +223,6 @@ export default function ChatSidebar({ activeChannelId }) {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </Tabs>
   );
 }
