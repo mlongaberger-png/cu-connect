@@ -50,6 +50,14 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   const [notifSent, setNotifSent] = useState(null);
   const [rsvpLoading, setRsvpLoading] = useState(null);
 
+  // Fetch teams for reassignment
+  const { data: allTeams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list(),
+    enabled: !!canEdit,
+    staleTime: 60000,
+  });
+
   // Fetch attendance request for this event (for parent RSVP)
   const { data: eventAttendanceRequests = [] } = useQuery({
     queryKey: ["attendance-requests-event", event?.id],
@@ -327,6 +335,26 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
             <div>
               <Label className="text-xs">Notes</Label>
               <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-surface border-border mt-0.5" />
+            </div>
+
+            <div>
+              <Label className="text-xs">Reassign Team</Label>
+              <Select
+                value={form.team_id || ""}
+                onValueChange={v => {
+                  const t = allTeams.find(t => t.id === v);
+                  setForm(f => ({ ...f, team_id: v, team_name: t?.name || f.team_name, sport_name: t?.sport_name || f.sport_name }));
+                }}
+              >
+                <SelectTrigger className="bg-surface border-border mt-0.5">
+                  <SelectValue placeholder="Select team…">{allTeams.find(t => t.id === form.team_id)?.name || form.team_name || "Select team…"}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {allTeams.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}{t.sport_name ? ` · ${t.sport_name}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <UniformSelector form={form} setForm={setForm} sportName={form.sport_name || ""} />
