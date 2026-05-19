@@ -48,6 +48,7 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
     const file = e.target.files?.[0];
     if (!file || !pendingUploadChannel.current) return;
     const ch = pendingUploadChannel.current;
+    setIconPickerFor(null); // close picker first
     setUploadingFor(ch.id);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -216,7 +217,11 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
               <div className="flex items-center gap-2">
                 {/* Photo upload button */}
                 <button
-                  onClick={() => { pendingUploadChannel.current = ch; fileInputRef.current?.click(); }}
+                  onClick={() => {
+                    pendingUploadChannel.current = ch;
+                    setIconPickerFor(null);
+                    setTimeout(() => fileInputRef.current?.click(), 50);
+                  }}
                   className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
                 >
                   <ImagePlus className="w-3 h-3" /> Upload Photo
@@ -257,8 +262,15 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Hidden file input for photo uploads */}
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+      {/* Hidden file input — rendered at top level so picker closing doesn't swallow the click */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePhotoUpload}
+        style={{ position: "fixed", top: -9999, left: -9999 }}
+      />
 
       {starredChannels.length > 0 && (
         <div>

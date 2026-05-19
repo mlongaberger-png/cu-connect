@@ -5,6 +5,7 @@ import TopBar from "./TopBar";
 import OfflineIndicator from "./OfflineIndicator";
 import BottomTabBar from "./BottomTabBar";
 import PageTransition from "./PageTransition";
+import SponsorTicker from "@/components/sponsors/SponsorTicker";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 
@@ -83,6 +84,11 @@ export default function AppLayout() {
                 }}
                 id="main-scroll-container"
               >
+                {liveSponsors.length > 0 && (
+                  <div className="px-3 pt-3 pb-1">
+                    <SponsorTicker />
+                  </div>
+                )}
                 <Outlet />
               </div>
             )}
