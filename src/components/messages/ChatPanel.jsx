@@ -5,19 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Send, MessageSquare, ClipboardList, Globe,
-  ChevronLeft, ChevronDown, MoreVertical, Lock, X, Check, ImagePlus, Loader2, Trash2
+  ChevronLeft, ChevronDown, MoreVertical
 } from "lucide-react";
 import { format } from "date-fns";
 import AnnouncementsPanel from "@/components/messages/AnnouncementsPanel";
 import MessageReadReceipts from "@/components/messages/MessageReadReceipts";
 import EventMessageCard from "@/components/messages/EventMessageCard";
 import MessageActions from "@/components/messages/MessageActions";
-
-const ICON_OPTIONS = [
-  { group: "Sports", icons: ["⚽","🏀","🏈","⚾","🥎","🏐","🏉","🎾","🏊","🏋️","🤸","🏇","⛷️","🏌️","🥊","🏒","🎿","🏑","🥅","🏟️"] },
-  { group: "Volunteer & Events", icons: ["🙋","🤝","🎽","📋","🧢","🍕","🥤","🍉","🍪","🎉","📣","🚗","🏕️","🎪","📸","🎤","🎯","🗓️","📢","💪"] },
-  { group: "General", icons: ["⭐","🔥","💬","📌","🏆","🎖️","👋","🌟","💡","📣","🔔","✅","🎁","🛡️","🦁","🌊","❤️","🤩","👏","🙌"] },
-];
+import ChannelEditModal from "@/components/messages/ChannelEditModal";
 
 // ─── Read/unread helpers ────────────────────────────────────────────────────
 function getLastRead(channelId) {
@@ -128,11 +123,7 @@ export default function ChatPanel({
   const [newMessage, setNewMessage] = useState("");
   const [atBottom, setAtBottom] = useState(true);
   const [newMsgCount, setNewMsgCount] = useState(0);
-  const [showEditMenu, setShowEditMenu] = useState(false);
-  const [editForm, setEditForm] = useState(null); // null = not editing
-  const [showIconPicker, setShowIconPicker] = useState(false);
-  const [uploadingIcon, setUploadingIcon] = useState(false);
-  const editFileInputRef = useRef(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const queryClient = useQueryClient();
   // Only admins can rename/edit channels; coaches & parents cannot
@@ -142,8 +133,8 @@ export default function ChatPanel({
   const { data: currentRoom } = useQuery({
     queryKey: ["message-room-single", channelId],
     queryFn: () => base44.entities.MessageRoom.filter({ is_active: true }).then(rooms => rooms.find(r => r.id === channelId) || null),
-    enabled: isAdmin && channel === "room",
-    staleTime: 30000,
+    enabled: channel === "room",
+    staleTime: 0,
   });
 
   const { data: allTeams = [] } = useQuery({
@@ -161,83 +152,13 @@ export default function ChatPanel({
   const currentSportForEdit = freshSports.find(s => s.id === channelId);
   const currentTeamForEdit = allTeams.find(t => t.id === channelId);
 
-  const updateMutation = useMutation({
-    mutationFn: ({ type, id, data }) => {
-      if (type === "room") return base44.entities.MessageRoom.update(id, data);
-      if (type === "sport") return base44.entities.Sport.update(id, data);
-      if (type === "team") return base44.entities.Team.update(id, data);
-      return Promise.resolve();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["sports"] });
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
-      queryClient.invalidateQueries({ queryKey: ["message-room-single", channelId] });
-      setEditForm(null);
-      setShowEditMenu(false);
-    },
-  });
-
-  const openEdit = () => {
-    if (channel === "room" && currentRoom) {
-      setEditForm({
-        type: "room",
-        name: currentRoom.name,
-        description: currentRoom.description || "",
-        icon: currentRoom.icon || "",
-        is_private: currentRoom.is_private || false,
-        allowed_roles: currentRoom.allowed_roles || "",
-        allowed_emails: currentRoom.allowed_emails || "",
-      });
-    } else if (channel === "sport" && currentSportForEdit) {
-      setEditForm({
-        type: "sport",
-        name: currentSportForEdit.name,
-        icon: currentSportForEdit.icon || "",
-      });
-    } else if (channel === "team" && currentTeamForEdit) {
-      setEditForm({
-        type: "team",
-        name: currentTeamForEdit.name,
-        icon: currentTeamForEdit.icon || "",
-      });
-    } else if (channel === "org") {
-      setEditForm({
-        type: "org",
-        name: channelName,
-        icon: "",
-      });
-    }
-    setShowEditMenu(false);
-    setShowIconPicker(false);
-  };
-
-  const saveEdit = () => {
-    if (!editForm) return;
-    if (editForm.type === "org") return; // org not editable
-    updateMutation.mutate({ type: editForm.type, id: channelId, data: editForm });
-  };
-
-  const handleEditIconUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingIcon(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setEditForm(f => ({ ...f, icon: file_url }));
-    } finally {
-      setUploadingIcon(false);
-      e.target.value = "";
-    }
-  };
-
-  const deleteRoom = () => {
-    if (!confirm(`Delete room "${channelName}"? This cannot be undone.`)) return;
-    base44.entities.MessageRoom.update(channelId, { is_active: false }).then(() => {
-      queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
-      setEditForm(null);
-    });
-  };
+  // Build the channel object for the edit modal
+  const editChannelObj = (() => {
+    if (channel === "room" && currentRoom) return { ...currentRoom, type: "room" };
+    if (channel === "sport" && currentSportForEdit) return { ...currentSportForEdit, type: "sport" };
+    if (channel === "team" && currentTeamForEdit) return { ...currentTeamForEdit, type: "team" };
+    return null;
+  })();
 
   const messagesEndRef = useRef(null);
   const scrollRef = useRef(null);
@@ -533,145 +454,27 @@ export default function ChatPanel({
             </button>
           )}
           <AnnouncementsPanel channel={channel} channelId={channelId} channelName={channelName} sports={sports} teams={teams} />
-          {/* Admin edit button — all channels */}
-          {isAdmin && (
-            <div className="relative">
-              <button
-                onClick={() => { setShowEditMenu(p => !p); setEditForm(null); }}
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-                title="Edit channel"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {showEditMenu && !editForm && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-popover border border-border rounded-xl shadow-xl z-50 py-1">
-                  <button
-                    onClick={openEdit}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-surface transition-colors"
-                  >
-                    ✏️ Edit Channel
-                  </button>
-                </div>
-              )}
-            </div>
+          {/* Admin edit button */}
+          {isAdmin && editChannelObj && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
+              title="Edit channel"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Inline edit panel */}
-      {editForm && (
-        <div className="flex-shrink-0 border-b border-border bg-card/95 p-4 space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-foreground">Edit Channel</p>
-            <button onClick={() => setEditForm(null)} className="text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Icon picker */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowIconPicker(p => !p)}
-              className="w-10 h-10 rounded-xl border border-border bg-surface flex items-center justify-center text-xl hover:border-primary/50 transition-colors flex-shrink-0 overflow-hidden"
-            >
-              {uploadingIcon ? (
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              ) : editForm.icon && (editForm.icon.startsWith("http://") || editForm.icon.startsWith("https://")) ? (
-                <img src={editForm.icon} alt="" className="w-full h-full object-cover" />
-              ) : editForm.icon ? (
-                editForm.icon
-              ) : (
-                <span className="text-muted-foreground text-sm">+</span>
-              )}
-            </button>
-            <div className="flex flex-col gap-1">
-              <button
-                onClick={() => editFileInputRef.current?.click()}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-              >
-                <ImagePlus className="w-3 h-3" /> Upload photo
-              </button>
-              {editForm.icon && (
-                <button onClick={() => setEditForm(f => ({ ...f, icon: "" }))} className="text-xs text-muted-foreground hover:text-red-400 text-left">Remove icon</button>
-              )}
-            </div>
-            <input ref={editFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleEditIconUpload} />
-          </div>
-
-          {showIconPicker && (
-            <div className="border border-border rounded-xl bg-surface p-3 space-y-2 max-h-44 overflow-y-auto">
-              {ICON_OPTIONS.map(group => (
-                <div key={group.group}>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{group.group}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {group.icons.map(icon => (
-                      <button
-                        key={icon}
-                        onClick={() => { setEditForm(f => ({ ...f, icon })); setShowIconPicker(false); }}
-                        className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center hover:bg-primary/20 transition-colors ${editForm.icon === icon ? "bg-primary/30 ring-1 ring-primary" : ""}`}
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Name */}
-          <Input
-            value={editForm.name}
-            onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-            className="bg-surface border-border text-sm"
-            placeholder="Channel name"
-          />
-
-          {/* Room-specific fields */}
-          {editForm.type === "room" && (
-            <>
-              <Input
-                value={editForm.description}
-                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                className="bg-surface border-border text-sm"
-                placeholder="Description (optional)"
-              />
-              <div className="flex items-center gap-4 text-sm">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={!editForm.is_private} onChange={() => setEditForm(f => ({ ...f, is_private: false }))} />
-                  <Globe className="w-3.5 h-3.5 text-muted-foreground" /> Public
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" checked={editForm.is_private} onChange={() => setEditForm(f => ({ ...f, is_private: true }))} />
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground" /> Private
-                </label>
-              </div>
-              {editForm.is_private && (
-                <Input
-                  value={editForm.allowed_emails}
-                  onChange={e => setEditForm(f => ({ ...f, allowed_emails: e.target.value }))}
-                  className="bg-surface border-border text-sm"
-                  placeholder="Allowed emails (comma-separated)"
-                />
-              )}
-            </>
-          )}
-
-          <div className="flex gap-2 justify-between items-center">
-            {editForm.type === "room" ? (
-              <Button variant="ghost" size="sm" onClick={deleteRoom} className="text-red-400 hover:text-red-400 hover:bg-red-500/10 gap-1">
-                <Trash2 className="w-3.5 h-3.5" /> Delete Room
-              </Button>
-            ) : <div />}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setEditForm(null)} className="border-border">Cancel</Button>
-              <Button size="sm" onClick={saveEdit} disabled={!editForm.name || updateMutation.isPending} className="bg-primary text-primary-foreground">
-                <Check className="w-3.5 h-3.5 mr-1" />
-                {updateMutation.isPending ? "Saving…" : "Save"}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Channel edit modal */}
+      {isAdmin && editChannelObj && (
+        <ChannelEditModal
+          channel={editChannelObj}
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          onDeleted={() => {}}
+        />
       )}
 
       {/* Scrollable message list */}
