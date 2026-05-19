@@ -69,18 +69,19 @@ export default function Messages() {
     setLocallyBlockedEmails(prev => new Set([...prev, email]));
   };
 
-  const { data: guardianLinks = [] } = useQuery({
+  const { data: guardianLinks = [], isFetched: guardiansFetched } = useQuery({
     queryKey: ["guardian-links-messages"],
     queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
     enabled: isParent && !!user?.email,
   });
 
   const myFilterTeamIds = useMemo(() => {
-    if (!isParent) return null;
+    if (!isParent) return null; // null = no filter (show all) for staff
+    if (!guardiansFetched && !allPlayers.length) return []; // block until data ready
     const linkedIds = new Set(guardianLinks.map(g => g.player_id));
     const myKids = allPlayers.filter(p => linkedIds.has(p.id) || p.parent_email === user?.email);
     return [...new Set(myKids.map(k => k.team_id))];
-  }, [isParent, guardianLinks, allPlayers, user?.email]);
+  }, [isParent, guardianLinks, allPlayers, user?.email, guardiansFetched]);
 
   const myPlayers = useMemo(() => {
     if (!isParent) return [];

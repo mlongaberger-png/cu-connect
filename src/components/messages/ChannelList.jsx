@@ -37,13 +37,9 @@ export default function ChannelList({ sports, teams, filterTeamIds, userRole, us
       return Promise.resolve();
     },
     onSuccess: () => {
-      // Force global refresh so all users see the updated icon
       queryClient.invalidateQueries({ queryKey: ["message-rooms"] });
       queryClient.invalidateQueries({ queryKey: ["sports"] });
       queryClient.invalidateQueries({ queryKey: ["teams"] });
-      queryClient.refetchQueries({ queryKey: ["message-rooms"] });
-      queryClient.refetchQueries({ queryKey: ["sports"] });
-      queryClient.refetchQueries({ queryKey: ["teams"] });
       setIconPickerFor(null);
     },
   });

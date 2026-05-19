@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, Pencil, Trash2, ShieldCheck, Mail, MessageSquare, Phone, UserCircle,
-  ClipboardList, FileText, DollarSign, Settings, Users2, MapPin, Star
+  ClipboardList, FileText, DollarSign, Settings, Users2, MapPin, Star, MessagesSquare
 } from "lucide-react";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
 import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
@@ -24,6 +24,8 @@ import AuditLog from "@/pages/AuditLog";
 import AdminFinanceConsole from "@/components/admin/AdminFinanceConsole";
 import FieldStatusManager from "@/components/admin/FieldStatusManager";
 import SponsorManager from "@/components/admin/SponsorManager";
+import MessageRoomManager from "@/components/messages/MessageRoomManager";
+import { useAuth } from "@/lib/AuthContext";
 
 const empty = { name: "", email: "", google_chat_url: "", sport_id: "", sport_name: "", phone: "", title: "Athletic Director" };
 
@@ -34,11 +36,13 @@ const TABS = [
   { id: "content",       label: "Content",       icon: FileText,      desc: "Documents & legal pages" },
   { id: "fields",        label: "Field Status",  icon: MapPin,         desc: "Field & facility alerts" },
   { id: "sponsors",      label: "Sponsors",      icon: Star,          desc: "Manage league sponsors" },
+  { id: "messages",      label: "Messages",      icon: MessagesSquare, desc: "Chat rooms & messaging settings" },
   { id: "settings",      label: "Settings",      icon: Settings,      desc: "Seasons, data & audit log" },
 ];
 
 export default function AthleticDirectors() {
   useAdminGuard();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const [activeTab, setActiveTab] = useState(urlParams.get("tab") || "people");
@@ -226,6 +230,17 @@ export default function AthleticDirectors() {
       {/* ── SPONSORS ── */}
       {activeTab === "sponsors" && (
         <SponsorManager />
+      )}
+
+      {/* ── MESSAGES ── */}
+      {activeTab === "messages" && (
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Chat Room Manager</h2>
+            <p className="text-sm text-muted-foreground mt-1">Create, edit, and manage all organization chat rooms. These rooms appear in the Messages section for permitted users.</p>
+          </div>
+          <MessageRoomManager currentUser={user} />
+        </div>
       )}
 
       {/* ── SETTINGS ── */}
