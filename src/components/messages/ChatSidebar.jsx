@@ -124,8 +124,8 @@ export default function ChatSidebar({ activeChannelId }) {
           <TabsList className="grid w-full grid-cols-4 bg-muted">
             <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
             <TabsTrigger value="direct">💬 Direct</TabsTrigger>
-            <TabsTrigger value="carpool">🚗</TabsTrigger>
-            <TabsTrigger value="announce">📢</TabsTrigger>
+            <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
+            <TabsTrigger value="announce">📢 News</TabsTrigger>
           </TabsList>
         </div>
       </div>
