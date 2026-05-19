@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Globe, Lock, ImagePlus, Loader2, Trash2, Check, X } from "lucide-react";
+import { Globe, Lock, ImagePlus, Loader2, Trash2, Check, X, UserPlus, Users } from "lucide-react";
 
 const ICON_OPTIONS = [
   { group: "Sports", icons: ["⚽","🏀","🏈","⚾","🥎","🏐","🏉","🎾","🏊","🏋️","🤸","🏇","⛷️","🏌️","🥊","🏒","🎿","🏑","🥅","🏟️"] },
@@ -28,6 +28,41 @@ export default function ChannelEditModal({ channel, open, onOpenChange, onDelete
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const [form, setForm] = useState(null);
+  const [memberSearch, setMemberSearch] = useState("");
+
+  // Fetch all users for member search (only when editing a room)
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["users-list"],
+    queryFn: () => base44.entities.User.list(),
+    enabled: !!(channel?.type === "room" && open),
+    staleTime: 60000,
+  });
+
+  // Parse allowed_emails into an array for the member manager
+  const memberEmails = (() => {
+    if (!form?.allowed_emails) return [];
+    try { return JSON.parse(form.allowed_emails); } catch { return []; }
+  })();
+
+  const addMember = (email) => {
+    const current = memberEmails;
+    if (current.includes(email)) return;
+    setForm(f => ({ ...f, allowed_emails: JSON.stringify([...current, email]) }));
+    setMemberSearch("");
+  };
+
+  const removeMember = (email) => {
+    const updated = memberEmails.filter(e => e !== email);
+    setForm(f => ({ ...f, allowed_emails: updated.length ? JSON.stringify(updated) : "" }));
+  };
+
+  const filteredUsers = memberSearch.length > 1
+    ? allUsers.filter(u =>
+        !memberEmails.includes(u.email) &&
+        (u.full_name?.toLowerCase().includes(memberSearch.toLowerCase()) ||
+         u.email?.toLowerCase().includes(memberSearch.toLowerCase()))
+      ).slice(0, 6)
+    : [];
 
   // Reset form when channel changes or modal opens
   useEffect(() => {
@@ -225,23 +260,79 @@ export default function ChannelEditModal({ channel, open, onOpenChange, onDelete
 
               {form.is_private && (
                 <>
+                  {/* Role toggles */}
                   <div>
-                    <label className="text-xs text-muted-foreground font-medium mb-1 block">Allowed Roles (JSON array)</label>
-                    <Input
-                      value={form.allowed_roles}
-                      onChange={e => setForm(f => ({ ...f, allowed_roles: e.target.value }))}
-                      className="bg-surface border-border text-sm"
-                      placeholder='e.g. ["admin","coach"]'
-                    />
+                    <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Allow by Role</label>
+                    <div className="flex flex-wrap gap-2">
+                      {["admin","coach","athletic_director","parent"].map(role => {
+                        const active = (() => { try { return JSON.parse(form.allowed_roles || "[]").includes(role); } catch { return false; } })();
+                        const toggle = () => {
+                          const current = (() => { try { return JSON.parse(form.allowed_roles || "[]"); } catch { return []; } })();
+                          const updated = active ? current.filter(r => r !== role) : [...current, role];
+                          setForm(f => ({ ...f, allowed_roles: updated.length ? JSON.stringify(updated) : "" }));
+                        };
+                        return (
+                          <button
+                            key={role}
+                            onClick={toggle}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border ${active ? "bg-primary/20 border-primary/50 text-primary" : "bg-surface border-border text-muted-foreground hover:text-foreground"}`}
+                          >
+                            {role}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
+
+                  {/* Member manager */}
                   <div>
-                    <label className="text-xs text-muted-foreground font-medium mb-1 block">Allowed Emails (JSON array)</label>
-                    <Input
-                      value={form.allowed_emails}
-                      onChange={e => setForm(f => ({ ...f, allowed_emails: e.target.value }))}
-                      className="bg-surface border-border text-sm"
-                      placeholder='e.g. ["user@email.com"]'
-                    />
+                    <label className="text-xs text-muted-foreground font-medium mb-1.5 flex items-center gap-1.5 block">
+                      <Users className="w-3.5 h-3.5" /> Members ({memberEmails.length})
+                    </label>
+
+                    {/* Current members */}
+                    {memberEmails.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {memberEmails.map(email => {
+                          const user = allUsers.find(u => u.email === email);
+                          return (
+                            <span key={email} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface border border-border text-xs text-foreground">
+                              {user?.full_name || email}
+                              <button onClick={() => removeMember(email)} className="text-muted-foreground hover:text-red-400 transition-colors">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Search to add */}
+                    <div className="relative">
+                      <div className="flex items-center gap-1.5">
+                        <UserPlus className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <Input
+                          value={memberSearch}
+                          onChange={e => setMemberSearch(e.target.value)}
+                          className="bg-surface border-border text-sm h-8"
+                          placeholder="Search name or email to add…"
+                        />
+                      </div>
+                      {filteredUsers.length > 0 && (
+                        <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                          {filteredUsers.map(u => (
+                            <button
+                              key={u.email}
+                              onClick={() => addMember(u.email)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface transition-colors text-left"
+                            >
+                              <span className="font-medium text-foreground">{u.full_name}</span>
+                              <span className="text-muted-foreground text-xs truncate">{u.email}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
