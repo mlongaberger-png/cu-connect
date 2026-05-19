@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useCallback } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import React, { useRef, useEffect, useCallback, useState } from "react";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, ArrowLeft } from "lucide-react";
+import { BellOff, Bell, ArrowLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -70,11 +70,22 @@ export default function ChatCanvas({ channelId }) {
   const [, setSearchParams] = useSearchParams();
   const myId = user?.id || user?.email;
   const topSentinelRef = useRef(null);
+  const queryClient = useQueryClient();
+  const [isMuted, setIsMuted] = useState(false);
 
   const { data: channel } = useQuery({
     queryKey: ["channel", channelId],
     queryFn: () => base44.entities.Channel.filter({ id: channelId }).then(r => r[0]),
     enabled: !!channelId,
+    onSuccess: (ch) => setIsMuted(ch?.is_muted || false),
+  });
+
+  const toggleMuteMutation = useMutation({
+    mutationFn: (muted) => base44.entities.Channel.update(channelId, { is_muted: muted }),
+    onSuccess: () => {
+      setIsMuted(!isMuted);
+      queryClient.invalidateQueries({ queryKey: ["channel", channelId] });
+    },
   });
 
   const {
@@ -138,8 +149,25 @@ export default function ChatCanvas({ channelId }) {
             {channel?.name || "Loading…"}
           </span>
         </div>
-        <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg hover:bg-surface transition-colors">
-          <BellOff className="w-3.5 h-3.5" /> Mute
+        <button
+          onClick={() => toggleMuteMutation.mutate(!isMuted)}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
+            isMuted 
+              ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20" 
+              : "text-muted-foreground hover:text-foreground hover:bg-surface"
+          }`}
+        >
+          {isMuted ? (
+            <>
+              <BellOff className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">Mute On</span>
+            </>
+          ) : (
+            <>
+              <Bell className="w-3.5 h-3.5" />
+              <span className="text-xs">Mute</span>
+            </>
+          )}
         </button>
       </div>
 
