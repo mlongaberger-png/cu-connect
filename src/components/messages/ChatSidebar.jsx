@@ -13,8 +13,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newType, setNewType] = useState("team");
+  const [newChannelForm, setNewChannelForm] = useState({ name: "", type: "team", team_id: "" });
 
   const { data: currentUser } = useQuery({
     queryKey: ["me"],
@@ -22,6 +21,12 @@ export default function ChatSidebar({ activeChannelId }) {
   });
 
   const canCreate = ["admin", "athletic_director"].includes(currentUser?.role);
+
+  const { data: orgTeams = [] } = useQuery({
+    queryKey: ["org-teams"],
+    queryFn: () => base44.entities.Team.list(),
+    enabled: !!currentUser,
+  });
 
   const { data: teamChannels = [] } = useQuery({
     queryKey: ["channels", "team"],
@@ -48,8 +53,7 @@ export default function ChatSidebar({ activeChannelId }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["channels"] });
       setShowCreate(false);
-      setNewName("");
-      setNewType("team");
+      setNewChannelForm({ name: "", type: "team", team_id: "" });
     },
   });
 
@@ -57,10 +61,11 @@ export default function ChatSidebar({ activeChannelId }) {
 
   const handleCreate = (e) => {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newChannelForm.name.trim()) return;
     createMutation.mutate({
-      name: newName.trim(),
-      type: newType,
+      name: newChannelForm.name.trim(),
+      type: newChannelForm.type,
+      team_id: newChannelForm.team_id || null,
       organization_id: currentUser?.organization_id || "",
     });
   };
@@ -162,17 +167,11 @@ export default function ChatSidebar({ activeChannelId }) {
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Channel Name</label>
-              <Input
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                placeholder="e.g. U10 Soccer"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Channel Type</label>
-              <Select value={newType} onValueChange={setNewType}>
+              <Select
+                value={newChannelForm.type}
+                onValueChange={val => setNewChannelForm(prev => ({ ...prev, type: val, name: "", team_id: "" }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -183,9 +182,44 @@ export default function ChatSidebar({ activeChannelId }) {
                 </SelectContent>
               </Select>
             </div>
+
+            {newChannelForm.type === "team" ? (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Select Team</label>
+                <Select
+                  value={newChannelForm.team_id}
+                  onValueChange={val => {
+                    const team = orgTeams.find(t => t.id === val);
+                    setNewChannelForm(prev => ({ ...prev, team_id: team.id, name: team.name }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a team…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {orgTeams.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Channel Name</label>
+                <Input
+                  value={newChannelForm.name}
+                  onChange={e => setNewChannelForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. Game Day Announcements"
+                  required
+                />
+              </div>
+            )}
             <div className="flex gap-2 justify-end pt-1">
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={createMutation.isPending}>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || !newChannelForm.name.trim()}
+              >
                 {createMutation.isPending ? "Creating…" : "Create Channel"}
               </Button>
             </div>
