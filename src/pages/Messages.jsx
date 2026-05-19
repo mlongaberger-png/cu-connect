@@ -27,6 +27,7 @@ export default function Messages() {
 
   // Mobile view: "list" | "chat"
   const [mobileView, setMobileView] = useState("list");
+  const [activeChannelId, setActiveChannelId] = useState(null);
 
   const [channel, setChannel] = useState("org");
   const [channelId, setChannelId] = useState("org");
@@ -138,15 +139,15 @@ export default function Messages() {
       setChannelId(prev => {
         if (prev === id) return prev;
         markChannelRead(id);
-        // Cancel in-flight fetches for the previous channel before switching
         queryClient.cancelQueries({ queryKey: ["messages-init", prev] });
         queryClient.removeQueries({ queryKey: ["messages-init", prev] });
         return id;
       });
       setChannel(type);
       setChannelName(name);
+      setActiveChannelId(id);
       setMobileView("chat");
-    }, 120); // 120ms debounce — absorbs double-taps without feeling laggy
+    }, 120);
   }, [queryClient]);
 
   const currentTeam = teams.find(t => t.id === channelId);
@@ -357,7 +358,7 @@ export default function Messages() {
             filterTeamIds={myFilterTeamIds}
             userRole={role}
             userEmail={user?.email}
-            activeChannelId={channelId}
+            activeChannelId={activeChannelId}
             onSelectChannel={selectChannel}
           />
         )}
@@ -369,9 +370,11 @@ export default function Messages() {
 
       {/* ── Mobile: chat view ── */}
       <div className={`md:hidden flex-1 h-full flex flex-col overflow-hidden ${mobileView === "chat" ? "" : "hidden"}`}>
-        {activeTab === "direct"
-          ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} onBack={() => setMobileView("list")} />
-          : <ChatPanel {...chatPanelProps} onBack={() => setMobileView("list")} />
+        {activeTab === "direct" && dmContact
+          ? <DirectMessagePanel currentUser={user} contact={dmContact} isStaff={isStaff} onBack={() => { setMobileView("list"); setDmContact(null); }} />
+          : activeTab !== "direct"
+            ? <ChatPanel {...chatPanelProps} onBack={() => { setMobileView("list"); setActiveChannelId(null); pendingChannelRef.current = null; }} />
+            : null
         }
       </div>
 
