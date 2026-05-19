@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { BellOff, ArrowLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { format } from "date-fns";
 import Composer from "./Composer";
 import EventCard from "./cards/EventCard";
 
@@ -16,13 +17,27 @@ function MessageBubble({ msg, isOwn }) {
     );
   }
 
+  const timestamp = msg.created_date ? format(new Date(msg.created_date), "h:mm a") : null;
+
   return (
-    <div className={`flex flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}>
+    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"} max-w-[80%] ${isOwn ? "self-end" : "self-start"}`}>
+      {/* Sender info — shown for others only */}
       {!isOwn && (
-        <span className="text-[11px] text-muted-foreground px-1">{msg.sender_name}</span>
+        <div className="flex items-center gap-1.5 mb-0.5 pl-1">
+          <div className="w-5 h-5 rounded-full overflow-hidden bg-surface border border-border flex-shrink-0 flex items-center justify-center">
+            {msg.sender_avatar
+              ? <img src={msg.sender_avatar} alt="" className="w-full h-full object-cover" />
+              : <span className="text-[9px] font-bold text-primary">{(msg.sender_name || "?")[0].toUpperCase()}</span>
+            }
+          </div>
+          <span className="text-[11px] font-semibold text-foreground">{msg.sender_name}</span>
+          {timestamp && <span className="text-[10px] text-muted-foreground">{timestamp}</span>}
+        </div>
       )}
+
+      {/* Bubble */}
       <div
-        className={`px-4 py-2 max-w-[80%] text-sm leading-relaxed break-words
+        className={`px-4 py-2 text-sm leading-relaxed break-words
           ${isOwn
             ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
             : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
@@ -31,6 +46,11 @@ function MessageBubble({ msg, isOwn }) {
       >
         {msg.content_text}
       </div>
+
+      {/* Timestamp for own messages */}
+      {isOwn && timestamp && (
+        <span className="text-[10px] text-muted-foreground mt-0.5 pr-1">{timestamp}</span>
+      )}
     </div>
   );
 }
