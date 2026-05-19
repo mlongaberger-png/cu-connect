@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 
 const DEFAULTS = [
   { type: "default_football", emoji: "🏈", label: "Football" },
-  { type: "default_baseball", emoji: "⚾", label: "Baseball" },
+  { type: "default_baseball", emoji: "🥎", label: "Baseball" },
   { type: "default_cheer", emoji: "📣", label: "Cheer" },
+  { type: "default_pom", emoji: "🎀", label: "Pom" },
 ];
 
 export function getTeamAvatarEmoji(avatarType) {
