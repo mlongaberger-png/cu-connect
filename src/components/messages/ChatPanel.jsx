@@ -133,7 +133,8 @@ export default function ChatPanel({
   const [showIconPicker, setShowIconPicker] = useState(false);
 
   const queryClient = useQueryClient();
-  const isAdmin = ["admin", "athletic_director"].includes(user?.role);
+  // Only admins can rename/edit channels; coaches & parents cannot
+  const isAdmin = user?.role === "admin";
 
   // Load current room/sport/team data for editing
   const { data: currentRoom } = useQuery({

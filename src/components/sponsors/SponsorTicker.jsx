@@ -1,10 +1,33 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Building2 } from "lucide-react";
 
+// ── Pixel-grid SVG overlay (subtle) ──────────────────────────────────────────
+const PixelGridOverlay = () => (
+  <svg
+    className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.07]"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <pattern id="pg" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+        <rect x="0" y="0" width="1" height="1" fill="white" />
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#pg)" />
+  </svg>
+);
+
+const TIER_COLORS = {
+  Gold:   { ring: "#d4af37", glow: "rgba(212,175,55,0.35)", label: "GOLD SPONSOR" },
+  Silver: { ring: "#a8a9ad", glow: "rgba(168,169,173,0.25)", label: "SILVER SPONSOR" },
+  Bronze: { ring: "#cd7f32", glow: "rgba(205,127,50,0.25)", label: "BRONZE SPONSOR" },
+};
+
 export default function SponsorTicker() {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [animClass, setAnimClass] = useState("jb-visible");
+  const intervalRef = useRef(null);
 
   const { data: sponsors = [] } = useQuery({
     queryKey: ["layout-sponsors"],
@@ -12,63 +35,136 @@ export default function SponsorTicker() {
     staleTime: 60_000,
   });
 
+  // Cycle with "fade-down-flash" animation
   useEffect(() => {
     if (sponsors.length <= 1) return;
-    const timer = setInterval(() => {
-      setActiveIdx(i => (i + 1) % sponsors.length);
-    }, 4000);
-    return () => clearInterval(timer);
+    intervalRef.current = setInterval(() => {
+      setAnimClass("jb-exit");
+      setTimeout(() => {
+        setActiveIdx(i => (i + 1) % sponsors.length);
+        setAnimClass("jb-flash");
+        setTimeout(() => setAnimClass("jb-visible"), 180);
+      }, 300);
+    }, 6000);
+    return () => clearInterval(intervalRef.current);
   }, [sponsors.length]);
 
   if (!sponsors.length) return null;
 
   const sponsor = sponsors[activeIdx];
+  const tier = TIER_COLORS[sponsor.tier] || TIER_COLORS.Bronze;
+  const iconIsUrl = sponsor.logo_url && (sponsor.logo_url.startsWith("http://") || sponsor.logo_url.startsWith("https://"));
 
-  const tierGlow = {
-    Gold: "border-yellow-500/40 shadow-yellow-500/10",
-    Silver: "border-zinc-400/40 shadow-zinc-400/10",
-    Bronze: "border-orange-500/40 shadow-orange-500/10",
-  };
-
-  const tierLabel = {
-    Gold: "🥇",
-    Silver: "🥈",
-    Bronze: "🥉",
-  };
-
-  const Inner = (
+  const Jumbotron = (
     <div
-      className={`flex items-center gap-3 bg-card/80 backdrop-blur-sm border rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${tierGlow[sponsor.tier] || "border-border"}`}
+      className="relative w-full overflow-hidden select-none"
+      style={{
+        background: "linear-gradient(160deg, #0a0a0a 0%, #141414 60%, #0d0d0d 100%)",
+        border: `1.5px solid ${tier.ring}`,
+        borderRadius: "14px",
+        boxShadow: `0 0 18px ${tier.glow}, inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.5)`,
+      }}
     >
-      <span className="text-xs text-muted-foreground font-medium tracking-wide uppercase shrink-0">Sponsor</span>
-      <div className="w-px h-4 bg-border shrink-0" />
-      {sponsor.logo_url ? (
-        <img src={sponsor.logo_url} alt={sponsor.business_name} className="h-6 max-w-[80px] object-contain shrink-0" />
-      ) : (
-        <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
-      )}
-      <span className="text-sm font-semibold text-foreground truncate">{sponsor.business_name}</span>
-      <span className="text-base shrink-0">{tierLabel[sponsor.tier] || ""}</span>
-      {sponsors.length > 1 && (
-        <div className="flex gap-1 shrink-0 ml-auto">
-          {sponsors.map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-full transition-all duration-300 ${i === activeIdx ? "w-3 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-muted"}`}
-            />
-          ))}
+      {/* Beveled inner frame edge */}
+      <div
+        className="absolute inset-[3px] rounded-[10px] pointer-events-none"
+        style={{ border: "1px solid rgba(255,255,255,0.04)" }}
+      />
+
+      {/* Pixel grid */}
+      <PixelGridOverlay />
+
+      {/* Scanline effect */}
+      <div
+        className="absolute inset-0 pointer-events-none rounded-[14px] overflow-hidden"
+        style={{
+          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px)",
+        }}
+      />
+
+      {/* Content */}
+      <div
+        className={`relative z-10 flex items-center gap-3 px-4 py-2.5 jumbotron-content ${animClass}`}
+      >
+        {/* LEFT: label */}
+        <div className="flex flex-col items-start shrink-0">
+          <span
+            className="text-[8px] font-black tracking-[0.2em] uppercase"
+            style={{ color: tier.ring, textShadow: `0 0 8px ${tier.glow}` }}
+          >
+            {tier.label}
+          </span>
         </div>
-      )}
+
+        <div className="w-px h-8 shrink-0" style={{ background: `linear-gradient(to bottom, transparent, ${tier.ring}60, transparent)` }} />
+
+        {/* Logo or icon */}
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${tier.ring}40` }}
+        >
+          {iconIsUrl ? (
+            <img src={sponsor.logo_url} alt={sponsor.business_name} className="w-full h-full object-contain p-0.5" />
+          ) : (
+            <Building2 className="w-4 h-4 text-muted-foreground" />
+          )}
+        </div>
+
+        {/* Name */}
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-sm font-bold truncate"
+            style={{ color: "#f0e8d0", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+          >
+            {sponsor.business_name}
+          </p>
+          {sponsor.website_url && (
+            <p className="text-[10px] truncate" style={{ color: tier.ring, opacity: 0.8 }}>
+              {sponsor.website_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+            </p>
+          )}
+        </div>
+
+        {/* Dot indicators */}
+        {sponsors.length > 1 && (
+          <div className="flex gap-1 shrink-0">
+            {sponsors.map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: i === activeIdx ? 10 : 5,
+                  height: 5,
+                  borderRadius: 3,
+                  background: i === activeIdx ? tier.ring : "rgba(255,255,255,0.18)",
+                  transition: "all 0.3s",
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom LED strip */}
+      <div
+        className="h-[2px] w-full"
+        style={{ background: `linear-gradient(to right, transparent, ${tier.ring}, transparent)`, opacity: 0.6 }}
+      />
+
+      <style>{`
+        .jb-visible { opacity: 1; transform: translateY(0); transition: opacity 0.25s, transform 0.25s; }
+        .jb-exit    { opacity: 0; transform: translateY(6px); transition: opacity 0.25s, transform 0.25s; }
+        .jb-flash   { opacity: 0; transform: translateY(-4px); }
+      `}</style>
     </div>
   );
 
   if (sponsor.website_url) {
     return (
       <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer" className="block no-underline">
-        {Inner}
+        {Jumbotron}
       </a>
     );
   }
 
-  return Inner;
+  return Jumbotron;
 }
