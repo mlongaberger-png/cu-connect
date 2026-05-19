@@ -264,7 +264,13 @@ export default function ChatSidebar({ activeChannelId }) {
         </DialogContent>
       </Dialog>
 
-      <CarpoolRequestModal open={showCarpoolRequest} onOpenChange={setShowCarpoolRequest} currentUser={currentUser} />
+      <CarpoolRequestModal
+        open={showCarpoolRequest}
+        onOpenChange={setShowCarpoolRequest}
+        currentUser={currentUser}
+        myTeamIds={orgTeams.map(t => t.id)}
+        myTeams={orgTeams}
+      />
       <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} currentUser={currentUser} />
     </Tabs>
   );
