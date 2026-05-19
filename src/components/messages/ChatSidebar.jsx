@@ -46,7 +46,7 @@ export default function ChatSidebar({ activeChannelId }) {
     queryKey: ["channel-members", user?.email],
     queryFn: () => base44.entities.ChannelMember.filter({ user_email: user?.email }),
     enabled: !!user?.email,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
   });
 
   const unreadMap = myMemberships.reduce((acc, m) => {
@@ -114,7 +114,8 @@ export default function ChatSidebar({ activeChannelId }) {
         onClick={() => select(ch.id)}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors
           ${isActive ? "bg-primary/15 text-primary font-medium" : "hover:bg-surface text-muted-foreground"}
-          ${pinned ? "border border-yellow-500/30 bg-yellow-500/5" : ""}`}
+          ${pinned ? "border border-yellow-500/30 bg-yellow-500/5" : ""}
+          ${unread > 0 ? "border-l-4 border-l-red-500" : ""}`}
       >
         <div className="w-7 h-7 rounded-full overflow-hidden bg-surface flex items-center justify-center shrink-0 border border-border/50">
           {teamAvatarUrl ? (
@@ -132,7 +133,7 @@ export default function ChatSidebar({ activeChannelId }) {
         <span className="truncate text-sm flex-1">{ch.name || "Unnamed"}</span>
         {pinned && !unread && <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />}
         {unread > 0 && (
-          <span className="ml-auto shrink-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+          <span className="ml-auto shrink-0 bg-red-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-md animate-in zoom-in">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
