@@ -314,7 +314,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
             }}
             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
               alertsOn
-                ? "bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-surface"
             }`}
           >
@@ -326,7 +326,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
             ) : (
               <>
                 <BellOff className="w-3.5 h-3.5" />
-                <span className="text-xs">Alerts Off</span>
+                <span className="text-xs font-semibold">Alerts Off</span>
               </>
             )}
           </button>
