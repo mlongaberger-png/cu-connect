@@ -45,14 +45,21 @@ Deno.serve(async (req) => {
     });
 
     // 2. Post a message in the team channel
-    await base44.asServiceRole.entities.Message.create({
-      content: `${headline}\n${body}`,
-      channel: "team",
-      channel_id: teamId,
-      channel_name: teamName,
-      sender_name: "Score Bot",
-      sender_email: "scorebot@system",
-    });
+    try {
+      const teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: teamId, type: 'team' });
+      const teamChannel = teamChannels[0];
+      if (teamChannel) {
+        await base44.asServiceRole.entities.Message.create({
+          channel_id: teamChannel.id,
+          content_text: `${headline}\n${body}`,
+          message_type: 'text',
+          sender_name: 'Score Bot',
+          sender_user_id: 'system',
+        });
+      }
+    } catch (e) {
+      console.warn(`Failed to post team message: ${e.message}`);
+    }
 
     // 3. Find all players on the team and get their parent emails
     const players = await base44.asServiceRole.entities.Player.filter({ team_id: teamId, is_active: true });
@@ -93,7 +100,6 @@ Deno.serve(async (req) => {
       success: true,
       headline,
       notified_parents: parentEmails.length,
-      push_sent: targetSubs.length,
     });
 
   } catch (error) {

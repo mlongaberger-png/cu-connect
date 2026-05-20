@@ -78,14 +78,17 @@ Deno.serve(async (req) => {
       // Post a message in the team channel
       if (event.team_id) {
         try {
-          await base44.asServiceRole.entities.Message.create({
-            content: `${headline}\n${body}`,
-            channel: "team",
-            channel_id: event.team_id,
-            channel_name: event.team_name || "Team",
-            sender_name: "Weather Bot",
-            sender_email: "weatherbot@system",
-          });
+          const teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: event.team_id, type: 'team' });
+          const teamChannel = teamChannels[0];
+          if (teamChannel) {
+            await base44.asServiceRole.entities.Message.create({
+              channel_id: teamChannel.id,
+              content_text: `${headline}\n${body}`,
+              message_type: 'text',
+              sender_name: 'Weather Bot',
+              sender_user_id: 'system',
+            });
+          }
         } catch (e) {
           console.warn(`Failed to post team message: ${e.message}`);
         }
