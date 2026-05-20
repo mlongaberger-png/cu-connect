@@ -147,38 +147,85 @@ Deno.serve(async (req) => {
       url: `/messages?channelId=${channel_id}`
     });
 
-    let sent = 0;
-    let noSubs = 0;
+    // Load all notification preferences and push subscriptions in bulk
+    const [allPrefs, allActiveSubs] = await Promise.all([
+      base44.asServiceRole.entities.NotificationPreference.filter({}),
+      base44.asServiceRole.entities.PushSubscription.filter({ is_active: true }),
+    ]);
+
+    const prefsMap = {};
+    allPrefs.forEach(p => { if (p.user_email) prefsMap[p.user_email.toLowerCase()] = p; });
+
+    const subsMap = {};
+    allActiveSubs.forEach(s => {
+      if (!s.user_email) return;
+      const key = s.user_email.toLowerCase();
+      if (!subsMap[key]) subsMap[key] = [];
+      subsMap[key].push(s);
+    });
+
+    let pushSent = 0;
+    let emailSent = 0;
+    let skipped = 0;
 
     for (const email of finalRecipients) {
-      const subs = await base44.asServiceRole.entities.PushSubscription.filter({
-        user_email: email,
-        is_active: true,
-      });
+      const key = email.toLowerCase();
+      const prefs = prefsMap[key];
 
-      if (subs.length === 0) {
-        noSubs++;
+      // Default: if no prefs saved, try push first, fall back to email
+      const messagesEnabled = prefs ? prefs.messages_enabled !== false : true;
+      const method = prefs?.messages_method || 'push'; // default push if no preference
+
+      if (!messagesEnabled) {
+        skipped++;
         continue;
       }
 
-      for (const sub of subs) {
-        try {
-          await webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
-            notifPayload
-          );
-          sent++;
-        } catch (err) {
-          console.error(`Push failed for ${email}:`, err.message);
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
+      const userSubs = subsMap[key] || [];
+      const hasPush = userSubs.length > 0;
+
+      // push: wants push AND has a device subscribed
+      const shouldPush = (method === 'push' || method === 'both') && hasPush;
+      // email: explicitly wants email, OR wants both, OR wants push but has no device (fallback)
+      const shouldEmail = method === 'email' || method === 'both' || (method === 'push' && !hasPush);
+
+      // Send push notification
+      if (shouldPush) {
+        for (const sub of userSubs) {
+          try {
+            await webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
+              notifPayload
+            );
+            pushSent++;
+          } catch (err) {
+            console.error(`Push failed for ${email}:`, err.message);
+            if (err.statusCode === 410 || err.statusCode === 404) {
+              await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
+            }
           }
+        }
+      }
+
+      // Send email notification
+      if (shouldEmail) {
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: email,
+            subject: `New message in ${channelLabel}`,
+            body: `<p><strong>${sender_name || 'Someone'}</strong> sent a message in <strong>${channelLabel}</strong>:</p>
+<blockquote style="border-left:3px solid #c8a84b;margin:8px 0;padding:8px 12px;color:#555;">${(content_text || '').slice(0, 300)}</blockquote>
+<p><a href="https://app.cornerstone-athletics.com/messages?channelId=${channel_id}" style="background:#c8a84b;color:#000;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">Open Chat</a></p>`,
+          });
+          emailSent++;
+        } catch (err) {
+          console.error(`Email failed for ${email}:`, err.message);
         }
       }
     }
 
-    console.log(`Done. Push sent: ${sent}, no push subs: ${noSubs}, unread updated: ${finalRecipients.length}`);
-    return Response.json({ success: true, push_sent: sent, no_subs: noSubs, unread_updated: finalRecipients.length });
+    console.log(`Done. Push sent: ${pushSent}, email sent: ${emailSent}, skipped (disabled): ${skipped}, unread updated: ${finalRecipients.length}`);
+    return Response.json({ success: true, push_sent: pushSent, email_sent: emailSent, skipped, unread_updated: finalRecipients.length });
   } catch (error) {
     console.error('onMessageCreated error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

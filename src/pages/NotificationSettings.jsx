@@ -18,11 +18,11 @@ const CATEGORIES = [
 ];
 
 const DEFAULTS = {
-  messages_enabled: true,   messages_method: "both",
-  schedule_enabled: true,   schedule_method: "both",
+  messages_enabled: true,   messages_method: "push",
+  schedule_enabled: true,   schedule_method: "push",
   attendance_enabled: true, attendance_method: "email",
   payments_enabled: true,   payments_method: "email",
-  volunteers_enabled: true, volunteers_method: "both",
+  volunteers_enabled: true, volunteers_method: "push",
   documents_enabled: true,  documents_method: "email",
   quiet_hours_enabled: false, quiet_start: "22:00", quiet_end: "07:00",
 };
@@ -131,9 +131,9 @@ export default function NotificationSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="push">Push</SelectItem>
-                    <SelectItem value="both">Both</SelectItem>
+                    <SelectItem value="push">Push only</SelectItem>
+                    <SelectItem value="email">Email only</SelectItem>
+                    <SelectItem value="both">Push + Email</SelectItem>
                   </SelectContent>
                 </Select>
               )}
