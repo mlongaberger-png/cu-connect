@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2, Link2, Send } from "lucide-react";
+import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2, Link2, Send, Bell, BellOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
@@ -33,6 +33,13 @@ export default function ParentAccountsTab() {
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
   });
+
+  const { data: pushSubs = [] } = useQuery({
+    queryKey: ["push-subscriptions"],
+    queryFn: () => base44.entities.PushSubscription.filter({ is_active: true }),
+  });
+
+  const pushEnabledEmails = new Set(pushSubs.map(s => s.user_email?.toLowerCase()).filter(Boolean));
 
   const parentUsers = users.filter(u => u.role === "parent" || u.role === "user" || u.role === "pending" || !u.role);
   const filtered = parentUsers.filter(u => {
@@ -160,6 +167,17 @@ export default function ParentAccountsTab() {
                       {linked.map(p => `${p.first_name} ${p.last_name}`).join(", ")}
                     </div>
                   )}
+                  <div className="flex items-center gap-1 mt-1">
+                    {pushEnabledEmails.has(user.email?.toLowerCase()) ? (
+                      <span className="flex items-center gap-1 text-[10px] font-medium text-green-400 bg-green-500/10 border border-green-500/20 rounded-full px-2 py-0.5">
+                        <Bell className="w-2.5 h-2.5" /> Push On
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-surface border border-border rounded-full px-2 py-0.5">
+                        <BellOff className="w-2.5 h-2.5" /> Push Off
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Button size="sm" variant="ghost" title="Resend invite link" onClick={() => handleReinvite(user)} disabled={reinviting === user.id}>
                   <Send className={`w-4 h-4 ${reinviting === user.id ? "animate-pulse text-primary" : "text-muted-foreground"}`} />
