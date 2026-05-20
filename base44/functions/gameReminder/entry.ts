@@ -154,22 +154,31 @@ Deno.serve(async (req) => {
           console.warn(`Failed to post team message: ${e.message}`);
         }
 
-        // Send push notifications
-        try {
-          await base44.asServiceRole.functions.invoke('sendPushNotification', {
-            user_emails: parentEmails,
-            title,
-            body,
-            url: notifUrl,
-            team_id: event.team_id,
-          });
-          console.log(`Push sent to ${parentEmails.length} parent(s) for ${event.title}`);
-        } catch (e) {
-          console.warn(`Push notification failed: ${e.message}`);
+        // Determine which parents have active push subscriptions
+        const allSubs = await base44.asServiceRole.entities.PushSubscription.filter({ is_active: true });
+        const emailsWithPush = new Set(allSubs.map(s => s.user_email?.toLowerCase()).filter(Boolean));
+
+        const pushRecipients = parentEmails.filter(e => emailsWithPush.has(e.toLowerCase()));
+        const emailOnlyRecipients = parentEmails.filter(e => !emailsWithPush.has(e.toLowerCase()));
+
+        // Send push notifications to those who have subscriptions
+        if (pushRecipients.length > 0) {
+          try {
+            await base44.asServiceRole.functions.invoke('sendPushNotification', {
+              user_emails: pushRecipients,
+              title,
+              body,
+              url: notifUrl,
+              team_id: event.team_id,
+            });
+            console.log(`Push sent to ${pushRecipients.length} parent(s) for ${event.title}`);
+          } catch (e) {
+            console.warn(`Push notification failed: ${e.message}`);
+          }
         }
 
-        // Send emails as fallback
-        for (const email of parentEmails) {
+        // Send emails ONLY as fallback for parents without push subscriptions
+        for (const email of emailOnlyRecipients) {
           try {
             await base44.asServiceRole.integrations.Core.SendEmail({
               to: email,
@@ -185,6 +194,7 @@ Deno.serve(async (req) => {
             console.warn(`Email failed for ${email}: ${e.message}`);
           }
         }
+        console.log(`Game reminder: ${pushRecipients.length} push, ${emailOnlyRecipients.length} email-only for ${event.title}`);
 
         // Mark reminder as sent so we don't re-fire on next run
         try {
