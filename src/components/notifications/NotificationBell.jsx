@@ -115,7 +115,16 @@ export default function NotificationBell() {
       ];
 
       items.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setNotifications(items.slice(0, 15));
+      const sliced = items.slice(0, 15);
+      setNotifications(sliced);
+
+      // First-time seed: if the user has never interacted with the bell,
+      // mark everything currently visible as read so the badge starts at 0.
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === null) {
+        markRead(sliced.map(n => n.id));
+        setReadIds(getReadIds());
+      }
     } catch { /* silent */ }
   };
 
