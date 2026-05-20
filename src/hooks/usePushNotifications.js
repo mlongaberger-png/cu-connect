@@ -18,10 +18,8 @@ export function usePushNotifications() {
 
   useEffect(() => {
     // Web Push requires serviceWorker + PushManager + Notification APIs.
-    // These are NOT available in:
-    //   - iOS WKWebView (App Store wrapper apps)
-    //   - iOS Safari unless installed as PWA (iOS 16.4+)
-    //   - Chrome/Firefox on iOS (forced to use WebKit)
+    // - Works on: Android Chrome, Desktop browsers, iOS Safari PWA (iOS 16.4+ added to Home Screen)
+    // - Does NOT work in: iOS WKWebView (App Store wrapper), Chrome/Firefox on iOS
     const supported =
       'serviceWorker' in navigator &&
       'PushManager' in window &&
