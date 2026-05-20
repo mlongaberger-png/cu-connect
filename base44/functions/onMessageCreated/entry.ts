@@ -78,9 +78,21 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'no recipients' });
     }
 
-    // Exclude sender
-    const senderLower = (sender_user_id || '').toLowerCase();
-    const finalRecipients = recipientEmails.filter(email => email.toLowerCase() !== senderLower);
+    // Exclude sender — sender_user_id may be an ID or email, look up their email to exclude properly
+    let senderEmail = '';
+    try {
+      const senderUsers = await base44.asServiceRole.entities.User.filter({ id: sender_user_id });
+      if (senderUsers.length > 0) {
+        senderEmail = (senderUsers[0].email || '').toLowerCase();
+      }
+    } catch (_) {}
+    // Also fall back: if sender_user_id looks like an email itself
+    if (!senderEmail && sender_user_id && sender_user_id.includes('@')) {
+      senderEmail = sender_user_id.toLowerCase();
+    }
+    console.log(`Sender email resolved: ${senderEmail}`);
+
+    const finalRecipients = recipientEmails.filter(email => email.toLowerCase() !== senderEmail);
     console.log(`Final recipients after excluding sender: ${finalRecipients.length}`);
 
     // Update unread_count for ChannelMember records (for those that have them)

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft, MessageSquareText } from "lucide-react";
+import { BellOff, Bell, ArrowLeft, MessageSquareText, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -194,15 +194,15 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    refetch: refetchMessages,
   } = useInfiniteQuery({
     queryKey: ["messages", channelId],
     queryFn: async ({ pageParam = 0 }) => {
       const msgs = await base44.entities.Message.filter(
         { channel_id: channelId },
-        "-created_at",
+        "-created_date",
         50
       );
-      // Simple offset pagination
       return msgs.slice(pageParam, pageParam + 50);
     },
     getNextPageParam: (lastPage, allPages) => {
@@ -211,7 +211,40 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     },
     initialPageParam: 0,
     enabled: !!channelId,
+    refetchInterval: 8000, // Poll every 8 seconds for new messages
   });
+
+  // Pull-to-refresh state
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const scrollContainerRef = useRef(null);
+  const touchStartY = useRef(null);
+
+  const handleTouchStart = (e) => {
+    const container = scrollContainerRef.current;
+    // Only trigger pull-to-refresh when scrolled to bottom (flex-col-reverse: bottom = scrollTop near 0)
+    if (container && container.scrollTop <= 10) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (touchStartY.current === null) return;
+    const dist = e.touches[0].clientY - touchStartY.current;
+    if (dist > 0) {
+      setPullDistance(Math.min(dist, 80));
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > 50) {
+      setIsPulling(true);
+      await refetchMessages();
+      setIsPulling(false);
+    }
+    setPullDistance(0);
+    touchStartY.current = null;
+  };
 
   // IntersectionObserver to load more when scrolling to top
   useEffect(() => {
@@ -323,7 +356,24 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
       </div>
 
       {/* Messages — flex-col-reverse keeps latest at bottom */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col-reverse gap-3">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-4 flex flex-col-reverse gap-3"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ position: 'relative' }}
+      >
+        {/* Pull-to-refresh indicator */}
+        {(pullDistance > 10 || isPulling) && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 bg-card border border-border rounded-full px-3 py-1.5 shadow-md z-10 transition-all"
+            style={{ top: `${60 + Math.min(pullDistance, 60)}px` }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-primary ${isPulling ? "animate-spin" : ""}`} />
+            <span className="text-xs text-muted-foreground">{isPulling ? "Refreshing…" : pullDistance > 50 ? "Release to refresh" : "Pull to refresh"}</span>
+          </div>
+        )}
         {isLoading ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
