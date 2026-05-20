@@ -6,6 +6,7 @@ import OfflineIndicator from "./OfflineIndicator";
 import BottomTabBar from "./BottomTabBar";
 import PageTransition from "./PageTransition";
 import SponsorTicker from "@/components/sponsors/SponsorTicker";
+import IOSInstallBanner from "@/components/notifications/IOSInstallBanner";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 
@@ -100,6 +101,7 @@ export default function AppLayout() {
       <BottomTabBar onOpenSidebar={() => setSidebarOpen(true)} />
 
       <OfflineIndicator />
+      <IOSInstallBanner />
     </div>
   );
 }
