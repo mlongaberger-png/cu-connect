@@ -78,7 +78,6 @@ export default function NotificationSettings() {
 
       {/* Push Notifications Card */}
       <div className={`rounded-2xl border p-5 ${
-        !isSupported ? 'bg-amber-500/5 border-amber-500/30' :
         isSubscribed ? 'bg-green-500/5 border-green-500/30' :
         permission === 'denied' ? 'bg-red-500/5 border-red-500/30' :
         'bg-card border-border'
@@ -86,16 +85,14 @@ export default function NotificationSettings() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              isSubscribed ? 'bg-green-500/20' : !isSupported ? 'bg-amber-500/20' : 'bg-primary/10'
+              isSubscribed ? 'bg-green-500/20' : 'bg-primary/10'
             }`}>
-              <Smartphone className={`w-5 h-5 ${isSubscribed ? 'text-green-400' : !isSupported ? 'text-amber-400' : 'text-primary'}`} />
+              <Smartphone className={`w-5 h-5 ${isSubscribed ? 'text-green-400' : 'text-primary'}`} />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">Push Notifications</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {!isSupported
-                  ? "Not available in this app — use Email notifications below"
-                  : isSubscribed
+                {isSubscribed
                   ? "✅ Active — you'll get alerts on this device"
                   : permission === 'denied'
                   ? "🚫 Blocked — open Settings → Notifications to allow"
@@ -104,49 +101,21 @@ export default function NotificationSettings() {
             </div>
           </div>
 
-          {/* Toggle switch — only shown when supported and not blocked */}
-          {isSupported && permission !== 'denied' && (
+          {/* Toggle switch — shown when not blocked */}
+          {permission !== 'denied' && (
             <Switch
               checked={isSubscribed}
               disabled={pushLoading}
               onCheckedChange={(checked) => checked ? subscribe() : unsubscribe()}
             />
           )}
-          {isSupported && permission === 'denied' && (
+          {permission === 'denied' && (
             <span className="text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1.5 shrink-0">Blocked</span>
-          )}
-          {!isSupported && (
-            <span className="text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5 shrink-0">Use Email</span>
           )}
         </div>
 
-        {/* Not supported — show Safari PWA upgrade path */}
-        {!isSupported && (
-          <div className="mt-4 border-t border-border pt-4 space-y-3">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Push alerts aren't available in this version of the app, but you can enable them in two ways:
-            </p>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 bg-surface rounded-xl p-3">
-                <span className="text-base leading-none mt-0.5">🧭</span>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Option 1 — Add to Home Screen (recommended)</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Open <strong className="text-foreground">app.cornerstone-athletics.com</strong> in <strong className="text-foreground">Safari</strong>, tap the Share button, then tap <strong className="text-foreground">"Add to Home Screen"</strong>. Launch the app from your home screen and enable notifications here.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 bg-surface rounded-xl p-3">
-                <span className="text-base leading-none mt-0.5">📧</span>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">Option 2 — Email notifications</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Enable Email delivery below for each category to stay up to date on games, messages, and more.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* First-time prompt — not yet asked */}
-        {isSupported && !isSubscribed && permission === 'default' && (
+        {!isSubscribed && permission === 'default' && (
           <div className="mt-4 border-t border-border pt-4">
             <p className="text-xs text-muted-foreground mb-3">
               Turning this on will ask for permission and add CU Connect to your device's notification settings.
