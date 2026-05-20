@@ -26,6 +26,19 @@
     "position": {
       "type": "string"
     },
+    "depth_chart_unit": {
+      "type": "string",
+      "description": "Offense, Defense, or Special Teams"
+    },
+    "depth_chart_slot": {
+      "type": "string",
+      "description": "Position slot on depth chart, e.g. QB, RB, WR1"
+    },
+    "depth_chart_order": {
+      "type": "number",
+      "description": "Rank within a position slot (1 = starter)",
+      "default": 1
+    },
     "date_of_birth": {
       "type": "string",
       "format": "date"
