@@ -20,7 +20,11 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
     );
   }
 
-  const timestamp = msg.created_date ? format(new Date(msg.created_date), "h:mm a") : null;
+  const rawDate = msg.created_date;
+  const timestamp = rawDate
+    ? new Date(rawDate.endsWith("Z") ? rawDate : rawDate + "Z")
+        .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Chicago" })
+    : null;
   const isPhoto = /^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim());
 
   return (
