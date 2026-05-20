@@ -259,7 +259,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
         </div>
         <div className="flex items-center gap-2">
           {/* Alerts On/Off toggle */}
-          {isSupported && permission !== "denied" && (
+          {isSupported && permission !== "denied" && 'PushManager' in window && (
             <button
               onClick={isSubscribed ? unsubscribePush : subscribePush}
               disabled={pushLoading}

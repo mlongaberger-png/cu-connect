@@ -78,6 +78,7 @@ export default function NotificationSettings() {
 
       {/* Push Notifications Card */}
       <div className={`rounded-2xl border p-5 ${
+        !isSupported ? 'bg-amber-500/5 border-amber-500/30' :
         isSubscribed ? 'bg-green-500/5 border-green-500/30' :
         permission === 'denied' ? 'bg-red-500/5 border-red-500/30' :
         'bg-card border-border'
@@ -85,42 +86,54 @@ export default function NotificationSettings() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              isSubscribed ? 'bg-green-500/20' : 'bg-primary/10'
+              isSubscribed ? 'bg-green-500/20' : !isSupported ? 'bg-amber-500/20' : 'bg-primary/10'
             }`}>
-              <Smartphone className={`w-5 h-5 ${isSubscribed ? 'text-green-400' : 'text-primary'}`} />
+              <Smartphone className={`w-5 h-5 ${isSubscribed ? 'text-green-400' : !isSupported ? 'text-amber-400' : 'text-primary'}`} />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">Push Notifications</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {isSubscribed
+                {!isSupported
+                  ? "Not available in this app — use Email notifications below"
+                  : isSubscribed
                   ? "✅ Active — you'll get alerts on this device"
                   : permission === 'denied'
-                  ? "🚫 Blocked — open your browser/phone Settings → Notifications to allow"
-                  : !isSupported
-                  ? "Not supported on this browser"
-                  : "Allow CU Connect to send alerts to your phone & browser"}
+                  ? "🚫 Blocked — open Settings → Notifications to allow"
+                  : "Allow CU Connect to send alerts to your phone"}
               </p>
             </div>
           </div>
 
-          {/* Toggle switch — only shown when not blocked */}
-          {permission !== 'denied' && isSupported && (
+          {/* Toggle switch — only shown when supported and not blocked */}
+          {isSupported && permission !== 'denied' && (
             <Switch
               checked={isSubscribed}
               disabled={pushLoading}
               onCheckedChange={(checked) => checked ? subscribe() : unsubscribe()}
             />
           )}
-          {permission === 'denied' && (
+          {isSupported && permission === 'denied' && (
             <span className="text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1.5 shrink-0">Blocked</span>
+          )}
+          {!isSupported && (
+            <span className="text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5 shrink-0">Use Email</span>
           )}
         </div>
 
+        {/* Not supported explanation */}
+        {!isSupported && (
+          <div className="mt-4 border-t border-border pt-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Push notifications aren't available in the App Store version of this app. <strong className="text-foreground">Enable Email notifications</strong> below for each category to stay up to date on messages, games, and more.
+            </p>
+          </div>
+        )}
+
         {/* First-time prompt — not yet asked */}
-        {!isSubscribed && permission === 'default' && isSupported && (
-          <div className="mt-4 pl-13 ml-13 border-t border-border pt-4">
+        {isSupported && !isSubscribed && permission === 'default' && (
+          <div className="mt-4 border-t border-border pt-4">
             <p className="text-xs text-muted-foreground mb-3">
-              Turning this on will ask for permission and add CU Connect to your device's notification settings — so you get game reminders, messages, and alerts even when the app is closed.
+              Turning this on will ask for permission and add CU Connect to your device's notification settings.
             </p>
             <Button
               size="sm"
