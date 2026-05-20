@@ -141,15 +141,21 @@ Deno.serve(async (req) => {
             attendanceRequestId ? `\nPlease confirm your attendance in the app.` : '',
           ].filter(Boolean).join('\n');
 
-          await base44.asServiceRole.entities.Message.create({
-            content: msgContent,
-            channel: 'team',
-            channel_id: event.team_id,
-            channel_name: event.team_name || 'Team',
-            sender_name: 'Game Reminder',
-            sender_email: 'system@cornerstone',
-            ...(attendanceRequestId ? { attendance_request_id: attendanceRequestId } : {}),
-          });
+          // Find the team channel for this team
+          const teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: event.team_id, type: 'team' });
+          const teamChannel = teamChannels[0];
+          if (!teamChannel) {
+            console.warn(`No team channel found for team ${event.team_id}, skipping message`);
+          } else {
+            await base44.asServiceRole.entities.Message.create({
+              channel_id: teamChannel.id,
+              content_text: msgContent,
+              message_type: 'text',
+              sender_name: 'Game Reminder',
+              sender_user_id: 'system',
+            });
+            console.log(`Message posted to channel ${teamChannel.id} for event ${event.title}`);
+          }
         } catch (e) {
           console.warn(`Failed to post team message: ${e.message}`);
         }
