@@ -313,15 +313,15 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
               }
             }}
             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
-              alertsOn
-                ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
+              !alertsOn
+                ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-surface"
             }`}
           >
             {alertsOn ? (
               <>
                 <Bell className="w-3.5 h-3.5" />
-                <span className="text-xs font-semibold">Alerts On</span>
+                <span className="text-xs">Alerts On</span>
               </>
             ) : (
               <>
