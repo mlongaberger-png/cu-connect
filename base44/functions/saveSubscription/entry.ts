@@ -12,30 +12,46 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing endpoint' }, { status: 400 });
     }
 
-    // Remove all existing subscriptions for this user
-    const existing = await base44.asServiceRole.entities.PushSubscription.filter({ user_email: user.email });
-    for (const sub of existing) {
-      await base44.asServiceRole.entities.PushSubscription.delete(sub.id);
-    }
-
-    // If this is an unsubscribe request, just delete and return
+    // Handle unsubscribe: mark this specific endpoint inactive
     if (remove) {
+      const existing = await base44.asServiceRole.entities.PushSubscription.filter({
+        user_email: user.email,
+        endpoint,
+      });
+      for (const sub of existing) {
+        await base44.asServiceRole.entities.PushSubscription.delete(sub.id);
+      }
       console.log(`Push subscription removed for ${user.email}`);
       return Response.json({ success: true, removed: true });
     }
 
+    // Validate keys before saving
     if (!keys?.p256dh || !keys?.auth) {
+      console.error(`Invalid subscription keys for ${user.email}`);
       return Response.json({ error: 'Invalid subscription keys' }, { status: 400 });
     }
 
-    // Save new subscription
-    await base44.asServiceRole.entities.PushSubscription.create({
+    // Upsert: if endpoint already exists for this user, update it; otherwise create
+    const existing = await base44.asServiceRole.entities.PushSubscription.filter({
       user_email: user.email,
       endpoint,
-      p256dh_key: keys.p256dh,
-      auth_key: keys.auth,
-      is_active: true,
     });
+
+    if (existing.length > 0) {
+      await base44.asServiceRole.entities.PushSubscription.update(existing[0].id, {
+        p256dh_key: keys.p256dh,
+        auth_key: keys.auth,
+        is_active: true,
+      });
+    } else {
+      await base44.asServiceRole.entities.PushSubscription.create({
+        user_email: user.email,
+        endpoint,
+        p256dh_key: keys.p256dh,
+        auth_key: keys.auth,
+        is_active: true,
+      });
+    }
 
     console.log(`Push subscription saved for ${user.email}`);
     return Response.json({ success: true });
