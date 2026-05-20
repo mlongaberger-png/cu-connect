@@ -19,7 +19,7 @@ const BALL_FILL     = "#b45309";
 const ROUTE_COLOR   = "#facc15";
 const BLOCK_COLOR   = "#60a5fa";
 const MOTION_COLOR  = "#34d399";
-const PLAYER_R      = 13;
+const PLAYER_R      = 9;
 
 // Field is LANDSCAPE: W > H
 const FW = 520;   // canvas width
@@ -142,7 +142,7 @@ function drawPlayers(ctx, players, selectedId) {
     ctx.lineWidth = p.id === selectedId ? 3 : 2;
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#fff";
-    const fs = p.label && p.label.length > 2 ? r - 4 : r - 2;
+    const fs = p.label && p.label.length > 2 ? r - 2 : r + 1;
     ctx.font = `bold ${fs}px sans-serif`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(p.label || (p.type === "defense" ? "X" : "O"), p.x, p.y);
@@ -289,6 +289,8 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
       if (hitP) {
         setSelectedId(hitP.id); setSelectedPathId(null);
         setDragging({ id: hitP.id, offX: x - hitP.x, offY: y - hitP.y });
+        // Open rename immediately on click
+        setRenaming({ id: hitP.id, value: hitP.label || "" });
       } else {
         const hitL = hitPath(x, y);
         if (hitL) { setSelectedPathId(hitL.id); setSelectedId(null); }
