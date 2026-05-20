@@ -151,6 +151,28 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   const [isMuted, setIsMuted] = useState(false);
   const [alertsOn, setAlertsOn] = useState(() => localStorage.getItem("alerts_enabled") === "true");
 
+  // Auto-clear unread when the user is actively viewing this channel
+  const clearUnreadMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.email || !channelId) return;
+      const memberships = await base44.entities.ChannelMember.filter({ channel_id: channelId, user_email: user.email });
+      const membership = memberships[0];
+      if (membership && (membership.unread_count || 0) > 0) {
+        await base44.entities.ChannelMember.update(membership.id, { unread_count: 0 });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["channel-members"] });
+    },
+  });
+
+  // Clear unread whenever this channel becomes active or new messages arrive
+  useEffect(() => {
+    if (channelId && user?.email) {
+      clearUnreadMutation.mutate();
+    }
+  }, [channelId, user?.email]); // eslint-disable-line
+
   const { data: channel } = useQuery({
     queryKey: ["channel", channelId],
     queryFn: () => base44.entities.Channel.filter({ id: channelId }).then(r => r[0]),
@@ -208,6 +230,13 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const allMessages = data?.pages.flat() ?? [];
+
+  // When new messages arrive while viewing, clear unread immediately
+  useEffect(() => {
+    if (allMessages.length > 0 && channelId && user?.email) {
+      clearUnreadMutation.mutate();
+    }
+  }, [allMessages.length]); // eslint-disable-line
 
   // Build a map of parent_message_id -> reply count for thread badges
   const replyCountMap = allMessages.reduce((acc, msg) => {

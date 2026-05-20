@@ -27,11 +27,6 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true });
     }
 
-    // Only handle team, direct, announcement channels
-    if (!['team', 'direct', 'announcement'].includes(channel.type)) {
-      return Response.json({ skipped: true, reason: 'channel type not supported' });
-    }
-
     // Fetch all channel members
     const members = await base44.asServiceRole.entities.ChannelMember.filter({ channel_id });
 
@@ -40,10 +35,15 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'no members' });
     }
 
-    // Separate sender from recipients
-    const recipients = members.filter(m => m.user_id !== sender_user_id && m.user_email !== sender_user_id);
+    // Exclude sender from recipients — check BOTH user_id and user_email against sender_user_id
+    // sender_user_id may be an id OR an email depending on how the message was created
+    const recipients = members.filter(m => {
+      const matchesById = sender_user_id && m.user_id === sender_user_id;
+      const matchesByEmail = sender_user_id && m.user_email === sender_user_id;
+      return !matchesById && !matchesByEmail;
+    });
 
-    console.log(`Dispatching to ${recipients.length} recipients (${members.length} total members)`);
+    console.log(`Dispatching to ${recipients.length} recipients (${members.length} total members, sender excluded)`);
 
     // Increment unread counts for all recipients
     const unreadUpdates = recipients.map(m =>
@@ -63,18 +63,28 @@ Deno.serve(async (req) => {
     const { publicKey, privateKey } = JSON.parse(configs[0].value);
     webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
 
+    // Build channel name label for the notification
+    const channelLabel = channel.name ? `#${channel.name}` : 'Team Chat';
+    const notifTitle = `${channelLabel}`;
+    const notifBody = sender_name ? `${sender_name}: ${content_text || ''}` : (content_text || 'New message');
     const notifPayload = JSON.stringify({
-      title: sender_name || 'New Message',
-      body: content_text || '',
+      title: notifTitle,
+      body: notifBody.length > 120 ? notifBody.slice(0, 117) + '…' : notifBody,
       url: `/messages?channelId=${channel_id}`
     });
 
     let sent = 0;
+    let noSubs = 0;
     for (const member of recipients) {
       const subs = await base44.asServiceRole.entities.PushSubscription.filter({
         user_email: member.user_email,
         is_active: true,
       });
+
+      if (subs.length === 0) {
+        noSubs++;
+        continue;
+      }
 
       for (const sub of subs) {
         try {
@@ -92,8 +102,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Push sent: ${sent}, unread incremented: ${recipients.length}`);
-    return Response.json({ success: true, push_sent: sent, unread_updated: recipients.length });
+    console.log(`Push sent: ${sent}, no subs: ${noSubs}, unread incremented: ${recipients.length}`);
+    return Response.json({ success: true, push_sent: sent, no_subs: noSubs, unread_updated: recipients.length });
   } catch (error) {
     console.error('onMessageCreated error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
