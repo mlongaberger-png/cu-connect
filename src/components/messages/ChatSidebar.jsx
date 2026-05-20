@@ -60,8 +60,12 @@ export default function ChatSidebar({ activeChannelId }) {
     refetchInterval: 5000,
   });
 
+  // Only count unreads for channels that actually exist and are visible
+  const visibleChannelIds = new Set(allChannels.map(ch => ch.id));
   const unreadMap = myMemberships.reduce((acc, m) => {
-    if (m.unread_count > 0) acc[m.channel_id] = m.unread_count;
+    if (m.unread_count > 0 && visibleChannelIds.has(m.channel_id)) {
+      acc[m.channel_id] = m.unread_count;
+    }
     return acc;
   }, {});
 
