@@ -74,7 +74,11 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.getRegistration('/sw.js');
       if (reg) {
         const sub = await reg.pushManager.getSubscription();
-        if (sub) await sub.unsubscribe();
+        if (sub) {
+          // Also remove from DB so server stops sending
+          await base44.functions.invoke('saveSubscription', { endpoint: sub.endpoint, keys: {}, remove: true }).catch(() => {});
+          await sub.unsubscribe();
+        }
       }
       setIsSubscribed(false);
     } catch (e) {
