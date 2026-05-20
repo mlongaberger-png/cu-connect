@@ -263,23 +263,23 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
             <button
               onClick={isSubscribed ? unsubscribePush : subscribePush}
               disabled={pushLoading}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
-                !isSubscribed
-                  ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-surface"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 font-medium text-xs ${
+                isSubscribed
+                  ? "bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
+                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
               }`}
             >
               {pushLoading ? (
-                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : isSubscribed ? (
                 <>
                   <Bell className="w-3.5 h-3.5" />
-                  <span className="text-xs">Alerts On</span>
+                  Alerts On
                 </>
               ) : (
                 <>
                   <BellOff className="w-3.5 h-3.5" />
-                  <span className="text-xs font-semibold">Alerts Off</span>
+                  Alerts Off
                 </>
               )}
             </button>
