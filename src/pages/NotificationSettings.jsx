@@ -77,38 +77,63 @@ export default function NotificationSettings() {
       </div>
 
       {/* Push Notifications Card */}
-      {isSupported && (
-        <div className="bg-card rounded-2xl border border-border p-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Smartphone className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Push Notifications</p>
-                <p className="text-xs text-muted-foreground">
-                  {isSubscribed ? "You'll receive browser push notifications in real time" :
-                   permission === 'denied' ? "Blocked in browser — update site permissions to enable" :
-                   "Get instant alerts even when the app isn't open"}
-                </p>
-              </div>
+      <div className={`rounded-2xl border p-5 ${
+        isSubscribed ? 'bg-green-500/5 border-green-500/30' :
+        permission === 'denied' ? 'bg-red-500/5 border-red-500/30' :
+        'bg-card border-border'
+      }`}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              isSubscribed ? 'bg-green-500/20' : 'bg-primary/10'
+            }`}>
+              <Smartphone className={`w-5 h-5 ${isSubscribed ? 'text-green-400' : 'text-primary'}`} />
             </div>
-            {permission === 'denied' ? (
-              <span className="text-xs text-muted-foreground bg-surface border border-border rounded-lg px-3 py-1.5">Blocked</span>
-            ) : isSubscribed ? (
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle2 className="w-3 h-3" /> Active</span>
-                <button onClick={unsubscribe} disabled={pushLoading} className="text-xs text-muted-foreground hover:text-foreground underline">Disable</button>
-              </div>
-            ) : (
-              <Button size="sm" onClick={subscribe} disabled={pushLoading} className="gap-1.5 text-xs">
-                <Bell className="w-3.5 h-3.5" />
-                {pushLoading ? 'Enabling...' : 'Enable Push'}
-              </Button>
-            )}
+            <div>
+              <p className="text-sm font-semibold text-foreground">Push Notifications</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isSubscribed
+                  ? "✅ Active — you'll get alerts on this device"
+                  : permission === 'denied'
+                  ? "🚫 Blocked — open your browser/phone Settings → Notifications to allow"
+                  : !isSupported
+                  ? "Not supported on this browser"
+                  : "Allow CU Connect to send alerts to your phone & browser"}
+              </p>
+            </div>
           </div>
+
+          {/* Toggle switch — only shown when not blocked */}
+          {permission !== 'denied' && isSupported && (
+            <Switch
+              checked={isSubscribed}
+              disabled={pushLoading}
+              onCheckedChange={(checked) => checked ? subscribe() : unsubscribe()}
+            />
+          )}
+          {permission === 'denied' && (
+            <span className="text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1.5 shrink-0">Blocked</span>
+          )}
         </div>
-      )}
+
+        {/* First-time prompt — not yet asked */}
+        {!isSubscribed && permission === 'default' && isSupported && (
+          <div className="mt-4 pl-13 ml-13 border-t border-border pt-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Turning this on will ask for permission and add CU Connect to your device's notification settings — so you get game reminders, messages, and alerts even when the app is closed.
+            </p>
+            <Button
+              size="sm"
+              onClick={subscribe}
+              disabled={pushLoading}
+              className="w-full gap-2"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              {pushLoading ? 'Requesting permission...' : 'Turn On Notifications'}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Per-category */}
       <div className="bg-card rounded-2xl border border-border divide-y divide-border">
