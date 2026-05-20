@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye } from "lucide-react";
+import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
@@ -115,6 +116,14 @@ export default function ChatSidebar({ activeChannelId }) {
     });
   };
 
+  const formatLastMessageTime = (isoStr) => {
+    if (!isoStr) return "";
+    const d = new Date(isoStr);
+    if (isToday(d)) return format(d, "h:mm a");
+    if (isYesterday(d)) return "Yesterday";
+    return format(d, "MMM d");
+  };
+
   const ChannelBtn = ({ ch, pinned }) => {
     const isActive = ch.id === activeChannelId;
     const unread = unreadMap[ch.id] || 0;
@@ -124,46 +133,55 @@ export default function ChatSidebar({ activeChannelId }) {
       : null;
     const teamAvatarUrl = linkedTeam?.avatar_url || ch.avatar_url;
     const teamAvatarType = linkedTeam?.avatar_type;
+    const lastTime = formatLastMessageTime(ch.last_message_at);
+    const preview = ch.last_message_preview || "";
 
     return (
       <button
         onClick={() => select(ch.id)}
-        className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors
-          ${isActive ? "bg-primary/15 text-primary font-medium" : "hover:bg-surface text-muted-foreground"}
-          ${pinned ? "border border-yellow-500/30 bg-yellow-500/5" : ""}
-          ${unread > 0 ? "border-l-4 border-l-red-500" : ""}
+        className={`group w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors
+          ${isActive ? "bg-primary/15" : "hover:bg-surface"}
           ${isHidden ? "opacity-50" : ""}`}
       >
-        <div className="w-7 h-7 rounded-full overflow-hidden bg-surface flex items-center justify-center shrink-0 border border-border/50">
+        {/* Avatar */}
+        <div className="w-11 h-11 rounded-full overflow-hidden bg-surface flex items-center justify-center shrink-0 border border-border/50">
           {teamAvatarUrl ? (
             <img src={teamAvatarUrl} alt="" className="w-full h-full object-cover" />
           ) : linkedTeam ? (
-            <span className="text-sm">{getTeamAvatarEmoji(teamAvatarType, linkedTeam?.sport_name)}</span>
+            <span className="text-xl">{getTeamAvatarEmoji(teamAvatarType, linkedTeam?.sport_name)}</span>
           ) : pinned ? (
-            <Crown className="w-3.5 h-3.5 text-yellow-400" />
+            <Crown className="w-5 h-5 text-yellow-400" />
           ) : ch.type === "carpool" ? (
-            <Car className="w-3.5 h-3.5 text-primary" />
+            <Car className="w-5 h-5 text-primary" />
           ) : (
-            <Hash className="w-3.5 h-3.5 text-primary" />
+            <Hash className="w-5 h-5 text-primary" />
           )}
         </div>
-        <span className="truncate text-sm flex-1">{ch.name || "Unnamed"}</span>
 
-        {/* Status / badge area */}
-        {unread > 0 ? (
-          <span className="ml-auto shrink-0 bg-red-600 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-md animate-in zoom-in">
-            {unread > 99 ? "99+" : unread}
-          </span>
-        ) : pinned ? (
-          <Crown className="w-3 h-3 text-yellow-400 ml-auto shrink-0" />
-        ) : (
-          <span className="text-[10px] text-green-500/60 ml-auto shrink-0 hidden group-hover:hidden">✓</span>
-        )}
+        {/* Text content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className={`truncate text-sm ${unread > 0 ? "font-bold text-foreground" : isActive ? "font-semibold text-primary" : "font-medium text-foreground"}`}>
+              {ch.name || "Unnamed"}
+            </span>
+            <span className="text-[11px] text-muted-foreground shrink-0">{lastTime}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-0.5">
+            <span className={`text-xs truncate ${unread > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
+              {preview || <span className="italic opacity-50">No messages yet</span>}
+            </span>
+            {unread > 0 && (
+              <span className="shrink-0 bg-primary text-primary-foreground text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
+          </div>
+        </div>
 
-        {/* Hide/unhide button — appears on hover */}
+        {/* Hide/unhide on hover */}
         <span
           onClick={(e) => toggleHideChannel(ch.id, e)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 p-1 rounded hover:bg-background shrink-0"
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-background shrink-0"
           title={isHidden ? "Unhide" : "Hide"}
         >
           {isHidden

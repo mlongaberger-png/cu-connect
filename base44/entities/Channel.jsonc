@@ -38,6 +38,10 @@
     "last_message_at": {
       "type": "string",
       "description": "ISO timestamp of most recent message"
+    },
+    "last_message_preview": {
+      "type": "string",
+      "description": "Sender name + message snippet for sidebar display"
     }
   },
   "required": [

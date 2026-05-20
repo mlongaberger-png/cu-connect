@@ -133,6 +133,12 @@ Deno.serve(async (req) => {
     const { publicKey, privateKey } = JSON.parse(configs[0].value);
     webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
 
+    // Store last message preview on the channel for sidebar display
+    await base44.asServiceRole.entities.Channel.update(channel_id, {
+      last_message_at: new Date().toISOString(),
+      last_message_preview: sender_name ? `${sender_name}: ${(content_text || '').slice(0, 80)}` : (content_text || '').slice(0, 80),
+    }).catch(() => {});
+
     const channelLabel = channel.name || 'Team Chat';
     const notifBody = sender_name ? `${sender_name}: ${content_text || ''}` : (content_text || 'New message');
     const notifPayload = JSON.stringify({
