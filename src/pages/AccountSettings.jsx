@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2, Users } from "lucide-react";
+import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2, Users, Bell, BellOff } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useQuery } from "@tanstack/react-query";
 import MyChildrenPanel from "@/components/parentportal/MyChildrenPanel";
 import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
@@ -35,6 +36,7 @@ export default function AccountSettings() {
   const [deleting, setDeleting] = useState(false);
 
   const isParent = ["parent", "grandparent"].includes(user?.role);
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   const { data: myGuardianLinks = [] } = useQuery({
     queryKey: ["my-guardian-links-settings", user?.email],
@@ -217,6 +219,48 @@ export default function AccountSettings() {
           <p className="text-xs text-muted-foreground mt-2">To change your email, please contact your organization administrator.</p>
         </CardContent>
       </Card>
+
+      {/* Push Notifications */}
+      {pushSupported && pushPermission !== "denied" && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Bell className="w-4 h-4 text-primary" /> Push Notifications</CardTitle>
+            <CardDescription>Receive real-time alerts on this device for messages, schedules, and announcements.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${pushSubscribed ? "bg-green-500/20" : "bg-muted"}`}>
+                  {pushSubscribed ? <Bell className="w-4 h-4 text-green-400" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{pushSubscribed ? "Alerts enabled on this device" : "Alerts are off"}</p>
+                  <p className="text-xs text-muted-foreground">{pushSubscribed ? "You'll receive push notifications here." : "Enable to get notified in real-time."}</p>
+                </div>
+              </div>
+              <Button
+                variant={pushSubscribed ? "outline" : "default"}
+                size="sm"
+                onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
+                disabled={pushLoading}
+                className="shrink-0"
+              >
+                {pushLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : pushSubscribed ? "Turn Off" : "Turn On"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {pushPermission === "denied" && pushSupported && (
+        <Card className="bg-card border-amber-900/30">
+          <CardContent className="pt-5">
+            <div className="flex items-start gap-3 text-sm text-amber-400">
+              <BellOff className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>Push notifications are blocked in your browser. To enable them, update your browser's notification permission for this site in your device settings.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Security */}
       <Card className="bg-card border-border">

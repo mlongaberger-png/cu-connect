@@ -106,7 +106,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   const topSentinelRef = useRef(null);
   const queryClient = useQueryClient();
   const [isMuted, setIsMuted] = useState(false);
-  const { isSubscribed, isLoading: pushLoading, permission, subscribe: subscribePush, unsubscribe: unsubscribePush } = usePushNotifications();
+  const { isSupported, isSubscribed, isLoading: pushLoading, permission, subscribe: subscribePush, unsubscribe: unsubscribePush } = usePushNotifications();
 
   // Auto-clear unread when the user is actively viewing this channel
   const clearUnreadMutation = useMutation({
@@ -259,7 +259,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
         </div>
         <div className="flex items-center gap-2">
           {/* Alerts On/Off toggle */}
-          {permission !== "denied" && (
+          {isSupported && permission !== "denied" && (
             <button
               onClick={isSubscribed ? unsubscribePush : subscribePush}
               disabled={pushLoading}
@@ -269,7 +269,9 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
                   : "text-muted-foreground hover:text-foreground hover:bg-surface"
               }`}
             >
-              {isSubscribed ? (
+              {pushLoading ? (
+                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : isSubscribed ? (
                 <>
                   <Bell className="w-3.5 h-3.5" />
                   <span className="text-xs">Alerts On</span>

@@ -31,9 +31,12 @@ export function usePushNotifications() {
       if (reg) {
         const sub = await reg.pushManager.getSubscription();
         setIsSubscribed(!!sub);
+      } else {
+        setIsSubscribed(false);
       }
     } catch (e) {
       console.error('Check subscription error:', e);
+      setIsSubscribed(false);
     }
   };
 
@@ -75,12 +78,13 @@ export function usePushNotifications() {
       if (reg) {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
-          // Also remove from DB so server stops sending
+          // Remove from DB so server stops sending
           await base44.functions.invoke('saveSubscription', { endpoint: sub.endpoint, keys: {}, remove: true }).catch(() => {});
           await sub.unsubscribe();
         }
       }
       setIsSubscribed(false);
+      setPermission(Notification.permission);
     } catch (e) {
       console.error('Unsubscribe error:', e);
     } finally {
