@@ -200,6 +200,11 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="flex items-center justify-between p-4">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-primary" /> Messages
+            {Object.values(unreadMap).reduce((a, b) => a + b, 0) > 0 && (
+              <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[24px] text-center">
+                {Object.values(unreadMap).reduce((a, b) => a + b, 0) > 99 ? "99+" : Object.values(unreadMap).reduce((a, b) => a + b, 0)}
+              </span>
+            )}
           </h2>
           {canCreate && (
             <Button variant="ghost" size="icon" onClick={() => setShowCreate(true)}>
