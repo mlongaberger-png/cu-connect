@@ -79,11 +79,6 @@ export default function AccessRequestsPanel() {
     setReviewingReq(null);
     toast({ title: action === "approve" ? "Approving parent account…" : "Rejecting request…" });
 
-    // Optimistically update local cache
-    queryClient.setQueryData(["access-requests"], (old = []) =>
-      old.map(r => r.id === reqToProcess.id ? { ...r, status: action === "approve" ? "approved" : "rejected" } : r)
-    );
-
     base44.functions.invoke("approveParentRequest", {
       request_id: reqToProcess.id,
       action,
