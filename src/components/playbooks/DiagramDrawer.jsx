@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, Undo2, Redo2, Trash2, Download, Save, MousePointer, Pencil, Circle, Square } from "lucide-react";
+import { X, Undo2, Redo2, Trash2, Download, Save, MousePointer, Pencil, Circle, Square, Eraser, ArrowRight, Minus, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const FIELD_COLOR = "#2d5a27";
 const LINE_COLOR = "rgba(255,255,255,0.6)";
 const HASH_COLOR = "rgba(255,255,255,0.4)";
@@ -15,77 +15,79 @@ const BALL_FILL = "#b45309";
 const ROUTE_COLOR = "#facc15";
 const BLOCK_COLOR = "#60a5fa";
 const MOTION_COLOR = "#34d399";
-
 const PLAYER_RADIUS = 14;
-const SNAP = 20; // grid snap px
 
-function snapVal(v) { return Math.round(v / SNAP) * SNAP; }
+function snapVal(v) { return Math.round(v / 20) * 20; }
 
 function drawField(ctx, W, H, mode) {
-  // Background
   ctx.fillStyle = FIELD_COLOR;
   ctx.fillRect(0, 0, W, H);
-
-  // Alternating darker stripes (10-yard bands)
   const stripeH = H / 10;
   for (let i = 0; i < 10; i++) {
-    if (i % 2 === 0) {
-      ctx.fillStyle = "rgba(0,0,0,0.08)";
-      ctx.fillRect(0, i * stripeH, W, stripeH);
-    }
+    if (i % 2 === 0) { ctx.fillStyle = "rgba(0,0,0,0.08)"; ctx.fillRect(0, i * stripeH, W, stripeH); }
   }
-
-  // Sidelines
   ctx.strokeStyle = LINE_COLOR;
   ctx.lineWidth = 2;
   ctx.strokeRect(4, 4, W - 8, H - 8);
-
-  // Yard lines (every 10% of height)
   for (let i = 1; i < 10; i++) {
     const y = i * (H / 10);
-    ctx.beginPath();
-    ctx.moveTo(4, y);
-    ctx.lineTo(W - 4, y);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4, y); ctx.lineTo(W - 4, y); ctx.stroke();
   }
-
-  // Hash marks (skip in Youth mode)
   if (mode !== "Youth") {
     ctx.strokeStyle = HASH_COLOR;
     ctx.lineWidth = 1.5;
-    const leftHash = W * 0.28;
-    const rightHash = W * 0.72;
+    const leftHash = W * 0.28, rightHash = W * 0.72;
     for (let i = 0; i <= 50; i++) {
       const y = 4 + i * ((H - 8) / 50);
       [leftHash, rightHash].forEach(x => {
-        ctx.beginPath();
-        ctx.moveTo(x - 8, y);
-        ctx.lineTo(x + 8, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 8, y); ctx.lineTo(x + 8, y); ctx.stroke();
       });
     }
   }
-
-  // Line of scrimmage
-  ctx.strokeStyle = "#60a5fa";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 4]);
+  ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 2; ctx.setLineDash([8, 4]);
   const los = H * 0.6;
-  ctx.beginPath();
-  ctx.moveTo(4, los);
-  ctx.lineTo(W - 4, los);
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4, los); ctx.lineTo(W - 4, los); ctx.stroke();
   ctx.setLineDash([]);
-
-  // LOS label
-  ctx.fillStyle = "rgba(96,165,250,0.7)";
-  ctx.font = "10px sans-serif";
-  ctx.fillText("LOS", 8, los - 3);
+  ctx.fillStyle = "rgba(96,165,250,0.7)"; ctx.font = "10px sans-serif"; ctx.fillText("LOS", 8, los - 3);
 }
 
-function drawPlayers(ctx, players, selectedId, mode) {
+function drawArrowHead(ctx, from, to, color) {
+  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  const aLen = 11;
+  ctx.beginPath();
+  ctx.moveTo(to.x, to.y);
+  ctx.lineTo(to.x - aLen * Math.cos(angle - 0.4), to.y - aLen * Math.sin(angle - 0.4));
+  ctx.moveTo(to.x, to.y);
+  ctx.lineTo(to.x - aLen * Math.cos(angle + 0.4), to.y - aLen * Math.sin(angle + 0.4));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.stroke();
+}
+
+function drawPaths(ctx, paths, selectedPathId) {
+  paths.forEach(path => {
+    if (path.points.length < 2) return;
+    const isSelected = path.id === selectedPathId;
+    ctx.beginPath();
+    ctx.moveTo(path.points[0].x, path.points[0].y);
+    for (let i = 1; i < path.points.length; i++) ctx.lineTo(path.points[i].x, path.points[i].y);
+    ctx.strokeStyle = isSelected ? "#fff" : (path.color || ROUTE_COLOR);
+    ctx.lineWidth = isSelected ? (path.width || 2.5) + 1.5 : (path.width || 2.5);
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.setLineDash(path.dashed ? [6, 4] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (path.arrow) {
+      const last = path.points[path.points.length - 1];
+      const prev = path.points[path.points.length - 2];
+      drawArrowHead(ctx, prev, last, isSelected ? "#fff" : (path.color || ROUTE_COLOR));
+    }
+  });
+}
+
+function drawPlayers(ctx, players, selectedId) {
   players.forEach(p => {
-    if (mode === "Youth" && p.varsityOnly) return;
     const r = PLAYER_RADIUS;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
@@ -100,65 +102,37 @@ function drawPlayers(ctx, players, selectedId, mode) {
       ctx.strokeStyle = "#f59e0b";
     }
     ctx.lineWidth = p.id === selectedId ? 3 : 2;
-    ctx.fill();
-    ctx.stroke();
-
-    // Label
+    ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#fff";
-    ctx.font = `bold ${r - 2}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    const fontSize = p.label && p.label.length > 2 ? r - 5 : r - 2;
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(p.label || (p.type === "defense" ? "X" : "O"), p.x, p.y);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   });
 }
 
-function drawPaths(ctx, paths) {
-  paths.forEach(path => {
-    if (path.points.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(path.points[0].x, path.points[0].y);
-    for (let i = 1; i < path.points.length; i++) {
-      ctx.lineTo(path.points[i].x, path.points[i].y);
-    }
-    ctx.strokeStyle = path.color || ROUTE_COLOR;
-    ctx.lineWidth = path.width || 2.5;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    if (path.dashed) ctx.setLineDash([6, 4]);
-    else ctx.setLineDash([]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Arrow at end
-    if (path.arrow && path.points.length >= 2) {
-      const last = path.points[path.points.length - 1];
-      const prev = path.points[path.points.length - 2];
-      const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
-      const aLen = 10;
-      ctx.beginPath();
-      ctx.moveTo(last.x, last.y);
-      ctx.lineTo(last.x - aLen * Math.cos(angle - 0.4), last.y - aLen * Math.sin(angle - 0.4));
-      ctx.moveTo(last.x, last.y);
-      ctx.lineTo(last.x - aLen * Math.cos(angle + 0.4), last.y - aLen * Math.sin(angle + 0.4));
-      ctx.strokeStyle = path.color || ROUTE_COLOR;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([]);
-      ctx.stroke();
-    }
-  });
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Toolbar config ────────────────────────────────────────────────────────────
 const MODES = ["Varsity", "JV", "Youth"];
 const TOOLS = [
-  { id: "select", icon: MousePointer, label: "Select/Move" },
-  { id: "offense", icon: Circle, label: "Add Offense (O)" },
-  { id: "defense", icon: Square, label: "Add Defense (X)" },
-  { id: "route", icon: Pencil, label: "Route (yellow arrow)" },
-  { id: "block", icon: Pencil, label: "Block (blue line)" },
-  { id: "motion", icon: Pencil, label: "Motion (green dash)" },
+  { id: "select",   icon: MousePointer, label: "Select/Move",       color: "#94a3b8" },
+  { id: "offense",  icon: Circle,       label: "Add Offense (O)",   color: OFF_FILL },
+  { id: "defense",  icon: Square,       label: "Add Defense (X)",   color: DEF_FILL },
+  { id: "route",    icon: ArrowRight,   label: "Route (freehand arrow)", color: ROUTE_COLOR },
+  { id: "line",     icon: Minus,        label: "Straight Line",     color: BLOCK_COLOR },
+  { id: "arrow",    icon: ArrowRight,   label: "Straight Arrow",    color: MOTION_COLOR },
+  { id: "block",    icon: Pencil,       label: "Block (freehand)",  color: BLOCK_COLOR },
+  { id: "motion",   icon: Pencil,       label: "Motion (dashed)",   color: MOTION_COLOR },
+  { id: "erase",    icon: Eraser,       label: "Erase Line",        color: "#f87171" },
+];
+
+const LINE_COLORS = [
+  { color: ROUTE_COLOR,  label: "Route" },
+  { color: BLOCK_COLOR,  label: "Block" },
+  { color: MOTION_COLOR, label: "Motion" },
+  { color: "#f472b6",    label: "Pink" },
+  { color: "#ffffff",    label: "White" },
+  { color: "#fb923c",    label: "Orange" },
 ];
 
 export default function DiagramDrawer({ play, onSave, onClose }) {
@@ -167,104 +141,142 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
   const [tool, setTool] = useState("offense");
   const [players, setPlayers] = useState([]);
   const [paths, setPaths] = useState([]);
-  const [history, setHistory] = useState([]); // undo stack: [{players, paths}]
+  const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [dragging, setDragging] = useState(null); // { id, offX, offY }
+  const [selectedId, setSelectedId] = useState(null);       // player id
+  const [selectedPathId, setSelectedPathId] = useState(null); // path id
+  const [dragging, setDragging] = useState(null);
   const [currentPath, setCurrentPath] = useState(null);
+  const [lineStart, setLineStart] = useState(null);          // for straight line/arrow
+  const [customColor, setCustomColor] = useState(ROUTE_COLOR);
   const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  // Rename inline
+  const [renaming, setRenaming] = useState(null); // { id, value }
   const playerCounter = useRef(1);
 
-  const W = 320;
-  const H = 480;
+  const W = 320, H = 480;
 
-  // Redraw
+  // Load existing diagram data if play has diagram_data saved
+  useEffect(() => {
+    if (play?.diagram_data) {
+      try {
+        const saved = JSON.parse(play.diagram_data);
+        if (saved.players) setPlayers(saved.players);
+        if (saved.paths) setPaths(saved.paths);
+        if (saved.counter) playerCounter.current = saved.counter;
+      } catch {}
+    }
+  }, [play?.id]);
+
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     drawField(ctx, W, H, mode);
-    drawPaths(ctx, paths);
-    if (currentPath) drawPaths(ctx, [currentPath]);
-    drawPlayers(ctx, players, selectedId, mode);
-  }, [players, paths, currentPath, selectedId, mode]);
+    drawPaths(ctx, paths, selectedPathId);
+    if (currentPath) drawPaths(ctx, [currentPath], null);
+    // Preview straight line while dragging
+    if (lineStart && (tool === "line" || tool === "arrow")) {
+      // Will be drawn on mousemove via currentPath
+    }
+    drawPlayers(ctx, players, selectedId);
+  }, [players, paths, currentPath, selectedId, selectedPathId, mode, lineStart, tool]);
 
   useEffect(() => { redraw(); }, [redraw]);
 
   const snapshot = () => ({ players: JSON.parse(JSON.stringify(players)), paths: JSON.parse(JSON.stringify(paths)) });
-
-  const pushHistory = (snap) => {
-    setHistory(h => [...h.slice(-30), snap]);
-    setRedoStack([]);
-  };
+  const pushHistory = (snap) => { setHistory(h => [...h.slice(-30), snap]); setRedoStack([]); };
 
   const undo = () => {
-    if (history.length === 0) return;
+    if (!history.length) return;
     const prev = history[history.length - 1];
     setRedoStack(r => [...r, snapshot()]);
     setHistory(h => h.slice(0, -1));
-    setPlayers(prev.players);
-    setPaths(prev.paths);
+    setPlayers(prev.players); setPaths(prev.paths);
+    setSelectedId(null); setSelectedPathId(null);
   };
-
   const redo = () => {
-    if (redoStack.length === 0) return;
+    if (!redoStack.length) return;
     const next = redoStack[redoStack.length - 1];
     setHistory(h => [...h, snapshot()]);
     setRedoStack(r => r.slice(0, -1));
-    setPlayers(next.players);
-    setPaths(next.paths);
+    setPlayers(next.players); setPaths(next.paths);
   };
+  const clearAll = () => { pushHistory(snapshot()); setPlayers([]); setPaths([]); setSelectedId(null); setSelectedPathId(null); };
 
-  const clearAll = () => {
-    pushHistory(snapshot());
-    setPlayers([]);
-    setPaths([]);
-    setSelectedId(null);
-  };
-
-  // ── Pointer helpers ─────────────────────────────────────────────────────────
   const getPos = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = W / rect.width;
-    const scaleY = H / rect.height;
+    const scaleX = W / rect.width, scaleY = H / rect.height;
     const src = e.touches ? e.touches[0] : e;
-    return {
-      x: (src.clientX - rect.left) * scaleX,
-      y: (src.clientY - rect.top) * scaleY,
-    };
+    return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
   };
 
   const hitPlayer = (x, y) => players.find(p => Math.hypot(p.x - x, p.y - y) <= PLAYER_RADIUS + 4);
+
+  // Find clicked path (within ~8px of any segment)
+  const hitPath = (x, y) => {
+    for (let i = paths.length - 1; i >= 0; i--) {
+      const path = paths[i];
+      for (let j = 1; j < path.points.length; j++) {
+        const a = path.points[j - 1], b = path.points[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        if (len === 0) continue;
+        const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / (len * len)));
+        const dist = Math.hypot(x - (a.x + t * dx), y - (a.y + t * dy));
+        if (dist < 8) return path;
+      }
+    }
+    return null;
+  };
 
   const onPointerDown = (e) => {
     e.preventDefault();
     const { x, y } = getPos(e);
 
+    if (renaming) { commitRename(); return; }
+
     if (tool === "select") {
-      const hit = hitPlayer(x, y);
-      if (hit) {
-        setSelectedId(hit.id);
-        setDragging({ id: hit.id, offX: x - hit.x, offY: y - hit.y });
+      const hitP = hitPlayer(x, y);
+      if (hitP) {
+        setSelectedId(hitP.id); setSelectedPathId(null);
+        setDragging({ id: hitP.id, offX: x - hitP.x, offY: y - hitP.y });
       } else {
-        setSelectedId(null);
+        const hitL = hitPath(x, y);
+        if (hitL) { setSelectedPathId(hitL.id); setSelectedId(null); }
+        else { setSelectedId(null); setSelectedPathId(null); }
+      }
+      return;
+    }
+
+    if (tool === "erase") {
+      const hitL = hitPath(x, y);
+      if (hitL) {
+        pushHistory(snapshot());
+        setPaths(ps => ps.filter(p => p.id !== hitL.id));
+        setSelectedPathId(null);
       }
       return;
     }
 
     if (tool === "offense" || tool === "defense") {
-      const snap = { x: snapVal(x), y: snapVal(y) };
+      const sx = snapVal(x), sy = snapVal(y);
       const label = tool === "offense" ? `O${playerCounter.current++}` : `X${playerCounter.current++}`;
-      const newP = { id: Date.now().toString(), type: tool, x: snap.x, y: snap.y, label };
       pushHistory(snapshot());
-      setPlayers(ps => [...ps, newP]);
+      setPlayers(ps => [...ps, { id: Date.now().toString(), type: tool, x: sx, y: sy, label }]);
       return;
     }
 
-    // Drawing paths
-    const color = tool === "route" ? ROUTE_COLOR : tool === "block" ? BLOCK_COLOR : MOTION_COLOR;
+    // Straight line / arrow — record start point
+    if (tool === "line" || tool === "arrow") {
+      setLineStart({ x, y });
+      setCurrentPath({ points: [{ x, y }, { x, y }], color: customColor, dashed: false, arrow: tool === "arrow", width: 2.5 });
+      return;
+    }
+
+    // Freehand paths
+    const color = tool === "route" ? customColor : tool === "block" ? BLOCK_COLOR : MOTION_COLOR;
     const dashed = tool === "motion";
     setCurrentPath({ points: [{ x, y }], color, dashed, arrow: tool === "route", width: 2.5 });
   };
@@ -279,62 +291,73 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
     }
 
     if (currentPath) {
-      setCurrentPath(cp => ({ ...cp, points: [...cp.points, { x, y }] }));
+      if (tool === "line" || tool === "arrow") {
+        // Update end point for straight line preview
+        setCurrentPath(cp => ({ ...cp, points: [cp.points[0], { x, y }] }));
+      } else {
+        setCurrentPath(cp => ({ ...cp, points: [...cp.points, { x, y }] }));
+      }
     }
   };
 
   const onPointerUp = (e) => {
     e.preventDefault();
-    if (dragging) {
-      pushHistory(snapshot());
-      setDragging(null);
-      return;
-    }
+    if (dragging) { pushHistory(snapshot()); setDragging(null); return; }
     if (currentPath && currentPath.points.length > 1) {
       pushHistory(snapshot());
       setPaths(ps => [...ps, { ...currentPath, id: Date.now().toString() }]);
     }
     setCurrentPath(null);
+    setLineStart(null);
   };
 
-  // Delete selected player
   const deleteSelected = () => {
-    if (!selectedId) return;
-    pushHistory(snapshot());
-    setPlayers(ps => ps.filter(p => p.id !== selectedId));
-    setSelectedId(null);
+    if (selectedId) {
+      pushHistory(snapshot());
+      setPlayers(ps => ps.filter(p => p.id !== selectedId));
+      setSelectedId(null);
+    } else if (selectedPathId) {
+      pushHistory(snapshot());
+      setPaths(ps => ps.filter(p => p.id !== selectedPathId));
+      setSelectedPathId(null);
+    }
   };
 
-  // Export as PNG
+  const startRename = () => {
+    if (!selectedId) return;
+    const p = players.find(pl => pl.id === selectedId);
+    if (p) setRenaming({ id: p.id, value: p.label || "" });
+  };
+
+  const commitRename = () => {
+    if (!renaming) return;
+    pushHistory(snapshot());
+    setPlayers(ps => ps.map(p => p.id === renaming.id ? { ...p, label: renaming.value } : p));
+    setRenaming(null);
+  };
+
   const handleExport = () => {
     const canvas = canvasRef.current;
-    const url = canvas.toDataURL("image/png");
     const a = document.createElement("a");
-    a.href = url;
+    a.href = canvas.toDataURL("image/png");
     a.download = `${play?.title || "diagram"}.png`;
     a.click();
   };
 
-  // Save to play record
   const handleSave = async () => {
     setSaving(true);
     const canvas = canvasRef.current;
+    // Save both the image and the raw data so it can be re-edited
     const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
     const file = new File([blob], `diagram-${play?.id || Date.now()}.png`, { type: "image/png" });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.Play.update(play.id, { diagram_url: file_url });
+    const diagramData = JSON.stringify({ players, paths, counter: playerCounter.current });
+    await base44.entities.Play.update(play.id, { diagram_url: file_url, diagram_data: diagramData });
     setSaving(false);
     onSave(file_url);
   };
 
-  const TOOL_COLORS = {
-    route: ROUTE_COLOR,
-    block: BLOCK_COLOR,
-    motion: MOTION_COLOR,
-    offense: OFF_FILL,
-    defense: DEF_FILL,
-    select: "#94a3b8",
-  };
+  const hasSelection = selectedId || selectedPathId;
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col items-center justify-start overflow-y-auto py-2">
@@ -343,35 +366,30 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div>
-            <p className="text-xs text-muted-foreground">Diagram</p>
+            <p className="text-xs text-muted-foreground">Diagram Editor</p>
             <h3 className="text-sm font-bold text-foreground truncate max-w-[180px]">{play?.title || "New Diagram"}</h3>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 
         {/* Mode selector */}
         <div className="flex gap-1 px-3 pt-3 pb-1">
           {MODES.map(m => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === m ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"}`}
-            >
+            <button key={m} onClick={() => setMode(m)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === m ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
               {m}
             </button>
           ))}
         </div>
 
         {/* Canvas */}
-        <div className="px-3 pb-1">
+        <div className="px-3 pb-1 relative">
           <canvas
             ref={canvasRef}
             width={W}
             height={H}
             className="w-full rounded-xl border border-border touch-none"
-            style={{ cursor: tool === "select" ? "grab" : "crosshair" }}
+            style={{ cursor: tool === "select" ? "grab" : tool === "erase" ? "cell" : "crosshair" }}
             onMouseDown={onPointerDown}
             onMouseMove={onPointerMove}
             onMouseUp={onPointerUp}
@@ -383,7 +401,7 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
 
         {/* Tool palette */}
         <div className="px-3 py-2">
-          <div className="grid grid-cols-6 gap-1">
+          <div className="grid grid-cols-9 gap-1">
             {TOOLS.map(t => {
               const Icon = t.icon;
               return (
@@ -393,9 +411,9 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
                   title={t.label}
                   className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all border ${tool === t.id ? "border-primary bg-primary/20" : "border-border bg-surface hover:bg-surface/80"}`}
                 >
-                  <Icon className="w-4 h-4" style={{ color: TOOL_COLORS[t.id] }} />
-                  <span className="text-[9px] text-muted-foreground mt-0.5 leading-tight text-center">
-                    {t.id === "offense" ? "Off" : t.id === "defense" ? "Def" : t.id === "select" ? "Move" : t.id.charAt(0).toUpperCase() + t.id.slice(1)}
+                  <Icon className="w-3.5 h-3.5" style={{ color: t.color }} />
+                  <span className="text-[8px] text-muted-foreground mt-0.5 leading-tight text-center hidden sm:block">
+                    {t.id === "offense" ? "Off" : t.id === "defense" ? "Def" : t.id === "select" ? "Move" : t.id === "erase" ? "Erase" : t.id === "line" ? "Line" : t.id === "arrow" ? "→" : t.id.charAt(0).toUpperCase() + t.id.slice(1)}
                   </span>
                 </button>
               );
@@ -403,9 +421,72 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
           </div>
         </div>
 
+        {/* Color picker for line tools */}
+        {(tool === "route" || tool === "line" || tool === "arrow") && (
+          <div className="px-3 pb-2">
+            <p className="text-[10px] text-muted-foreground mb-1.5">Line Color</p>
+            <div className="flex gap-1.5 flex-wrap">
+              {LINE_COLORS.map(({ color, label }) => (
+                <button
+                  key={color}
+                  title={label}
+                  onClick={() => setCustomColor(color)}
+                  className={`w-6 h-6 rounded-full border-2 transition-all ${customColor === color ? "border-white scale-110" : "border-transparent"}`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Selected player actions */}
+        {selectedId && (
+          <div className="px-3 pb-2">
+            <div className="bg-surface rounded-xl border border-border p-2.5 flex items-center gap-2">
+              {renaming ? (
+                <>
+                  <input
+                    autoFocus
+                    value={renaming.value}
+                    onChange={e => setRenaming(r => ({ ...r, value: e.target.value }))}
+                    onKeyDown={e => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setRenaming(null); }}
+                    maxLength={4}
+                    className="flex-1 bg-card border border-border rounded-lg px-2 py-1 text-sm text-foreground focus:outline-none focus:border-primary"
+                    placeholder="Label…"
+                  />
+                  <button onClick={commitRename} className="px-2 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium">OK</button>
+                  <button onClick={() => setRenaming(null)} className="px-2 py-1 rounded-lg bg-surface text-muted-foreground text-xs">✕</button>
+                </>
+              ) : (
+                <>
+                  <span className="text-xs text-muted-foreground flex-1">Player selected</span>
+                  <button onClick={startRename} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+                    <Type className="w-3 h-3" /> Rename
+                  </button>
+                  <button onClick={deleteSelected} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Selected path actions */}
+        {selectedPathId && !selectedId && (
+          <div className="px-3 pb-2">
+            <div className="bg-surface rounded-xl border border-border p-2.5 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground flex-1">Line selected</span>
+              <button onClick={deleteSelected} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                <Trash2 className="w-3 h-3" /> Delete Line
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Legend */}
         <div className="flex gap-3 px-3 pb-2 flex-wrap">
-          {[["Route", ROUTE_COLOR], ["Block", BLOCK_COLOR], ["Motion", MOTION_COLOR]].map(([label, color]) => (
+          {[["Route/Arrow", ROUTE_COLOR], ["Block", BLOCK_COLOR], ["Motion", MOTION_COLOR]].map(([label, color]) => (
             <div key={label} className="flex items-center gap-1">
               <div className="w-4 h-1 rounded" style={{ backgroundColor: color }} />
               <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -415,30 +496,20 @@ export default function DiagramDrawer({ play, onSave, onClose }) {
 
         {/* Action bar */}
         <div className="flex gap-1 px-3 pb-3 flex-wrap">
-          <button onClick={undo} disabled={history.length === 0} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-foreground disabled:opacity-40 text-xs transition-colors">
+          <button onClick={undo} disabled={!history.length} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-foreground disabled:opacity-40 text-xs">
             <Undo2 className="w-3.5 h-3.5" />
           </button>
-          <button onClick={redo} disabled={redoStack.length === 0} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-foreground disabled:opacity-40 text-xs transition-colors">
+          <button onClick={redo} disabled={!redoStack.length} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-foreground disabled:opacity-40 text-xs">
             <Redo2 className="w-3.5 h-3.5" />
           </button>
-          {selectedId && (
-            <button onClick={deleteSelected} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs transition-colors">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <button onClick={clearAll} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-red-400 text-xs transition-colors">
+          <button onClick={clearAll} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-red-400 text-xs">
             Clear All
           </button>
           <div className="flex-1" />
-          <button onClick={handleExport} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-foreground text-xs transition-colors">
-            <Download className="w-3.5 h-3.5" /> Export
+          <button onClick={handleExport} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-surface text-muted-foreground hover:text-foreground text-xs">
+            <Download className="w-3.5 h-3.5" />
           </button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-primary text-primary-foreground gap-1 text-xs h-8"
-          >
+          <Button size="sm" onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground gap-1 text-xs h-8">
             <Save className="w-3.5 h-3.5" />
             {saving ? "Saving…" : "Save"}
           </Button>

@@ -27,6 +27,10 @@
       "type": "string",
       "description": "Uploaded diagram image or PDF"
     },
+    "diagram_data": {
+      "type": "string",
+      "description": "JSON blob of players/paths for re-editing in DiagramDrawer"
+    },
     "film_clip_url": {
       "type": "string",
       "description": "Optional video clip URL"
