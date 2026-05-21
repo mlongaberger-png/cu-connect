@@ -57,7 +57,12 @@ export default function ParentHome() {
   const myEvents = events
     .filter(e => myTeamIds.includes(e.team_id) && e.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
-  const myUpcoming = myEvents.filter(e => !isPast(parseISO(e.date + "T23:59:59")));
+  const myUpcoming = myEvents.filter(e => {
+    if (!e.date) return false;
+    // Use end_time if available, otherwise start_time, otherwise end-of-day
+    const timeStr = e.end_time || e.start_time || "23:59";
+    return new Date(`${e.date}T${timeStr}:00`) >= new Date();
+  });
   const myAnnouncements = announcements.filter(a =>
     a.target === "org" || myTeamIds.includes(a.target_id) || myTeams.some(t => t.sport_id === a.target_id)
   );
@@ -83,7 +88,17 @@ export default function ParentHome() {
     queryFn: () => base44.entities.AttendanceRequest.list("-created_date"),
     enabled: myTeamIds.length > 0,
   });
-  const openRsvps = attendanceRequests.filter(r => myTeamIds.includes(r.team_id) && !r.is_locked);
+  const now = new Date();
+  const openRsvps = attendanceRequests.filter(r => {
+    if (!myTeamIds.includes(r.team_id) || r.is_locked) return false;
+    // Drop RSVPs whose event has already concluded
+    if (r.event_date) {
+      const timeStr = r.event_time || "23:59";
+      const eventEnd = new Date(`${r.event_date}T${timeStr}:00`);
+      if (eventEnd < now) return false;
+    }
+    return true;
+  });
 
   // Fetch all responses for open RSVPs to determine completion
   const { data: rsvpResponses = [] } = useQuery({
