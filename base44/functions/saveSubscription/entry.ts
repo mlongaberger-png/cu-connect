@@ -32,10 +32,14 @@ Deno.serve(async (req) => {
     }
 
     // Upsert: if endpoint already exists for this user, update it; otherwise create
-    const existing = await base44.asServiceRole.entities.PushSubscription.filter({
-      user_email: user.email,
-      endpoint,
-    });
+    const allForUser = await base44.asServiceRole.entities.PushSubscription.filter({ user_email: user.email });
+    const existing = allForUser.filter(s => s.endpoint === endpoint);
+
+    // Cap subscriptions per user at 10 to prevent DB flooding
+    if (existing.length === 0 && allForUser.length >= 10) {
+      console.warn(`Subscription cap reached for ${user.email}`);
+      return Response.json({ error: 'Too many subscriptions for this account' }, { status: 429 });
+    }
 
     if (existing.length > 0) {
       await base44.asServiceRole.entities.PushSubscription.update(existing[0].id, {

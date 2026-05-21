@@ -53,10 +53,11 @@ export function usePushNotifications() {
       const publicKey = res.data?.publicKey;
       if (!publicKey) throw new Error('Could not get push config');
 
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
+      await navigator.serviceWorker.register('/sw.js');
+      // Wait for THIS registration specifically — avoids race with stale active SW
+      const activeReg = await navigator.serviceWorker.ready;
 
-      const sub = await reg.pushManager.subscribe({
+      const sub = await activeReg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
@@ -66,6 +67,9 @@ export function usePushNotifications() {
         endpoint: subJson.endpoint,
         keys: subJson.keys,
       });
+
+      // Re-check subscription state from the active registration to sync UI accurately
+      await checkSubscription();
 
       setIsSubscribed(true);
       setPermission('granted');

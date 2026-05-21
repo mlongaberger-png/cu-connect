@@ -58,6 +58,10 @@ export function useOptimisticMutation(mutationFn, options = {}) {
     },
 
     onSuccess: (data, variables, context) => {
+      // Always re-sync with server after confirmed mutation to prevent stale cache
+      if (queryClient && queryKey) {
+        queryClient.invalidateQueries({ queryKey });
+      }
       onSuccess?.(data, variables, context);
     },
   });

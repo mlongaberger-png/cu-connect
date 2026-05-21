@@ -7,7 +7,8 @@ export function useAdminGuard() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!isLoadingAuth && user && user.role !== "admin") {
+    if (isLoadingAuth) return;
+    if (!user || user.role !== "admin") {
       navigate("/Portal", { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
@@ -19,7 +20,8 @@ export function useAdminOrADGuard() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!isLoadingAuth && user && user.role !== "admin" && user.role !== "athletic_director") {
+    if (isLoadingAuth) return;
+    if (!user || (user.role !== "admin" && user.role !== "athletic_director")) {
       navigate("/Portal", { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
@@ -31,7 +33,8 @@ export function useScheduleGuard() {
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!isLoadingAuth && user && !["admin", "athletic_director", "coach"].includes(user.role)) {
+    if (isLoadingAuth) return;
+    if (!user || !["admin", "athletic_director", "coach"].includes(user.role)) {
       navigate("/Portal", { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
