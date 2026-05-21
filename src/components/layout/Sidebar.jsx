@@ -41,7 +41,7 @@ const staffNavGroups = [
 const parentNavItems = [
   { path: "/Portal", label: "Dashboard", icon: LayoutDashboard, roles: ["parent", "user"] },
   { path: "/ParentPortal", label: "My Portal", icon: UserCircle, roles: ["parent", "user"] },
-  { path: "/Sports", label: "Sports & Register", icon: Trophy, roles: ["parent", "user"] },
+  { path: "/sports-directory", label: "Sports & Register", icon: Trophy, roles: ["parent", "user"] },
   { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["parent", "user"] },
   { path: "/Gallery", label: "Gallery", icon: Image, roles: ["parent", "user"] },
 ];
