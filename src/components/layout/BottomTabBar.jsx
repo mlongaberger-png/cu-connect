@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, MessageSquare, UserCircle,
-  Image, Users, Menu, Car
+  Image, Users, Menu, ClipboardList
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
@@ -26,6 +26,22 @@ function useUnreadMessageCount(user) {
   return unread;
 }
 
+function useOpenRegistrations() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    base44.entities.TeamRegistration.filter({ is_open: true })
+      .then(regs => setCount(regs?.length || 0))
+      .catch(() => {});
+    const interval = setInterval(() => {
+      base44.entities.TeamRegistration.filter({ is_open: true })
+        .then(regs => setCount(regs?.length || 0))
+        .catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+  return count;
+}
+
 // Tab root paths — used to identify which tab is active
 const staffTabs = [
   { root: "/Portal",   label: "Home",     icon: LayoutDashboard },
@@ -41,6 +57,7 @@ const parentTabs = [
   { root: "/Messages", label: "Messages", icon: MessageSquare },
   { root: "/ParentPortal", label: "My Family", icon: UserCircle },
   { root: "/Gallery",  label: "Photos",   icon: Image },
+  { root: "/sports-directory", label: "Sports", icon: ClipboardList, isSports: true },
 ];
 
 const STORAGE_KEY = "tab_last_path";
@@ -62,6 +79,7 @@ export default function BottomTabBar({ onOpenSidebar }) {
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const tabs = isStaff ? staffTabs : parentTabs;
   const unreadMessages = useUnreadMessageCount(user);
+  const openRegCount = useOpenRegistrations();
 
   // Remember current path for the active tab whenever location changes
   const activeTab = tabs.find(t => t.root && location.pathname.startsWith(t.root));
@@ -109,10 +127,22 @@ export default function BottomTabBar({ onOpenSidebar }) {
             );
           }
 
+          const sportsLabel = tab.isSports
+            ? (openRegCount > 0 ? "Sports & Register" : "Sports")
+            : tab.label;
+
+          const handleSportsPress = () => {
+            if (tab.isSports && openRegCount > 0) {
+              navigate("/Register");
+            } else {
+              handleTabPress(tab);
+            }
+          };
+
           return (
             <motion.button
               key={tab.root}
-              onClick={() => handleTabPress(tab)}
+              onClick={tab.isSports ? handleSportsPress : () => handleTabPress(tab)}
               whileTap={{ scale: 0.88 }}
               transition={{ duration: 0.12 }}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 relative ${
@@ -139,8 +169,13 @@ export default function BottomTabBar({ onOpenSidebar }) {
                     {unreadMessages > 99 ? "99+" : unreadMessages}
                   </span>
                 )}
+                {tab.isSports && openRegCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {openRegCount}
+                  </span>
+                )}
               </motion.div>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-[10px] font-medium leading-tight text-center">{sportsLabel}</span>
             </motion.button>
           );
         })}

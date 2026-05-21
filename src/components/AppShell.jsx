@@ -34,6 +34,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ParentCalendar from "@/pages/ParentCalendar";
 import Playbooks from "@/pages/Playbooks";
 import MessagesLayout from "@/pages/MessagesLayout";
+import ParentSportsRegister from "@/pages/ParentSportsRegister";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -138,6 +139,7 @@ export default function AppShell() {
         <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
         <Route path="/Playbooks" element={<Playbooks />} />
         <Route path="/Messages" element={<MessagesLayout />} />
+        <Route path="/sports-directory" element={<ParentSportsRegister />} />
 
         {/* ── Staff-only routes — redirects non-staff to /Portal ── */}
         <Route element={<StaffRoute />}>
