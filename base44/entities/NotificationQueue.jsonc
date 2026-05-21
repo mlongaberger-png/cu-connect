@@ -21,10 +21,11 @@
     },
     "source": {
       "type": "string",
-      "description": "Which function enqueued this task (e.g. sendSnackReminder, gameReminder)",
+      "description": "Which function enqueued this task",
       "enum": [
         "snack_reminder",
         "game_reminder",
+        "weather_alert",
         "document_reminder",
         "other"
       ],

@@ -1,8 +1,19 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // This is a scheduled/admin function — verify caller is admin or system
+    const caller = await base44.auth.me().catch(() => null);
+    if (caller) {
+      const dbUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
+      const callerRole = dbUsers[0]?.role;
+      if (!['admin', 'athletic_director'].includes(callerRole)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+    // If no auth token (scheduled run), proceed as system
 
     // Get all events scheduled for tomorrow
     const today = new Date();
@@ -104,33 +115,32 @@ Deno.serve(async (req) => {
         parentEmails = [...new Set(players.map(p => p.parent_email).filter(Boolean))];
       }
 
-      // Send push notifications — team_id filter ensures only relevant parents receive it
+      // Enqueue push notifications — processNotifications cron handles batched delivery
       if (parentEmails.length > 0) {
-        try {
-          await base44.asServiceRole.functions.invoke('sendPushNotification', {
-            user_emails: parentEmails,
+        await Promise.all(parentEmails.map(async (email) => {
+          const dedupKey = `weather_alert_${event.id}_${email}`;
+          const existing = await base44.asServiceRole.entities.NotificationQueue.filter({ dedup_key: dedupKey });
+          if (existing.length > 0) return; // already queued
+          return base44.asServiceRole.entities.NotificationQueue.create({
+            user_email: email,
             title: headline,
-            body: body,
-            url: "/Schedule",
-            team_id: event.team_id || undefined,
+            body,
+            url: '/Schedule',
+            source: 'weather_alert',
+            dedup_key: dedupKey,
+            status: 'pending',
           });
-        } catch (e) {
-          console.warn(`Push failed: ${e.message}`);
-        }
+        })).catch(e => console.warn(`Failed to queue weather alerts: ${e.message}`));
       }
 
-      // Send emails
-      for (const email of parentEmails) {
-        try {
-          await base44.asServiceRole.integrations.Core.SendEmail({
-            to: email,
-            subject: headline,
-            body: `<h2>${headline}</h2><p>${body.replace(/ · /g, "<br>")}</p><p>Log in to the app to check for any schedule changes.</p>`,
-          });
-        } catch (e) {
-          console.warn(`Email failed for ${email}: ${e.message}`);
-        }
-      }
+      // Email remains direct (email doesn't go through push queue)
+      await Promise.allSettled(parentEmails.map(email =>
+        base44.asServiceRole.integrations.Core.SendEmail({
+          to: email,
+          subject: headline,
+          body: `<h2>${headline}</h2><p>${body.replace(/ · /g, "<br>")}</p><p>Log in to the app to check for any schedule changes.</p>`,
+        }).catch(e => console.warn(`Email failed for ${email}: ${e.message}`))
+      ));
 
       alertsSent++;
       console.log(`Alert sent for: ${event.title} | ${parentEmails.length} parents notified`);
