@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
 /**
  * Scheduled function: runs every 30 minutes.
  * Finds games whose start time is 8 hours from now (±15 min window),

@@ -14,51 +14,15 @@ function useUnreadMessageCount(user) {
     if (!user?.email) return;
     const check = async () => {
       try {
-        const isParent = user.role === "parent" || user.role === "user";
-
-        // For parents, compute the set of channel IDs they're allowed to see
-        let allowedChannelIds = null;
-        if (isParent) {
-          allowedChannelIds = new Set();
-          // Get teams via guardian links
-          const guardians = await base44.entities.PlayerGuardian.filter({ user_email: user.email });
-          const playerIds = guardians.map(g => g.player_id).filter(Boolean);
-          const myTeamIds = new Set();
-          if (playerIds.length > 0) {
-            const players = await Promise.all(playerIds.map(pid => base44.entities.Player.filter({ id: pid })));
-            players.flat().forEach(p => { if (p.team_id) myTeamIds.add(p.team_id); });
-          }
-          // Team channels
-          myTeamIds.forEach(tid => allowedChannelIds.add(tid));
-          // Rooms the parent has access to
-          const rooms = await base44.entities.MessageRoom.filter({ is_active: true });
-          rooms.forEach(room => {
-            if (room.allowed_team_ids) {
-              try {
-                const tids = JSON.parse(room.allowed_team_ids);
-                if (tids.some(tid => myTeamIds.has(tid))) { allowedChannelIds.add(room.id); return; }
-              } catch {}
-            }
-            if (room.allowed_emails) {
-              try { if (JSON.parse(room.allowed_emails).includes(user.email)) { allowedChannelIds.add(room.id); return; } } catch {}
-            }
-          });
-        }
-
-        const msgs = await base44.entities.Message.list("-created_date", 100);
-        const count = msgs.filter(m => {
-          if (m.sender_email === user.email) return false;
-          if (allowedChannelIds && !allowedChannelIds.has(m.channel_id)) return false;
-          const lastRead = parseInt(localStorage.getItem(`msg_read_${m.channel_id}`) || "0", 10);
-          return new Date(m.created_date).getTime() > lastRead;
-        }).length;
-        setUnread(count);
+        const memberships = await base44.entities.ChannelMember.filter({ user_email: user.email });
+        const total = memberships.reduce((sum, m) => sum + (m.unread_count || 0), 0);
+        setUnread(total);
       } catch {}
     };
     check();
     const interval = setInterval(check, 30000);
     return () => clearInterval(interval);
-  }, [user?.email, user?.role]);
+  }, [user?.email]);
   return unread;
 }
 

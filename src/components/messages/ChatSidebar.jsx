@@ -87,7 +87,7 @@ export default function ChatSidebar({ activeChannelId }) {
 
   // Filter channels by type
   const userEmail = currentUser?.email;
-  const teamChannels = allChannels.filter(ch => ch.type === "team" || ch.type === "announcement");
+  const teamChannels = allChannels.filter(ch => ch.type === "team");
   const directChannels = allChannels.filter(ch => {
     if (ch.type !== "direct") return false;
     try {
