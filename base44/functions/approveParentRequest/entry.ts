@@ -4,10 +4,16 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const user = await base44.auth.me();
-    if (!user || user.role !== 'admin') {
+    const caller = await base44.auth.me();
+    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Re-fetch role from DB to prevent privilege escalation via stale token
+    const dbUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
+    const callerRole = dbUsers[0]?.role;
+    if (callerRole !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
+    const user = { ...caller, role: callerRole };
 
     const { request_id, action, player_ids, alternate_email } = await req.json();
     if (!request_id || !action) {

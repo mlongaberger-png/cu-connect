@@ -32,26 +32,34 @@ Deno.serve(async (req) => {
           console.log(`Registration payment confirmed: ${submissionId}`);
         }
       } else {
+        // Idempotency guard: if this payment_intent was already processed, skip
+        if (session.payment_intent) {
+          const existingByIntent = await base44.asServiceRole.entities.Payment.filter({
+            stripe_payment_intent_id: session.payment_intent,
+          });
+          if (existingByIntent.some(p => p.status === 'paid')) {
+            console.log(`Idempotency: payment_intent ${session.payment_intent} already processed, skipping`);
+            return Response.json({ received: true, skipped: 'duplicate' });
+          }
+        }
+
         // New flow: invoice_ids in metadata
         const invoiceIdsRaw = session.metadata?.invoice_ids;
         if (invoiceIdsRaw) {
           const invoiceIds = JSON.parse(invoiceIdsRaw);
-          await Promise.all(invoiceIds.map(id =>
-            base44.asServiceRole.entities.Payment.update(id, {
-              status: 'paid',
-              paid_amount_override: session.amount_total, // informational
-            })
-          ));
-          // Mark each invoice paid with its full amount
-          const invoices = await base44.asServiceRole.entities.Payment.list();
-          const myInvoices = invoices.filter(i => invoiceIds.includes(i.id));
-          await Promise.all(myInvoices.map(inv =>
-            base44.asServiceRole.entities.Payment.update(inv.id, {
-              status: 'paid',
-              paid_amount: inv.amount,
-              stripe_payment_intent_id: session.payment_intent || '',
-            })
-          ));
+          // Fetch only the relevant invoices — avoids loading entire Payment table
+          const invoices = await Promise.all(
+            invoiceIds.map(id => base44.asServiceRole.entities.Payment.filter({ id }).then(r => r[0]).catch(() => null))
+          );
+          await Promise.all(
+            invoices.filter(Boolean).map(inv =>
+              base44.asServiceRole.entities.Payment.update(inv.id, {
+                status: 'paid',
+                paid_amount: inv.amount,
+                stripe_payment_intent_id: session.payment_intent || '',
+              })
+            )
+          );
           console.log(`Marked ${invoiceIds.length} invoice(s) as paid for session ${session.id}`);
         } else {
           // Legacy flow: find by stripe_session_id

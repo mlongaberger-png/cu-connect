@@ -1,0 +1,60 @@
+{
+  "name": "NotificationQueue",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Recipient email"
+    },
+    "title": {
+      "type": "string",
+      "description": "Notification title"
+    },
+    "body": {
+      "type": "string",
+      "description": "Notification body text"
+    },
+    "url": {
+      "type": "string",
+      "description": "Deep-link URL for the notification",
+      "default": "/ParentPortal"
+    },
+    "source": {
+      "type": "string",
+      "description": "Which function enqueued this task (e.g. sendSnackReminder, gameReminder)",
+      "enum": [
+        "snack_reminder",
+        "game_reminder",
+        "document_reminder",
+        "other"
+      ],
+      "default": "other"
+    },
+    "dedup_key": {
+      "type": "string",
+      "description": "Unique key used to prevent duplicate notifications (e.g. snack_slot_id or event_id+email)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "sent",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "processed_at": {
+      "type": "string",
+      "description": "ISO timestamp when this task was processed"
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if processing failed"
+    }
+  },
+  "required": [
+    "user_email",
+    "title",
+    "body"
+  ]
+}

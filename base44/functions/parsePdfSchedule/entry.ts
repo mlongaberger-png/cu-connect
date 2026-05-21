@@ -54,7 +54,19 @@ Return ONLY events you can confidently extract. If a date is ambiguous, make you
       }
     });
 
-    const events = (result?.events || []).map(ev => ({
+    const rawEvents = result?.events;
+    if (!Array.isArray(rawEvents)) {
+      const msg = 'AI returned no parseable event array from the PDF. The document may be scanned, image-only, or in an unsupported format.';
+      console.error('parsePdfSchedule: bad LLM output', JSON.stringify(result));
+      return Response.json({
+        events: [],
+        parse_error: true,
+        parse_error_message: msg,
+        parse_error_detail: JSON.stringify(result).slice(0, 500),
+      }, { status: 422 });
+    }
+
+    const events = rawEvents.map(ev => ({
       title: ev.title || '',
       type: ev.type || 'other',
       date: ev.date || '',
@@ -66,12 +78,25 @@ Return ONLY events you can confidently extract. If a date is ambiguous, make you
       team_id: team_id || '',
       team_name: team_name || '',
       sport_name: sport_name || '',
-    }));
+    })).filter(ev => ev.date); // drop events with no date
+
+    if (events.length === 0) {
+      console.warn(`parsePdfSchedule: 0 usable events extracted for team ${team_name}`);
+      return Response.json({
+        events: [],
+        parse_error: true,
+        parse_error_message: 'No events with valid dates could be extracted from this document.',
+      }, { status: 422 });
+    }
 
     console.log(`Parsed ${events.length} events from PDF for team ${team_name}`);
-    return Response.json({ events });
+    return Response.json({ events, parse_error: false });
   } catch (error) {
     console.error('parsePdfSchedule error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({
+      events: [],
+      parse_error: true,
+      parse_error_message: `Unexpected error during parsing: ${error.message}`,
+    }, { status: 500 });
   }
 });

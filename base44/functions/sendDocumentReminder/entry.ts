@@ -4,10 +4,16 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const caller = await base44.auth.me();
+    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Verify role from DB — only staff may trigger document reminders
+    const dbUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
+    const callerRole = dbUsers[0]?.role;
+    if (!['admin', 'athletic_director', 'coach'].includes(callerRole)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
+    const user = { ...caller, role: callerRole };
 
     const { parent_emails, doc_type_label, team_name, coach_name, missing_player_names } = await req.json();
 

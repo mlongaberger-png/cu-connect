@@ -166,19 +166,28 @@ Deno.serve(async (req) => {
         const pushRecipients = parentEmails.filter(e => emailsWithPush.has(e.toLowerCase()));
         const emailOnlyRecipients = parentEmails.filter(e => !emailsWithPush.has(e.toLowerCase()));
 
-        // Send push notifications to those who have subscriptions
+        // Enqueue push notifications — processNotifications cron handles batched delivery
         if (pushRecipients.length > 0) {
           try {
-            await base44.asServiceRole.functions.invoke('sendPushNotification', {
-              user_emails: pushRecipients,
-              title,
-              body,
-              url: notifUrl,
-              team_id: event.team_id,
-            });
-            console.log(`Push sent to ${pushRecipients.length} parent(s) for ${event.title}`);
+            await Promise.all(pushRecipients.map(email => {
+              const dedupKey = `game_reminder_push_${event.id}_${email}`;
+              return base44.asServiceRole.entities.NotificationQueue.filter({ dedup_key: dedupKey })
+                .then(existing => {
+                  if (existing.length > 0) return; // already queued
+                  return base44.asServiceRole.entities.NotificationQueue.create({
+                    user_email: email,
+                    title,
+                    body,
+                    url: notifUrl,
+                    source: 'game_reminder',
+                    dedup_key: dedupKey,
+                    status: 'pending',
+                  });
+                });
+            }));
+            console.log(`Queued game reminder notifications for ${pushRecipients.length} parent(s) for ${event.title}`);
           } catch (e) {
-            console.warn(`Push notification failed: ${e.message}`);
+            console.warn(`Failed to queue game reminder notifications: ${e.message}`);
           }
         }
 

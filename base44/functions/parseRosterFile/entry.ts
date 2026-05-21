@@ -58,28 +58,55 @@ Return ONLY players you can confidently identify. If a field is unknown, use an 
       }
     });
 
-    const players = (result?.players || []).map(p => ({
-      first_name: p.first_name || '',
-      last_name: p.last_name || '',
-      jersey_number: p.jersey_number || '',
-      position: p.position || '',
-      date_of_birth: p.date_of_birth || '',
-      parent_name: p.parent_name || '',
-      parent_email: p.parent_email || '',
-      parent_phone: p.parent_phone || '',
-      emergency_contact: p.emergency_contact || '',
-      emergency_phone: p.emergency_phone || '',
-      medical_notes: p.medical_notes || '',
-      team_id: team_id || '',
-      team_name: team_name || '',
-      sport_name: sport_name || '',
-      is_active: true,
-    }));
+    const rawPlayers = result?.players;
+    if (!Array.isArray(rawPlayers)) {
+      const msg = 'AI returned no parseable player array from the file. The document may be scanned, image-only, or in an unsupported format.';
+      console.error('parseRosterFile: bad LLM output', JSON.stringify(result));
+      return Response.json({
+        players: [],
+        parse_error: true,
+        parse_error_message: msg,
+        parse_error_detail: JSON.stringify(result).slice(0, 500),
+      }, { status: 422 });
+    }
+
+    const players = rawPlayers
+      .filter(p => p.first_name || p.last_name) // drop fully empty rows
+      .map(p => ({
+        first_name: p.first_name || '',
+        last_name: p.last_name || '',
+        jersey_number: p.jersey_number || '',
+        position: p.position || '',
+        date_of_birth: p.date_of_birth || '',
+        parent_name: p.parent_name || '',
+        parent_email: p.parent_email || '',
+        parent_phone: p.parent_phone || '',
+        emergency_contact: p.emergency_contact || '',
+        emergency_phone: p.emergency_phone || '',
+        medical_notes: p.medical_notes || '',
+        team_id: team_id || '',
+        team_name: team_name || '',
+        sport_name: sport_name || '',
+        is_active: true,
+      }));
+
+    if (players.length === 0) {
+      console.warn(`parseRosterFile: 0 usable players extracted for team ${team_name}`);
+      return Response.json({
+        players: [],
+        parse_error: true,
+        parse_error_message: 'No players with valid names could be extracted from this document.',
+      }, { status: 422 });
+    }
 
     console.log(`Parsed ${players.length} players from roster file for team ${team_name}`);
-    return Response.json({ players });
+    return Response.json({ players, parse_error: false });
   } catch (error) {
     console.error('parseRosterFile error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({
+      players: [],
+      parse_error: true,
+      parse_error_message: `Unexpected error during parsing: ${error.message}`,
+    }, { status: 500 });
   }
 });

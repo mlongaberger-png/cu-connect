@@ -1,38 +1,31 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
-  const user = await base44.auth.me();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Delete guardian links for this user
-  const guardianLinks = await base44.entities.PlayerGuardian.filter({ user_email: user.email });
-  for (const link of guardianLinks) {
-    await base44.entities.PlayerGuardian.delete(link.id);
+    // Delegate cascading child-record cleanup to orphanedRecordCleaner (service-role call)
+    const cleanupResult = await base44.asServiceRole.functions.invoke('orphanedRecordCleaner', {
+      target_email: user.email,
+      target_user_id: user.id,
+    });
+    console.log('orphanedRecordCleaner result:', JSON.stringify(cleanupResult));
+
+    // NOTE: Financial records (Payments) and compliance records are intentionally retained.
+    await base44.asServiceRole.entities.AuditLog.create({
+      action: 'account_deleted',
+      category: 'user',
+      actor_email: user.email,
+      actor_name: user.full_name || user.email,
+      actor_role: user.role || 'user',
+      description: `User ${user.email} requested account deletion. All orphaned child records removed. Financial records retained per compliance policy.`,
+    });
+
+    return Response.json({ success: true, cleanup: cleanupResult });
+  } catch (error) {
+    console.error('deleteAccount error:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
   }
-
-  // Delete push subscriptions
-  const subs = await base44.entities.PushSubscription.filter({ user_email: user.email });
-  for (const sub of subs) {
-    await base44.entities.PushSubscription.delete(sub.id);
-  }
-
-  // Delete notification preferences
-  const prefs = await base44.entities.NotificationPreference.filter({ user_email: user.email });
-  for (const pref of prefs) {
-    await base44.entities.NotificationPreference.delete(pref.id);
-  }
-
-  // NOTE: Financial records (Payments) and compliance records are intentionally retained.
-  // Log the deletion request
-  await base44.asServiceRole.entities.AuditLog.create({
-    action: 'account_deleted',
-    category: 'user',
-    actor_email: user.email,
-    actor_name: user.full_name || user.email,
-    actor_role: user.role || 'user',
-    description: `User ${user.email} requested account deletion. Guardian links, push subscriptions, and personal data removed immediately. All remaining user data will be fully purged within 90 days per data retention policy. Financial records retained per compliance policy.`,
-  });
-
-  return Response.json({ success: true });
 });
