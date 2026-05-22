@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
 import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
+import StaffAccountsPanel from "@/components/admin/StaffAccountsPanel";
 import PendingChildrenPanel from "@/components/admin/PendingChildrenPanel";
 import ParentAccountsTab from "@/components/admin/ParentAccountsTab";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
@@ -126,6 +127,7 @@ export default function AthleticDirectors() {
           <div className="flex gap-1 w-fit">
             {[
               { id: "staff", label: "Staff & Admins" },
+              { id: "staff-accounts", label: "Staff Accounts" },
               { id: "parents", label: "Parent Accounts" },
               { id: "access", label: "Access Requests" },
               { id: "children", label: "Child Submissions" },
@@ -173,6 +175,7 @@ export default function AthleticDirectors() {
             </>
           )}
 
+          {peopleSubTab === "staff-accounts" && <StaffAccountsPanel />}
           {peopleSubTab === "parents" && <ParentAccountsTab />}
           {peopleSubTab === "access" && <AccessRequestsPanel />}
           {peopleSubTab === "children" && <PendingChildrenPanel />}
