@@ -1,0 +1,111 @@
+{
+  "name": "PlayerStats",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string",
+      "description": "FK to Player"
+    },
+    "player_name": {
+      "type": "string",
+      "description": "Denormalized player name"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "season_label": {
+      "type": "string",
+      "description": "e.g. Spring 2026"
+    },
+    "source_file_url": {
+      "type": "string",
+      "description": "Original uploaded image/PDF URL"
+    },
+    "stat_type": {
+      "type": "string",
+      "enum": [
+        "hitting",
+        "pitching",
+        "fielding"
+      ],
+      "description": "Which stat category this record holds"
+    },
+    "hitting_avg": {
+      "type": "string"
+    },
+    "hitting_ab": {
+      "type": "string"
+    },
+    "hitting_h": {
+      "type": "string"
+    },
+    "hitting_r": {
+      "type": "string"
+    },
+    "hitting_rbi": {
+      "type": "string"
+    },
+    "hitting_hr": {
+      "type": "string"
+    },
+    "hitting_bb": {
+      "type": "string"
+    },
+    "hitting_k": {
+      "type": "string"
+    },
+    "hitting_obp": {
+      "type": "string"
+    },
+    "hitting_slg": {
+      "type": "string"
+    },
+    "pitching_era": {
+      "type": "string"
+    },
+    "pitching_ip": {
+      "type": "string"
+    },
+    "pitching_w": {
+      "type": "string"
+    },
+    "pitching_l": {
+      "type": "string"
+    },
+    "pitching_so": {
+      "type": "string"
+    },
+    "pitching_bb": {
+      "type": "string"
+    },
+    "pitching_whip": {
+      "type": "string"
+    },
+    "fielding_po": {
+      "type": "string"
+    },
+    "fielding_a": {
+      "type": "string"
+    },
+    "fielding_e": {
+      "type": "string"
+    },
+    "fielding_fpct": {
+      "type": "string"
+    },
+    "uploaded_by": {
+      "type": "string",
+      "description": "Email of uploader"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "player_id",
+    "stat_type"
+  ]
+}

@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle, BarChart2, Sparkles } from "lucide-react";
 import TeamAvatarPicker from "@/components/teams/TeamAvatarPicker";
+import StatsUploadModal from "@/components/stats/StatsUploadModal";
+import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
 import SnackManagerPanel from "@/components/snacks/SnackManagerPanel";
 import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
@@ -39,6 +41,8 @@ export default function TeamDetail() {
   const [uploadingTeamAvatar, setUploadingTeamAvatar] = useState(false);
   const [invitedEmails, setInvitedEmails] = useState({});
   const [inviting, setInviting] = useState(null);
+  const [statsPlayer, setStatsPlayer] = useState(null);
+  const [viewStatsPlayer, setViewStatsPlayer] = useState(null);
 
   const handleInviteParent = async (player) => {
     if (!player.parent_email) return;
@@ -70,6 +74,12 @@ export default function TeamDetail() {
   const { data: allPlayers = [] } = useQuery({
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
+  });
+
+  const { data: allPlayerStats = [] } = useQuery({
+    queryKey: ["playerStats-team", teamId],
+    queryFn: () => base44.entities.PlayerStats.filter({ team_id: teamId }),
+    enabled: !!teamId,
   });
 
   const { data: uniformInventory = [] } = useQuery({
@@ -365,8 +375,14 @@ export default function TeamDetail() {
                         </Button>
                       )
                     )}
+                    <Button variant="ghost" size="icon" title="Stats" onClick={() => setViewStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                      <BarChart2 className="w-3.5 h-3.5" />
+                    </Button>
                     {canManage && (
                       <>
+                        <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                          <Sparkles className="w-3.5 h-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -414,12 +430,16 @@ export default function TeamDetail() {
                         ) : <span className="text-xs text-muted-foreground">No email</span>}
                       </TableCell>
                       <TableCell>
-                        {canManage && (
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" title="View Stats" onClick={() => setViewStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary"><BarChart2 className="w-4 h-4" /></Button>
+                          {canManage && (
+                            <>
+                              <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary"><Sparkles className="w-4 h-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(p)} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="w-4 h-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400"><Trash2 className="w-4 h-4" /></Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -542,6 +562,33 @@ export default function TeamDetail() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats Upload Modal */}
+      <StatsUploadModal
+        open={!!statsPlayer}
+        onOpenChange={(open) => { if (!open) setStatsPlayer(null); }}
+        player={statsPlayer}
+        teamId={teamId}
+        teamName={team?.name}
+      />
+
+      {/* View Stats Dialog */}
+      <Dialog open={!!viewStatsPlayer} onOpenChange={(open) => { if (!open) setViewStatsPlayer(null); }}>
+        <DialogContent className="bg-card border-border text-foreground max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-primary" />
+              {viewStatsPlayer?.first_name} {viewStatsPlayer?.last_name} — Stats
+            </DialogTitle>
+          </DialogHeader>
+          {viewStatsPlayer && (() => {
+            const ps = allPlayerStats.filter(s => s.player_id === viewStatsPlayer.id);
+            return ps.length > 0
+              ? <BaseballStatsDisplay stats={ps} />
+              : <p className="text-sm text-muted-foreground py-4 text-center">No stats uploaded yet.</p>;
+          })()}
         </DialogContent>
       </Dialog>
 

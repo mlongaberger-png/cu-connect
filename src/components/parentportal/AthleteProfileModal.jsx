@@ -1,8 +1,11 @@
 import React from "react";
-import { Trophy, Calendar, MapPin, Clock, X, Star, Target, Zap, Shield } from "lucide-react";
+import { Trophy, Calendar, MapPin, Clock, X, Star, Target, Zap, Shield, BarChart2 } from "lucide-react";
 import { format } from "date-fns";
 import { formatTime12h } from "@/utils/dateTime";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
 
 function StatBox({ value, label, color = "text-primary" }) {
   return (
@@ -23,6 +26,12 @@ const TYPE_COLORS = {
 };
 
 export default function AthleteProfileModal({ player, team, sport, events = [], onClose }) {
+  const { data: playerStats = [] } = useQuery({
+    queryKey: ["playerStats", player?.id],
+    queryFn: () => base44.entities.PlayerStats.filter({ player_id: player.id }, "-created_date"),
+    enabled: !!player?.id,
+  });
+
   if (!player) return null;
 
   // Derive season stats from game/tournament events that have results
@@ -177,6 +186,16 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
               </div>
             )}
           </div>
+
+          {/* Baseball Stats */}
+          {playerStats.length > 0 && (
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <BarChart2 className="w-3.5 h-3.5 text-primary" /> Player Stats
+              </h3>
+              <BaseballStatsDisplay stats={playerStats} />
+            </div>
+          )}
 
           {/* Team info */}
           {team && (
