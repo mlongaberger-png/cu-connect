@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, Pencil, Trash2, ShieldCheck, Mail, MessageSquare, Phone, UserCircle,
-  ClipboardList, FileText, DollarSign, Settings, Users2, MapPin, Star
+  ClipboardList, FileText, DollarSign, Settings, Users2, MapPin, Star, BarChart2
 } from "lucide-react";
 import { useAdminGuard } from "@/hooks/useRoleGuard";
 import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
@@ -26,6 +26,7 @@ import AdminFinanceConsole from "@/components/admin/AdminFinanceConsole";
 import FieldStatusManager from "@/components/admin/FieldStatusManager";
 import SponsorManager from "@/components/admin/SponsorManager";
 import { useAuth } from "@/lib/AuthContext";
+import StatsManagerPanel from "@/components/admin/StatsManagerPanel";
 
 const empty = { name: "", email: "", google_chat_url: "", sport_id: "", sport_name: "", phone: "", title: "Athletic Director" };
 
@@ -36,6 +37,7 @@ const TABS = [
   { id: "content",       label: "Content",       icon: FileText,      desc: "Documents & legal pages" },
   { id: "fields",        label: "Field Status",  icon: MapPin,         desc: "Field & facility alerts" },
   { id: "sponsors",      label: "Sponsors",      icon: Star,          desc: "Manage league sponsors" },
+  { id: "stats",         label: "Stats",         icon: BarChart2,     desc: "Upload & manage athlete stats" },
   { id: "settings",      label: "Settings",      icon: Settings,      desc: "Seasons, data & audit log" },
 ];
 
@@ -231,6 +233,11 @@ export default function AthleticDirectors() {
       {/* ── SPONSORS ── */}
       {activeTab === "sponsors" && (
         <SponsorManager />
+      )}
+
+      {/* ── STATS ── */}
+      {activeTab === "stats" && (
+        <StatsManagerPanel />
       )}
 
       {/* ── SETTINGS ── */}

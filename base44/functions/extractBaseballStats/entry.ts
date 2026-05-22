@@ -96,6 +96,23 @@ Rules:
       created.push(record);
     }
 
+    // Notify parent guardians of this player
+    try {
+      const guardians = await base44.asServiceRole.entities.PlayerGuardian.filter({ player_id });
+      for (const guardian of guardians) {
+        if (guardian.user_email) {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: guardian.user_email,
+            subject: `New stats uploaded for ${player_name}`,
+            body: `Hi,\n\nNew athletic stats have been uploaded for ${player_name} (${season_label || "this season"}).\n\nCategories updated: ${stat_types.join(", ") || "stats"}.\n\nLog in to the CU Connect parent portal to view the latest stats.\n\n— CU Connect`
+          });
+        }
+      }
+      console.log(`Notified ${guardians.length} guardian(s) for player ${player_name}`);
+    } catch (notifyErr) {
+      console.warn("Guardian notification failed (non-fatal):", notifyErr.message);
+    }
+
     return Response.json({ success: true, records_created: created.length, stat_types, records: created });
   } catch (error) {
     console.error("extractBaseballStats error:", error);
