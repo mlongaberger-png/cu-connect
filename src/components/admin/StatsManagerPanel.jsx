@@ -3,16 +3,26 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, BarChart2, Trash2, Search } from "lucide-react";
+import { Sparkles, BarChart2, Trash2, Search, Pencil, Users } from "lucide-react";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
+import TeamStatsUploadModal from "@/components/stats/TeamStatsUploadModal";
+import EditStatsModal from "@/components/stats/EditStatsModal";
 import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 export default function StatsManagerPanel() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statsPlayer, setStatsPlayer] = useState(null);
   const [viewPlayer, setViewPlayer] = useState(null);
+  const [editPlayer, setEditPlayer] = useState(null);
+  const [teamUploadTeam, setTeamUploadTeam] = useState(null);
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list(),
+  });
 
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
@@ -47,7 +57,22 @@ export default function StatsManagerPanel() {
           <h2 className="text-lg font-semibold text-foreground">Athlete Stats</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Upload stats for any athlete — parents are notified automatically.</p>
         </div>
-        <div className="text-xs text-muted-foreground">{allStats.length} stat record{allStats.length !== 1 ? "s" : ""} total</div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground">{allStats.length} record{allStats.length !== 1 ? "s" : ""}</div>
+          {teams.length > 0 && (
+            <div className="relative">
+              <select
+                className="text-xs bg-surface border border-border rounded-lg px-2 py-1.5 pr-6 text-foreground appearance-none cursor-pointer"
+                onChange={e => { const t = teams.find(t => t.id === e.target.value); if (t) setTeamUploadTeam(t); e.target.value = ""; }}
+                defaultValue=""
+              >
+                <option value="" disabled>Team upload…</option>
+                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <Users className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -88,6 +113,11 @@ export default function StatsManagerPanel() {
                     {count > 0 && (
                       <Button variant="ghost" size="icon" title="View Stats" onClick={() => setViewPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
                         <BarChart2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {count > 0 && (
+                      <Button variant="ghost" size="icon" title="Edit Stats" onClick={() => setEditPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                        <Pencil className="w-4 h-4" />
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
@@ -132,6 +162,21 @@ export default function StatsManagerPanel() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Stats Modal */}
+      <EditStatsModal
+        open={!!editPlayer}
+        onOpenChange={(open) => { if (!open) setEditPlayer(null); }}
+        player={editPlayer}
+        stats={editPlayer ? allStats.filter(s => s.player_id === editPlayer.id) : []}
+      />
+
+      {/* Team Stats Upload Modal */}
+      <TeamStatsUploadModal
+        open={!!teamUploadTeam}
+        onOpenChange={(open) => { if (!open) setTeamUploadTeam(null); }}
+        team={teamUploadTeam}
+      />
     </div>
   );
 }

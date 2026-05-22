@@ -118,15 +118,15 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
 
       {/* Reaction badges */}
       {Object.keys(reactionGroups).length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1 px-1">
+        <div className="flex flex-wrap gap-0.5 mt-0.5 px-1">
           {Object.entries(reactionGroups).map(([emoji, count]) => (
             <button
               key={emoji}
               onClick={() => onReact(msg.id, emoji)}
-              className="flex items-center gap-0.5 bg-surface border border-border rounded-full px-2 py-0.5 text-xs hover:bg-surface-hover transition-colors"
+              className="flex items-center gap-0.5 bg-surface border border-border rounded-full px-1.5 py-0 text-[11px] leading-5 hover:bg-surface-hover transition-colors"
             >
-              <span>{emoji}</span>
-              {count > 1 && <span className="text-muted-foreground">{count}</span>}
+              <span className="text-[13px]">{emoji}</span>
+              {count > 1 && <span className="text-muted-foreground text-[10px]">{count}</span>}
             </button>
           ))}
         </div>
