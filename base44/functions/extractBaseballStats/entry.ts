@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import webpush from 'npm:web-push@3.6.7';
 
 Deno.serve(async (req) => {
   try {
@@ -96,21 +97,55 @@ Rules:
       created.push(record);
     }
 
-    // Notify parent guardians of this player
+    // Push-notify parent guardians of this player
     try {
       const guardians = await base44.asServiceRole.entities.PlayerGuardian.filter({ player_id });
-      for (const guardian of guardians) {
-        if (guardian.user_email) {
-          await base44.asServiceRole.integrations.Core.SendEmail({
-            to: guardian.user_email,
-            subject: `New stats uploaded for ${player_name}`,
-            body: `Hi,\n\nNew athletic stats have been uploaded for ${player_name} (${season_label || "this season"}).\n\nCategories updated: ${stat_types.join(", ") || "stats"}.\n\nLog in to the CU Connect parent portal to view the latest stats.\n\n— CU Connect`
+      const guardianEmails = guardians.map(g => g.user_email).filter(Boolean);
+
+      if (guardianEmails.length > 0) {
+        const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'vapid_keys' });
+        if (configs.length) {
+          const { publicKey, privateKey } = JSON.parse(configs[0].value);
+          webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
+
+          const allSubs = await base44.asServiceRole.entities.PushSubscription.filter({ is_active: true });
+          const subsMap = {};
+          allSubs.forEach(s => {
+            if (!s.user_email) return;
+            const k = s.user_email.toLowerCase();
+            if (!subsMap[k]) subsMap[k] = [];
+            subsMap[k].push(s);
           });
+
+          const pushPayload = JSON.stringify({
+            title: `New stats for ${player_name}`,
+            body: `${season_label || "Stats"} updated: ${stat_types.join(", ") || "stats"}.`,
+            url: "/ParentPortal"
+          });
+
+          const pushPromises = [];
+          for (const email of guardianEmails) {
+            const subs = subsMap[email.toLowerCase()] || [];
+            for (const sub of subs) {
+              pushPromises.push(
+                webpush.sendNotification(
+                  { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
+                  pushPayload
+                ).catch(async (err) => {
+                  if (err.statusCode === 410 || err.statusCode === 404) {
+                    await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
+                  }
+                  console.warn(`Push failed for ${email}:`, err.message);
+                })
+              );
+            }
+          }
+          await Promise.all(pushPromises);
+          console.log(`Push notifications sent to ${guardianEmails.length} guardian(s) for ${player_name}`);
         }
       }
-      console.log(`Notified ${guardians.length} guardian(s) for player ${player_name}`);
     } catch (notifyErr) {
-      console.warn("Guardian notification failed (non-fatal):", notifyErr.message);
+      console.warn("Guardian push notification failed (non-fatal):", notifyErr.message);
     }
 
     return Response.json({ success: true, records_created: created.length, stat_types, records: created });
