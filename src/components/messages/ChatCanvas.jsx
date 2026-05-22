@@ -8,9 +8,19 @@ import { format } from "date-fns";
 import Composer from "./Composer";
 import EventCard from "./cards/EventCard";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import EmojiReactionPicker from "./EmojiReactionPicker";
 
-function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
+function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact }) {
   const [hovered, setHovered] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const longPressTimer = useRef(null);
+
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => setShowPicker(true), 500);
+  };
+  const handleTouchEnd = () => {
+    clearTimeout(longPressTimer.current);
+  };
 
   if (msg.message_type === "event") {
     return (
@@ -26,6 +36,12 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
         .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Chicago" })
     : null;
   const isPhoto = /^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim());
+
+  // Group reactions by emoji
+  const reactionGroups = reactions.reduce((acc, r) => {
+    acc[r.reaction_type] = (acc[r.reaction_type] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div
@@ -50,7 +66,11 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
       {/* Bubble + hover action */}
       <div className="relative">
         {isPhoto ? (
-          <div className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
+          <div
+            className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
               src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
               alt="photo"
@@ -59,7 +79,9 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
           </div>
         ) : (
           <div
-            className={`px-4 py-2 text-sm leading-relaxed break-words
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className={`px-4 py-2 text-sm leading-relaxed break-words select-none
               ${isOwn
                 ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
                 : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
@@ -70,7 +92,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
           </div>
         )}
 
-        {/* Hover: Reply in Thread button */}
+        {/* Hover: Reply in Thread button (desktop) */}
         {hovered && !msg.parent_message_id && (
           <button
             onClick={() => onOpenThread(msg)}
@@ -83,7 +105,32 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount }) {
             <MessageSquareText className="w-3.5 h-3.5" />
           </button>
         )}
+
+        {/* Emoji picker (long-press or right-click) */}
+        {showPicker && (
+          <EmojiReactionPicker
+            isOwn={isOwn}
+            onSelect={(emoji) => onReact(msg.id, emoji)}
+            onClose={() => setShowPicker(false)}
+          />
+        )}
       </div>
+
+      {/* Reaction badges */}
+      {Object.keys(reactionGroups).length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1 px-1">
+          {Object.entries(reactionGroups).map(([emoji, count]) => (
+            <button
+              key={emoji}
+              onClick={() => onReact(msg.id, emoji)}
+              className="flex items-center gap-0.5 bg-surface border border-border rounded-full px-2 py-0.5 text-xs hover:bg-surface-hover transition-colors"
+            >
+              <span>{emoji}</span>
+              {count > 1 && <span className="text-muted-foreground">{count}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Timestamp for own messages */}
       {isOwn && timestamp && (
@@ -232,6 +279,46 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     }
   }, [allMessages.length]); // eslint-disable-line
 
+  // Reactions
+  const { data: reactions = [] } = useQuery({
+    queryKey: ["reactions", channelId],
+    queryFn: async () => {
+      const msgIds = allMessages.map(m => m.id);
+      if (!msgIds.length) return [];
+      return base44.entities.MessageReaction.filter({});
+    },
+    enabled: !!channelId && allMessages.length > 0,
+    refetchInterval: 8000,
+  });
+
+  const reactMutation = useMutation({
+    mutationFn: async ({ messageId, emoji }) => {
+      if (!user?.id) return;
+      // Toggle: remove if already reacted with same emoji, else add
+      const existing = reactions.find(
+        r => r.message_id === messageId && r.user_id === user.id && r.reaction_type === emoji
+      );
+      if (existing) {
+        await base44.entities.MessageReaction.delete(existing.id);
+      } else {
+        await base44.entities.MessageReaction.create({
+          message_id: messageId,
+          user_id: user.id,
+          user_email: user.email,
+          reaction_type: emoji,
+        });
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reactions", channelId] }),
+  });
+
+  // Build reactions map: messageId -> array of reactions
+  const reactionsMap = reactions.reduce((acc, r) => {
+    if (!acc[r.message_id]) acc[r.message_id] = [];
+    acc[r.message_id].push(r);
+    return acc;
+  }, {});
+
   // Build a map of parent_message_id -> reply count for thread badges
   const replyCountMap = allMessages.reduce((acc, msg) => {
     if (msg.parent_message_id) {
@@ -356,6 +443,8 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
                 isOwn={msg.sender_user_id === myId}
                 onOpenThread={onOpenThread || (() => {})}
                 replyCount={replyCountMap[msg.id] || 0}
+                reactions={reactionsMap[msg.id] || []}
+                onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
               />
             ))}
           </>
