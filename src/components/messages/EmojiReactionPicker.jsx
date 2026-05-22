@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { Plus } from "lucide-react";
 
-const QUICK_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥", "👏", "🙏"];
+const QUICK_EMOJIS = ["👍", "❤️", "🔥", "👏", "😮", "😢", "📌"];
 
 export default function EmojiReactionPicker({ onSelect, onClose, isOwn }) {
   const inputRef = useRef(null);
@@ -34,14 +34,14 @@ export default function EmojiReactionPicker({ onSelect, onClose, isOwn }) {
       <div className="fixed inset-0 z-40" onClick={onClose} />
       {/* Picker */}
       <div
-        className={`absolute z-50 bottom-full mb-2 flex items-center gap-1 bg-card border border-border rounded-2xl shadow-xl px-2 py-1.5
+        className={`absolute z-50 bottom-full mb-2 bg-card border border-border shadow-lg rounded-full px-3 py-1.5 flex items-center gap-2
           ${isOwn ? "right-0" : "left-0"}`}
       >
         {QUICK_EMOJIS.map((emoji) => (
           <button
             key={emoji}
             onClick={() => { onSelect(emoji); onClose(); }}
-            className="text-xl hover:scale-125 transition-transform p-0.5 rounded-lg hover:bg-surface"
+            className="text-xl hover:scale-125 transition-transform p-0.5 rounded-full hover:bg-surface"
           >
             {emoji}
           </button>

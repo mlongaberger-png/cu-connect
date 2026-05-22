@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft, MessageSquareText, RefreshCw } from "lucide-react";
+import { BellOff, Bell, ArrowLeft, MessageSquareText, RefreshCw, CornerUpLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -13,13 +13,30 @@ import EmojiReactionPicker from "./EmojiReactionPicker";
 function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact }) {
   const [hovered, setHovered] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   const longPressTimer = useRef(null);
+  const startXRef = useRef(0);
 
-  const handleTouchStart = () => {
+  const handleBubbleTouchStart = (e) => {
     longPressTimer.current = setTimeout(() => setShowPicker(true), 500);
+    startXRef.current = e.touches[0].clientX;
+    setIsSwiping(true);
   };
-  const handleTouchEnd = () => {
+
+  const handleBubbleTouchMove = (e) => {
     clearTimeout(longPressTimer.current);
+    const deltaX = e.touches[0].clientX - startXRef.current;
+    if (deltaX > 0) setSwipeX(Math.min(deltaX, 60));
+  };
+
+  const handleBubbleTouchEnd = () => {
+    clearTimeout(longPressTimer.current);
+    setIsSwiping(false);
+    if (swipeX >= 40 && !msg.parent_message_id) {
+      onOpenThread(msg);
+    }
+    setSwipeX(0);
   };
 
   if (msg.message_type === "event") {
@@ -43,6 +60,8 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
     return acc;
   }, {});
 
+  const swipeProgress = Math.min(swipeX / 40, 1); // 0–1 as user approaches threshold
+
   return (
     <div
       className={`relative flex flex-col ${isOwn ? "items-end" : "items-start"} max-w-[80%] ${isOwn ? "self-end" : "self-start"}`}
@@ -63,13 +82,30 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
         </div>
       )}
 
+      {/* Swipe reveal indicator (behind bubble) */}
+      {swipeX > 0 && !msg.parent_message_id && (
+        <div
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 flex items-center justify-center"
+          style={{ opacity: swipeProgress, transform: `translateY(-50%) scale(${0.7 + 0.3 * swipeProgress})` }}
+        >
+          <CornerUpLeft className="w-4 h-4 text-primary" />
+        </div>
+      )}
+
       {/* Bubble + hover action */}
-      <div className="relative">
+      <div
+        className="relative"
+        style={{
+          transform: `translateX(${swipeX}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
+        }}
+      >
         {isPhoto ? (
           <div
             className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            onTouchStart={handleBubbleTouchStart}
+            onTouchMove={handleBubbleTouchMove}
+            onTouchEnd={handleBubbleTouchEnd}
           >
             <img
               src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
@@ -79,8 +115,9 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
           </div>
         ) : (
           <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            onTouchStart={handleBubbleTouchStart}
+            onTouchMove={handleBubbleTouchMove}
+            onTouchEnd={handleBubbleTouchEnd}
             className={`px-4 py-2 text-sm leading-relaxed break-words select-none
               ${isOwn
                 ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
@@ -106,7 +143,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
           </button>
         )}
 
-        {/* Emoji picker (long-press or right-click) */}
+        {/* Emoji picker (long-press) */}
         {showPicker && (
           <EmojiReactionPicker
             isOwn={isOwn}
