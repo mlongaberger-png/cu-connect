@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, BarChart2, Trash2, Search, Pencil, Users } from "lucide-react";
+import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload } from "lucide-react";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
 import TeamStatsUploadModal from "@/components/stats/TeamStatsUploadModal";
 import EditStatsModal from "@/components/stats/EditStatsModal";
+import StatsUploadPicker from "@/components/stats/StatsUploadPicker";
 import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -18,11 +19,7 @@ export default function StatsManagerPanel() {
   const [viewPlayer, setViewPlayer] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null);
   const [teamUploadTeam, setTeamUploadTeam] = useState(null);
-
-  const { data: teams = [] } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => base44.entities.Team.list(),
-  });
+  const [showPicker, setShowPicker] = useState(false);
 
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
@@ -59,19 +56,9 @@ export default function StatsManagerPanel() {
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground">{allStats.length} record{allStats.length !== 1 ? "s" : ""}</div>
-          {teams.length > 0 && (
-            <div className="relative">
-              <select
-                className="text-xs bg-surface border border-border rounded-lg px-2 py-1.5 pr-6 text-foreground appearance-none cursor-pointer"
-                onChange={e => { const t = teams.find(t => t.id === e.target.value); if (t) setTeamUploadTeam(t); e.target.value = ""; }}
-                defaultValue=""
-              >
-                <option value="" disabled>Team upload…</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              <Users className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
-            </div>
-          )}
+          <Button size="sm" onClick={() => setShowPicker(true)} className="gap-1.5 h-8 text-xs">
+            <Upload className="w-3.5 h-3.5" /> Upload Stats
+          </Button>
         </div>
       </div>
 
@@ -169,6 +156,14 @@ export default function StatsManagerPanel() {
         onOpenChange={(open) => { if (!open) setEditPlayer(null); }}
         player={editPlayer}
         stats={editPlayer ? allStats.filter(s => s.player_id === editPlayer.id) : []}
+      />
+
+      {/* Upload Picker */}
+      <StatsUploadPicker
+        open={showPicker}
+        onOpenChange={setShowPicker}
+        onSelectTeam={(team) => { setShowPicker(false); setTeamUploadTeam(team); }}
+        onSelectPlayer={(player) => { setShowPicker(false); setStatsPlayer(player); }}
       />
 
       {/* Team Stats Upload Modal */}

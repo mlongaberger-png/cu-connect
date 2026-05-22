@@ -27,6 +27,7 @@ import FieldStatusManager from "@/components/admin/FieldStatusManager";
 import SponsorManager from "@/components/admin/SponsorManager";
 import { useAuth } from "@/lib/AuthContext";
 import StatsManagerPanel from "@/components/admin/StatsManagerPanel";
+import StatsLeaderboard from "@/components/stats/StatsLeaderboard";
 
 const empty = { name: "", email: "", google_chat_url: "", sport_id: "", sport_name: "", phone: "", title: "Athletic Director" };
 
@@ -50,6 +51,7 @@ export default function AthleticDirectors() {
   const [peopleSubTab, setPeopleSubTab] = useState(urlParams.get("sub") || "staff");
   const [registrationsSubTab, setRegistrationsSubTab] = useState("athletes");
   const [settingsSubTab, setSettingsSubTab] = useState("seasons");
+  const [statsSubTab, setStatsSubTab] = useState("manage");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
@@ -237,7 +239,21 @@ export default function AthleticDirectors() {
 
       {/* ── STATS ── */}
       {activeTab === "stats" && (
-        <StatsManagerPanel />
+        <div className="space-y-5">
+          <div className="flex gap-1 w-fit">
+            {[
+              { id: "manage", label: "Manage Stats" },
+              { id: "leaderboard", label: "🏆 Leaderboard" },
+            ].map(sub => (
+              <button key={sub.id} onClick={() => setStatsSubTab(sub.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statsSubTab === sub.id ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
+                {sub.label}
+              </button>
+            ))}
+          </div>
+          {statsSubTab === "manage" && <StatsManagerPanel />}
+          {statsSubTab === "leaderboard" && <StatsLeaderboard />}
+        </div>
       )}
 
       {/* ── SETTINGS ── */}
