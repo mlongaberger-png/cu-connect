@@ -16,8 +16,17 @@ Deno.serve(async (req) => {
 
     console.log(`Extracting stats for player ${player_name} from ${file_url}`);
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a baseball stats extractor. Analyze this image or document and extract all baseball statistics you can find for the player named "${player_name}".
+    // Detect if this is a CSV file and read it as text
+    const isCSV = file_url.toLowerCase().includes('.csv') || file_url.toLowerCase().includes('text%2Fcsv');
+    let csvText = null;
+    if (isCSV) {
+      console.log("Detected CSV file — fetching as text");
+      const fileRes = await fetch(file_url);
+      csvText = await fileRes.text();
+      console.log(`CSV content (first 500 chars): ${csvText.slice(0, 500)}`);
+    }
+
+    const promptBase = `You are a baseball stats extractor. Analyze this stat sheet and extract all baseball statistics you can find for the player named "${player_name}".
 
 Extract stats into three categories:
 - HITTING: AVG, AB, H, R, RBI, HR, BB, K, OBP, SLG
@@ -25,12 +34,16 @@ Extract stats into three categories:
 - FIELDING: PO, A, E, FPCT
 
 Rules:
-- Only include categories that have actual data present in the image/document.
+- Only include categories that have actual data present.
 - For any stat not visible, use null.
 - Return numbers as strings (e.g. "0.312", "45").
 - If the document has multiple players, focus only on "${player_name}" or the most prominent player.
-- stat_types_present should list which categories have data: ["hitting"], ["pitching"], ["fielding"] or multiple.`,
-      file_urls: [file_url],
+- stat_types_present should list which categories have data: ["hitting"], ["pitching"], ["fielding"] or multiple.`;
+
+    const llmParams = {
+      prompt: csvText
+        ? `${promptBase}\n\nHere is the CSV data:\n\`\`\`\n${csvText}\n\`\`\``
+        : promptBase,
       response_json_schema: {
         type: "object",
         properties: {
@@ -58,7 +71,14 @@ Rules:
           }
         }
       }
-    });
+    };
+
+    // Only pass file_urls for non-CSV files (images/PDFs)
+    if (!csvText) {
+      llmParams.file_urls = [file_url];
+    }
+
+    const result = await base44.integrations.Core.InvokeLLM(llmParams);
 
     console.log("AI extraction result:", JSON.stringify(result));
 

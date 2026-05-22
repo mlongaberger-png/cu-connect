@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Extracts stats for ALL players on a team from a single uploaded stat sheet.
-// The AI parses each player row and saves a PlayerStats record per player per stat category.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -22,13 +20,21 @@ Deno.serve(async (req) => {
     const playerNames = players.map(p => `${p.first_name} ${p.last_name}`).join(", ");
     console.log(`Players on team: ${playerNames}`);
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      model: "claude_sonnet_4_6",
-      prompt: `You are a baseball stats extractor. Analyze this stat sheet image or document and extract statistics for EVERY player listed.
+    // Detect if this is a CSV file and read it as text
+    const isCSV = file_url.toLowerCase().includes('.csv') || file_url.toLowerCase().includes('text%2Fcsv');
+    let csvText = null;
+    if (isCSV) {
+      console.log("Detected CSV file — fetching as text");
+      const fileRes = await fetch(file_url);
+      csvText = await fileRes.text();
+      console.log(`CSV content (first 500 chars): ${csvText.slice(0, 500)}`);
+    }
+
+    const promptBase = `You are a baseball stats extractor. Analyze the following stat sheet and extract statistics for EVERY player listed.
 
 Known players on this team: ${playerNames}
 
-For each player found in the document, extract all available stats:
+For each player found in the data, extract all available stats:
 - HITTING: AVG, AB, H, R, RBI, HR, BB, K, OBP, SLG
 - PITCHING: ERA, IP, W, L, SO, BB, WHIP  
 - FIELDING: PO, A, E, FPCT
@@ -39,8 +45,13 @@ Rules:
 - Only include stat categories that have actual data in the document.
 - Return numbers as strings (e.g. "0.312", "45").
 - For any stat not present, use null.
-- stat_types_present per player should list which categories have data.`,
-      file_urls: [file_url],
+- stat_types_present per player should list which categories have data.`;
+
+    const llmParams = {
+      model: "claude_sonnet_4_6",
+      prompt: csvText
+        ? `${promptBase}\n\nHere is the CSV data:\n\`\`\`\n${csvText}\n\`\`\``
+        : promptBase,
       response_json_schema: {
         type: "object",
         properties: {
@@ -77,7 +88,14 @@ Rules:
           }
         }
       }
-    });
+    };
+
+    // Only pass file_urls for non-CSV files (images/PDFs)
+    if (!csvText) {
+      llmParams.file_urls = [file_url];
+    }
+
+    const result = await base44.integrations.Core.InvokeLLM(llmParams);
 
     console.log(`AI found ${result.players?.length || 0} players`);
 

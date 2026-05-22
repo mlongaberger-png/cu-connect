@@ -67,11 +67,12 @@ export default function StatsUploadModal({ open, onOpenChange, player, teamId, t
               <Input value={seasonLabel} onChange={e => setSeasonLabel(e.target.value)} placeholder="e.g. Spring 2026" />
             </div>
             <div className="space-y-1">
-              <Label>Stat Sheet (JPG, PNG, or PDF)</Label>
+              <Label>Stat Sheet (JPG, PNG, PDF, or CSV)</Label>
               <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors bg-surface">
                 <Upload className="w-6 h-6 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">{file ? file.name : "Click to select file"}</span>
-                <input type="file" accept="image/*,.pdf" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
+                <span className="text-xs text-muted-foreground">JPG, PNG, PDF, or CSV</span>
+                <input type="file" accept="image/*,.pdf,.csv,text/csv" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
               </label>
             </div>
             <div className="flex gap-2 justify-end">
