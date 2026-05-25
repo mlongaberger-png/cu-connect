@@ -1,12 +1,11 @@
-import React, { useState } from "react";
-import { Trophy, Calendar, MapPin, Clock, X, Star, Target, Zap, Shield, BarChart2, Download, Loader2 } from "lucide-react";
+import React from "react";
+import { Trophy, Calendar, MapPin, Clock, X, Star, Target, Zap, Shield, BarChart2 } from "lucide-react";
 import { format } from "date-fns";
 import { formatTime12h } from "@/utils/dateTime";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
-import { generatePlayerSummaryPDF } from "./PlayerSummaryPDF";
 
 function StatBox({ value, label, color = "text-primary" }) {
   return (
@@ -27,14 +26,6 @@ const TYPE_COLORS = {
 };
 
 export default function AthleteProfileModal({ player, team, sport, events = [], onClose }) {
-  const [downloading, setDownloading] = useState(false);
-
-  const handleDownloadPDF = async () => {
-    setDownloading(true);
-    await generatePlayerSummaryPDF({ player, team, sport, events, playerStats });
-    setDownloading(false);
-  };
-
   const { data: playerStats = [] } = useQuery({
     queryKey: ["playerStats", player?.id],
     queryFn: () => base44.entities.PlayerStats.filter({ player_id: player.id }, "-created_date"),
@@ -88,22 +79,12 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleDownloadPDF}
-              disabled={downloading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50"
-            >
-              {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              PDF
-            </button>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-surface flex items-center justify-center hover:bg-border transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-surface flex items-center justify-center hover:bg-border transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
 
         <div className="p-5 space-y-6">
