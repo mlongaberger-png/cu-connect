@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload } from "lucide-react";
+import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload, Download } from "lucide-react";
+import { generatePlayerSummaryPDF } from "@/components/parentportal/PlayerSummaryPDF";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
 import TeamStatsUploadModal from "@/components/stats/TeamStatsUploadModal";
 import EditStatsModal from "@/components/stats/EditStatsModal";
@@ -110,6 +111,15 @@ export default function StatsManagerPanel() {
                     <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
                       <Sparkles className="w-4 h-4" />
                     </Button>
+                    {count > 0 && (
+                      <Button
+                        variant="ghost" size="icon" title="Download PDF Summary"
+                        onClick={() => generatePlayerSummaryPDF({ player: p, playerStats: allStats.filter(s => s.player_id === p.id) })}
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    )}
                     {count > 0 && (
                       <Button variant="ghost" size="icon" title="Delete All Stats" onClick={() => handleDeleteStats(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
                         <Trash2 className="w-4 h-4" />
