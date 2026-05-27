@@ -77,8 +77,19 @@ export default function ParentPortal() {
     if (refreshUser) refreshUser();
   }, []);
 
-  // Check for payment return or game reminder confirm deep link
+  // Auto-open event detail panel when deep-linked via ?eventId=
+  useEffect(() => {
+    if (!deepLinkedEventId || !events.length) return;
+    const target = events.find(e => e.id === deepLinkedEventId);
+    if (target) {
+      setSelectedEvent(target);
+      setDeepLinkedEventId(null); // clear so it only fires once
+    }
+  }, [deepLinkedEventId, events]);
+
+  // Check for payment return, game reminder confirm, or event deep-link
   const [highlightAttendanceId, setHighlightAttendanceId] = useState(null);
+  const [deepLinkedEventId, setDeepLinkedEventId] = useState(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
@@ -88,6 +99,11 @@ export default function ParentPortal() {
     if (confirmId) {
       setHighlightAttendanceId(confirmId);
       setActiveTab("rsvp-volunteers");
+    }
+    const eventId = params.get("eventId");
+    if (eventId) {
+      setDeepLinkedEventId(eventId);
+      setActiveTab("schedule");
     }
   }, []);
 
