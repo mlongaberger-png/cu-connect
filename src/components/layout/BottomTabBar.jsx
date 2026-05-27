@@ -154,7 +154,7 @@ export default function BottomTabBar({ onOpenSidebar }) {
                 {isActive && (
                   <motion.span
                     layoutId="tab-indicator"
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary rounded-full"
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary rounded-full"
                     initial={{ opacity: 0, scaleX: 0.5 }}
                     animate={{ opacity: 1, scaleX: 1 }}
                     exit={{ opacity: 0, scaleX: 0.5 }}
