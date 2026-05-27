@@ -1,0 +1,54 @@
+{
+  "name": "VolunteerAssignment",
+  "type": "object",
+  "properties": {
+    "opportunity_id": {
+      "type": "string",
+      "description": "VolunteerOpportunity ID"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "Player whose household is volunteering"
+    },
+    "player_name": {
+      "type": "string",
+      "description": "Denormalized player name"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Denormalized team ID"
+    },
+    "volunteer_name": {
+      "type": "string",
+      "description": "Name of the parent/volunteer"
+    },
+    "volunteer_email": {
+      "type": "string",
+      "description": "Email of the parent who signed up"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "signed_up",
+        "completed",
+        "no_show",
+        "excused"
+      ],
+      "default": "signed_up",
+      "description": "Volunteer status"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Admin-only notes on this assignment"
+    },
+    "override_by": {
+      "type": "string",
+      "description": "Admin email if manually assigned/overridden"
+    }
+  },
+  "required": [
+    "opportunity_id",
+    "player_id",
+    "volunteer_email"
+  ]
+}

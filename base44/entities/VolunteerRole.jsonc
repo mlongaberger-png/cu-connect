@@ -1,0 +1,30 @@
+{
+  "name": "VolunteerRole",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Role name (e.g. Chains, Gate, Concession)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of the role"
+    },
+    "is_system_role": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for default system-defined roles"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of admin/coach who created this role"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

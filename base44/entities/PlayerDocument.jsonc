@@ -1,0 +1,44 @@
+{
+  "name": "PlayerDocument",
+  "type": "object",
+  "properties": {
+    "player_id": {
+      "type": "string"
+    },
+    "player_name": {
+      "type": "string"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "birth_certificate",
+        "physical",
+        "insurance",
+        "consent_form",
+        "waiver",
+        "other"
+      ],
+      "description": "Type of document"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "player_id",
+    "doc_type",
+    "file_url"
+  ]
+}

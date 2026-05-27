@@ -1,0 +1,39 @@
+{
+  "name": "AthleticDirector",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Full name of the athletic director"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "google_chat_url": {
+      "type": "string",
+      "description": "Direct Google Chat link or email to search in Google Chat"
+    },
+    "sport_id": {
+      "type": "string",
+      "description": "ID of the sport they oversee (optional)"
+    },
+    "sport_name": {
+      "type": "string",
+      "description": "Sport name (denormalized)"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "title": {
+      "type": "string",
+      "description": "Official title (e.g. Athletic Director, Associate AD)",
+      "default": "Athletic Director"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ]
+}

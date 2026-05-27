@@ -1,0 +1,17 @@
+{
+  "name": "AppConfig",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Config key (e.g. vapid_keys)"
+    },
+    "value": {
+      "type": "string",
+      "description": "JSON string value"
+    }
+  },
+  "required": [
+    "key"
+  ]
+}
