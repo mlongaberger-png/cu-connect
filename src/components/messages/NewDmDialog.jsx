@@ -4,9 +4,10 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Crown, User } from "lucide-react";
+import { Crown } from "lucide-react";
 
 const LEADERSHIP_ROLES = ["coach", "athletic_director", "admin"];
+const isLeadershipRole = (role) => LEADERSHIP_ROLES.includes(role);
 
 export default function NewDmDialog({ open, onOpenChange, currentUser, onChannelCreated }) {
   const [search, setSearch] = useState("");
@@ -19,11 +20,39 @@ export default function NewDmDialog({ open, onOpenChange, currentUser, onChannel
     enabled: open,
   });
 
-  // Exclude self
-  const contacts = allUsers.filter(u => u.email !== currentUser?.email);
+  // Fetch team channels to find teammates (for parent role restriction)
+  const { data: allChannels = [] } = useQuery({
+    queryKey: ["channels-for-dm"],
+    queryFn: () => base44.entities.Channel.list(),
+    enabled: open && !isLeadershipRole(currentUser?.role),
+  });
 
-  const leadership = contacts.filter(c => LEADERSHIP_ROLES.includes(c.role));
-  const parents = contacts.filter(c => !LEADERSHIP_ROLES.includes(c.role));
+  // Build set of emails in channels the current user is a member of
+  const teammateEmails = useMemo(() => {
+    if (isLeadershipRole(currentUser?.role)) return null; // null = no restriction
+    const myEmail = currentUser?.email;
+    const emails = new Set();
+    allChannels.forEach(ch => {
+      if (ch.type !== "team" && ch.type !== "announcement") return;
+      try {
+        const members = JSON.parse(ch.member_emails || "[]");
+        if (members.includes(myEmail)) members.forEach(e => emails.add(e));
+      } catch { /* skip */ }
+    });
+    return emails;
+  }, [allChannels, currentUser]);
+
+  // Exclude self; restrict parents to teammates + all leadership
+  const contacts = allUsers.filter(u => {
+    if (u.email === currentUser?.email) return false;
+    if (isLeadershipRole(currentUser?.role)) return true; // staff see everyone
+    if (isLeadershipRole(u.role)) return true; // parents can always DM staff
+    if (teammateEmails && teammateEmails.size > 0) return teammateEmails.has(u.email);
+    return false; // parent with no channels yet can only DM staff
+  });
+
+  const leadership = contacts.filter(c => isLeadershipRole(c.role));
+  const parents = contacts.filter(c => !isLeadershipRole(c.role));
 
   const filteredParents = useMemo(() => {
     if (!search.trim()) return parents;

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye } from "lucide-react";
+import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye, Trash2 } from "lucide-react";
 import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import NewDmDialog from "@/components/messages/NewDmDialog";
@@ -69,7 +69,8 @@ export default function ChatSidebar({ activeChannelId }) {
     }
   }, [unreadMap, unreadScheduleCount, currentUser?.allow_schedule_notifications]);
 
-  const canCreate = currentUser?.role === "admin" || currentUser?.role === "athletic_director";
+  const canCreate = ["admin", "athletic_director", "coach"].includes(currentUser?.role);
+  const isAdmin = currentUser?.role === "admin";
 
   const { data: orgTeams = [] } = useQuery({
     queryKey: ["org-teams"],
@@ -135,6 +136,11 @@ export default function ChatSidebar({ activeChannelId }) {
       setShowCreate(false);
       setNewChannelForm({ name: "", type: "team", team_id: "" });
     },
+  });
+
+  const deleteChannelMutation = useMutation({
+    mutationFn: (channelId) => base44.entities.Channel.delete(channelId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channels"] }),
   });
 
   const handleCreateChannel = () => {
@@ -219,6 +225,22 @@ export default function ChatSidebar({ activeChannelId }) {
             : <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
           }
         </span>
+
+        {/* Admin delete */}
+        {isAdmin && ch.type !== "direct" && (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm(`Delete "${ch.name}"? This cannot be undone.`)) {
+                deleteChannelMutation.mutate(ch.id);
+              }
+            }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/10 shrink-0"
+            title="Delete channel"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+          </span>
+        )}
       </button>
     );
   };
@@ -324,7 +346,7 @@ export default function ChatSidebar({ activeChannelId }) {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <Input
-              placeholder="Channel name"
+              placeholder="Channel name (e.g. Lions - Fall 2026)"
               value={newChannelForm.name}
               onChange={e => setNewChannelForm(f => ({ ...f, name: e.target.value }))}
             />
@@ -336,9 +358,11 @@ export default function ChatSidebar({ activeChannelId }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="team">Team</SelectItem>
-                <SelectItem value="carpool">Carpool</SelectItem>
-                <SelectItem value="announcement">Announcement</SelectItem>
+                <SelectItem value="team">🛡️ Team Chat</SelectItem>
+                <SelectItem value="announcement">📢 Announcements</SelectItem>
+                {(currentUser?.role === "admin" || currentUser?.role === "athletic_director") && (
+                  <SelectItem value="carpool">🚗 Carpool</SelectItem>
+                )}
               </SelectContent>
             </Select>
             {(newChannelForm.type === "team" || newChannelForm.type === "announcement") && (
