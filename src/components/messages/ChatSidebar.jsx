@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -38,6 +38,36 @@ export default function ChatSidebar({ activeChannelId }) {
     queryKey: ["me"],
     queryFn: () => base44.auth.me(),
   });
+
+  // Unread schedule events since user last viewed schedule
+  const { data: unreadScheduleEvents = [] } = useQuery({
+    queryKey: ["unread-schedule", currentUser?.last_viewed_schedule],
+    queryFn: () => base44.entities.Event.list("-created_date", 100),
+    enabled: !!currentUser && currentUser.allow_schedule_notifications !== false,
+    select: (events) => {
+      const since = currentUser?.last_viewed_schedule
+        ? new Date(currentUser.last_viewed_schedule)
+        : null;
+      if (!since) return [];
+      return events.filter(e => new Date(e.created_date) > since);
+    },
+    refetchInterval: 30000,
+  });
+
+  const unreadScheduleCount = unreadScheduleEvents.length;
+
+  // Combined app icon badge effect
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return;
+    const messageTotal = Object.values(unreadMap || {}).reduce((a, b) => a + b, 0);
+    const scheduleTotal = currentUser?.allow_schedule_notifications !== false ? unreadScheduleCount : 0;
+    const finalBadgeCount = messageTotal + scheduleTotal;
+    if (finalBadgeCount > 0) {
+      navigator.setAppBadge(finalBadgeCount).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  }, [unreadMap, unreadScheduleCount, currentUser?.allow_schedule_notifications]);
 
   const canCreate = currentUser?.role === "admin" || currentUser?.role === "athletic_director";
 

@@ -36,6 +36,20 @@
     "notification_prefs": {
       "type": "string",
       "description": "JSON of notification preferences"
+    },
+    "allow_chat_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the user wants push notifications for new chat messages"
+    },
+    "allow_schedule_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the user wants push notifications for new game/practice events"
+    },
+    "last_viewed_schedule": {
+      "type": "string",
+      "description": "ISO timestamp of when the user last viewed the schedule \u2014 used to calculate unread schedule alerts"
     }
   },
   "required": []

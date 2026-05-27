@@ -1,0 +1,61 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Action performed (e.g. invoice_created, event_updated, role_changed)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "payment",
+        "schedule",
+        "volunteer",
+        "document",
+        "user",
+        "roster",
+        "other"
+      ],
+      "description": "Category of action"
+    },
+    "actor_email": {
+      "type": "string",
+      "description": "Email of user who performed the action"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Display name of user who performed the action"
+    },
+    "actor_role": {
+      "type": "string",
+      "description": "Role of user at time of action"
+    },
+    "target_entity": {
+      "type": "string",
+      "description": "Entity type affected (e.g. Payment, Player, Event)"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "ID of affected record"
+    },
+    "target_name": {
+      "type": "string",
+      "description": "Human-readable name of affected record"
+    },
+    "description": {
+      "type": "string",
+      "description": "Plain-language description of the action"
+    },
+    "metadata": {
+      "type": "string",
+      "description": "JSON string of extra context (before/after values, etc.)"
+    }
+  },
+  "required": [
+    "action",
+    "category",
+    "actor_email",
+    "description"
+  ]
+}

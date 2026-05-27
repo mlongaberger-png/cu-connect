@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, MessageSquare, Calendar, ClipboardList, DollarSign, Users, FileText, Moon, Smartphone, CheckCircle2 } from "lucide-react";
+import NotificationPreferencesCard from "@/components/notifications/NotificationPreferencesCard";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -29,13 +30,18 @@ const DEFAULTS = {
 
 export default function NotificationSettings() {
   const [userEmail, setUserEmail] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [prefs, setPrefs] = useState(DEFAULTS);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {});
+    base44.auth.me().then(u => { setUserEmail(u?.email); setCurrentUser(u); }).catch(() => {});
   }, []);
+
+  const refreshUser = () => {
+    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+  };
 
   const { data: existing = [] } = useQuery({
     queryKey: ["notif-prefs", userEmail],
@@ -75,6 +81,11 @@ export default function NotificationSettings() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Control which notifications you receive and how.</p>
       </div>
+
+      {/* Chat & Schedule Preference Toggles */}
+      {currentUser && (
+        <NotificationPreferencesCard currentUser={currentUser} onUpdated={refreshUser} />
+      )}
 
       {/* Push Notifications Card */}
       <div className={`rounded-2xl border p-5 ${

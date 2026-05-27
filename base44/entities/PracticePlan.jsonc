@@ -1,0 +1,53 @@
+{
+  "name": "PracticePlan",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Practice plan title"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Team this plan is for"
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Denormalized team name"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Planned practice date"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Total duration in minutes",
+      "default": 90
+    },
+    "focus": {
+      "type": "string",
+      "description": "Primary focus (e.g. Offense, Defense, Conditioning)"
+    },
+    "drills": {
+      "type": "string",
+      "description": "JSON array of drill objects [{name, duration_minutes, description, equipment}]"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Coach notes"
+    },
+    "is_template": {
+      "type": "boolean",
+      "default": false,
+      "description": "Save as reusable template"
+    },
+    "shared_with_assistants": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "team_id"
+  ]
+}

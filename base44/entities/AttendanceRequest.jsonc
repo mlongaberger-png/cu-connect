@@ -1,0 +1,57 @@
+{
+  "name": "AttendanceRequest",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "Team this request belongs to"
+    },
+    "team_name": {
+      "type": "string"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "Optional linked Event ID"
+    },
+    "label": {
+      "type": "string",
+      "description": "Display label, e.g. 'Practice \u2013 Tuesday 6:00 PM'"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "practice",
+        "game",
+        "meeting",
+        "other"
+      ],
+      "default": "practice"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "event_time": {
+      "type": "string",
+      "description": "HH:MM"
+    },
+    "created_by_name": {
+      "type": "string"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "is_locked": {
+      "type": "boolean",
+      "default": false
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "channel_id of the team chat it was posted in"
+    }
+  },
+  "required": [
+    "team_id",
+    "label"
+  ]
+}

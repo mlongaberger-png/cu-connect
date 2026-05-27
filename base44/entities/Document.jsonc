@@ -1,0 +1,52 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "roster",
+        "schedule",
+        "policy",
+        "medical",
+        "financial",
+        "other"
+      ],
+      "default": "other"
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "org",
+        "sport",
+        "team"
+      ],
+      "default": "org"
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "target_name": {
+      "type": "string"
+    },
+    "file_size": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string"
+    },
+    "uploaded_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "file_url"
+  ]
+}
