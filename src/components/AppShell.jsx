@@ -35,6 +35,7 @@ import ParentCalendar from "@/pages/ParentCalendar";
 import Playbooks from "@/pages/Playbooks";
 import MessagesLayout from "@/pages/MessagesLayout";
 import ParentSportsRegister from "@/pages/ParentSportsRegister";
+import SRD from "@/pages/SRD";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -161,6 +162,9 @@ export default function AppShell() {
 
       {/* Public legal pages — always accessible */}
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
+      {/* Internal review only — not linked in navigation */}
+      <Route path="/srd" element={<SRD />} />
 
       <Route path="/Register" element={<Register />} />
       <Route path="/ParentSignup" element={<ParentSignup />} />
