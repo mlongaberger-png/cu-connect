@@ -1,5 +1,53 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+// Determine if a stat object has any meaningful (non-null) values
+// Handles cases where LLM returns the string "null" instead of actual null
+function hasData(obj) {
+  if (!obj || typeof obj !== "object") return false;
+  return Object.values(obj).some(v => v !== null && v !== undefined && v !== "" && v !== "null" && v !== "N/A" && v !== "-");
+}
+
+// Clean a stat value — converts string "null" / "N/A" / "-" to actual null
+function cleanVal(v) {
+  if (v === null || v === undefined || v === "" || v === "null" || v === "N/A" || v === "-") return null;
+  return v;
+}
+
+// Clean all values in a stat object
+function cleanStats(obj) {
+  if (!obj) return obj;
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) out[k] = cleanVal(v);
+  return out;
+}
+
+// Fuzzy name matching — handles "Last, First" vs "First Last" and partial matches
+function matchPlayerName(extractedName, playerMap) {
+  const clean = (s) => (s || "").toLowerCase().replace(/[^a-z\s]/g, "").trim();
+  const target = clean(extractedName);
+
+  // Exact match
+  if (playerMap[target]) return playerMap[target];
+
+  // Try reversed "Last, First" -> "First Last"
+  if (target.includes(",")) {
+    const parts = target.split(",").map(s => s.trim());
+    const reversed = `${parts[1]} ${parts[0]}`.trim();
+    if (playerMap[reversed]) return playerMap[reversed];
+  }
+
+  // Partial match: if all words in extractedName appear in a known player name
+  const targetWords = target.split(/\s+/).filter(Boolean);
+  for (const [key, player] of Object.entries(playerMap)) {
+    const keyWords = key.split(/\s+/).filter(Boolean);
+    if (targetWords.every(w => keyWords.some(kw => kw.startsWith(w) || w.startsWith(kw)))) {
+      return player;
+    }
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -13,45 +61,63 @@ Deno.serve(async (req) => {
       return Response.json({ error: "file_url and team_id are required" }, { status: 400 });
     }
 
-    console.log(`Extracting team stats for team ${team_name} (${team_id}) from ${file_url}`);
+    console.log(`[extractTeamStats] Starting for team: ${team_name} (${team_id})`);
+    console.log(`[extractTeamStats] File URL: ${file_url}`);
 
-    // Fetch all active players on this team so AI can match names
+    // Fetch all active players on this team
     const players = await base44.asServiceRole.entities.Player.filter({ team_id, is_active: true });
-    const playerNames = players.map(p => `${p.first_name} ${p.last_name}`).join(", ");
-    console.log(`Players on team: ${playerNames}`);
+    const playerList = players.map(p => `${p.first_name} ${p.last_name}`);
+    console.log(`[extractTeamStats] Roster (${players.length} players): ${playerList.join(", ")}`);
 
-    // Detect if this is a CSV file and read it as text
-    const isCSV = file_url.toLowerCase().includes('.csv') || file_url.toLowerCase().includes('text%2Fcsv');
-    let csvText = null;
-    if (isCSV) {
-      console.log("Detected CSV file — fetching as text");
-      const fileRes = await fetch(file_url);
-      csvText = await fileRes.text();
-      console.log(`CSV content (first 500 chars): ${csvText.slice(0, 500)}`);
+    if (players.length === 0) {
+      return Response.json({ error: "No active players found on this team" }, { status: 400 });
     }
 
-    const promptBase = `You are a baseball stats extractor. Analyze the following stat sheet and extract statistics for EVERY player listed.
+    // Build name lookup map
+    const playerMap = {};
+    players.forEach(p => {
+      playerMap[`${p.first_name} ${p.last_name}`.toLowerCase()] = p;
+    });
 
-Known players on this team: ${playerNames}
+    // Detect CSV
+    const isCSV = /\.csv|text%2Fcsv|csv/i.test(file_url);
+    let csvText = null;
+    if (isCSV) {
+      console.log("[extractTeamStats] Detected CSV — fetching as text");
+      const fileRes = await fetch(file_url);
+      csvText = await fileRes.text();
+      console.log(`[extractTeamStats] CSV preview: ${csvText.slice(0, 800)}`);
+    } else {
+      console.log("[extractTeamStats] Treating as image/PDF — using vision model");
+    }
 
-For each player found in the data, extract all available stats:
-- HITTING: AVG, AB, H, R, RBI, HR, BB, K, OBP, SLG
-- PITCHING: ERA, IP, W, L, SO, BB, WHIP  
-- FIELDING: PO, A, E, FPCT
+    const prompt = `You are an expert baseball statistics extractor.
 
-Rules:
-- Match player names case-insensitively to the known players list. Use the exact name from the known list when matched.
-- Include ALL players found in the document, even if not in the known list.
-- Only include stat categories that have actual data in the document.
-- Return numbers as strings (e.g. "0.312", "45").
-- For any stat not present, use null.
-- stat_types_present per player should list which categories have data.`;
+${csvText
+  ? `Here is raw CSV/spreadsheet data:\n\`\`\`\n${csvText}\n\`\`\``
+  : `Analyze the attached image or PDF stat sheet.`}
+
+Known roster for team "${team_name}":
+${playerList.map((n, i) => `${i + 1}. ${n}`).join("\n")}
+
+Extract statistics for EVERY player you find in the data. Match player names to the known roster (case-insensitive, handle abbreviations/nicknames).
+
+For each player found, return:
+- player_name: the exact name from the known roster if matched, otherwise the name as written
+- stat_types_present: array of which categories have data (e.g. ["hitting"] or ["hitting","pitching"])
+- hitting: { avg, ab, h, r, rbi, hr, bb, k, obp, slg } — use null for missing
+- pitching: { era, ip, w, l, so, bb, whip } — use null for missing
+- fielding: { po, a, e, fpct } — use null for missing
+
+IMPORTANT:
+- Return ALL players found, even if only partial data exists
+- All numeric values as strings (e.g. "0.312", "14")
+- If any field in a category has a value, include that category in stat_types_present
+- Do NOT return an empty players array if there is data in the document`;
 
     const llmParams = {
-      model: csvText ? undefined : "gemini_3_1_pro",
-      prompt: csvText
-        ? `${promptBase}\n\nHere is the CSV data:\n\`\`\`\n${csvText}\n\`\`\``
-        : promptBase,
+      model: csvText ? "gemini_3_flash" : "gemini_3_1_pro",
+      prompt,
       response_json_schema: {
         type: "object",
         properties: {
@@ -90,46 +156,45 @@ Rules:
       }
     };
 
-    // Only pass file_urls for non-CSV files (images/PDFs)
     if (!csvText) {
       llmParams.file_urls = [file_url];
     }
 
     const result = await base44.integrations.Core.InvokeLLM(llmParams);
-
-    console.log(`AI found ${result.players?.length || 0} players`);
-
-    // Build a name->player map for quick lookup
-    const playerMap = {};
-    players.forEach(p => {
-      playerMap[`${p.first_name} ${p.last_name}`.toLowerCase()] = p;
-    });
+    console.log(`[extractTeamStats] AI returned ${result.players?.length || 0} player(s)`);
+    console.log("[extractTeamStats] Full AI result:", JSON.stringify(result).slice(0, 2000));
 
     const base = { team_id, team_name, season_label, source_file_url: file_url, uploaded_by: user.email };
     let totalCreated = 0;
     const playerResults = [];
 
     for (const extracted of (result.players || [])) {
-      const nameLower = (extracted.player_name || "").toLowerCase().trim();
-      const matchedPlayer = playerMap[nameLower];
+      const matchedPlayer = matchPlayerName(extracted.player_name, playerMap);
 
-      const player_id = matchedPlayer?.id || null;
-      const player_name = matchedPlayer
-        ? `${matchedPlayer.first_name} ${matchedPlayer.last_name}`
-        : extracted.player_name;
-
-      if (!player_id) {
-        console.warn(`Could not match player: "${extracted.player_name}" — skipping`);
+      if (!matchedPlayer) {
+        console.warn(`[extractTeamStats] No roster match for: "${extracted.player_name}"`);
         playerResults.push({ player_name: extracted.player_name, matched: false, records: 0 });
         continue;
       }
 
+      const player_id = matchedPlayer.id;
+      const player_name = `${matchedPlayer.first_name} ${matchedPlayer.last_name}`;
       const statBase = { ...base, player_id, player_name };
-      const statTypes = extracted.stat_types_present || [];
+
+      // Auto-detect categories from actual data
+      const declared = Array.isArray(extracted.stat_types_present) ? extracted.stat_types_present : [];
+      const statTypes = [
+        ...((declared.includes("hitting") || hasData(extracted.hitting)) ? ["hitting"] : []),
+        ...((declared.includes("pitching") || hasData(extracted.pitching)) ? ["pitching"] : []),
+        ...((declared.includes("fielding") || hasData(extracted.fielding)) ? ["fielding"] : []),
+      ];
+
+      console.log(`[extractTeamStats] ${player_name} → matched, categories: ${JSON.stringify(statTypes)}`);
+
       let created = 0;
 
       if (statTypes.includes("hitting") && extracted.hitting) {
-        const h = extracted.hitting;
+        const h = cleanStats(extracted.hitting);
         await base44.asServiceRole.entities.PlayerStats.create({
           ...statBase, stat_type: "hitting",
           hitting_avg: h.avg, hitting_ab: h.ab, hitting_h: h.h, hitting_r: h.r,
@@ -140,7 +205,7 @@ Rules:
       }
 
       if (statTypes.includes("pitching") && extracted.pitching) {
-        const p = extracted.pitching;
+        const p = cleanStats(extracted.pitching);
         await base44.asServiceRole.entities.PlayerStats.create({
           ...statBase, stat_type: "pitching",
           pitching_era: p.era, pitching_ip: p.ip, pitching_w: p.w, pitching_l: p.l,
@@ -150,7 +215,7 @@ Rules:
       }
 
       if (statTypes.includes("fielding") && extracted.fielding) {
-        const f = extracted.fielding;
+        const f = cleanStats(extracted.fielding);
         await base44.asServiceRole.entities.PlayerStats.create({
           ...statBase, stat_type: "fielding",
           fielding_po: f.po, fielding_a: f.a, fielding_e: f.e, fielding_fpct: f.fpct
@@ -159,13 +224,13 @@ Rules:
       }
 
       totalCreated += created;
-      playerResults.push({ player_name, matched: true, records: created });
+      playerResults.push({ player_name, matched: true, records: created, stat_types: statTypes });
     }
 
-    console.log(`Done. Total records created: ${totalCreated}`);
+    console.log(`[extractTeamStats] Done — ${totalCreated} total record(s) across ${playerResults.filter(r => r.matched).length} matched player(s)`);
     return Response.json({ success: true, total_records: totalCreated, players: playerResults });
   } catch (error) {
-    console.error("extractTeamStats error:", error);
+    console.error("[extractTeamStats] Fatal error:", error.message, error.stack);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
