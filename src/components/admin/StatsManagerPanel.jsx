@@ -3,13 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload, FileText } from "lucide-react";
+import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload, FileText, LayoutDashboard, List } from "lucide-react";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
 import TeamStatsUploadModal from "@/components/stats/TeamStatsUploadModal";
 import EditStatsModal from "@/components/stats/EditStatsModal";
 import StatsUploadPicker from "@/components/stats/StatsUploadPicker";
 import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
 import StatsReportExporter from "@/components/stats/StatsReportExporter";
+import StatsDashboard from "@/components/stats/StatsDashboard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 
@@ -24,6 +25,7 @@ export default function StatsManagerPanel() {
   const [exportPlayer, setExportPlayer] = useState(null);
   const [exportTeam, setExportTeam] = useState(null);
   const [showExportPicker, setShowExportPicker] = useState(false);
+  const [view, setView] = useState("roster"); // "roster" | "dashboard"
 
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
@@ -60,6 +62,21 @@ export default function StatsManagerPanel() {
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground">{allStats.length} record{allStats.length !== 1 ? "s" : ""}</div>
+          {/* View toggle */}
+          <div className="flex items-center bg-surface border border-border rounded-lg p-0.5 gap-0.5">
+            <button
+              onClick={() => setView("roster")}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${view === "roster" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <List className="w-3 h-3" /> Roster
+            </button>
+            <button
+              onClick={() => setView("dashboard")}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${view === "dashboard" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <LayoutDashboard className="w-3 h-3" /> Dashboard
+            </button>
+          </div>
           <Button size="sm" variant="outline" onClick={() => setShowPicker(true)} className="gap-1.5 h-8 text-xs border-border">
             <Upload className="w-3.5 h-3.5" /> Upload
           </Button>
@@ -69,71 +86,77 @@ export default function StatsManagerPanel() {
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search athletes or teams..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="pl-9 bg-surface border-border"
-        />
-      </div>
-
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        {filtered.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-10">No athletes found.</p>
-        ) : (
-          <div className="divide-y divide-border">
-            {filtered.map(p => {
-              const count = statsCountFor(p.id);
-              return (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {p.photo_url
-                      ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
-                      : <span className="text-xs font-bold text-primary">{p.first_name?.[0]}</span>
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
-                    <p className="text-xs text-muted-foreground">{p.team_name || "No team"}{p.position ? ` · ${p.position}` : ""}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {count > 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                        {count} record{count !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {count > 0 && (
-                      <Button variant="ghost" size="icon" title="View Stats" onClick={() => setViewPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                        <BarChart2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {count > 0 && (
-                      <Button variant="ghost" size="icon" title="Edit Stats" onClick={() => setEditPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                      <Sparkles className="w-4 h-4" />
-                    </Button>
-                    {count > 0 && (
-                      <Button variant="ghost" size="icon" title="Export PDF Report" onClick={() => setExportPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                        <FileText className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {count > 0 && (
-                      <Button variant="ghost" size="icon" title="Delete All Stats" onClick={() => handleDeleteStats(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+      {view === "dashboard" ? (
+        <StatsDashboard />
+      ) : (
+        <>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search athletes or teams..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 bg-surface border-border"
+            />
           </div>
-        )}
-      </div>
+
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            {filtered.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-10">No athletes found.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {filtered.map(p => {
+                  const count = statsCountFor(p.id);
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {p.photo_url
+                          ? <img src={p.photo_url} alt="" className="w-full h-full object-cover" />
+                          : <span className="text-xs font-bold text-primary">{p.first_name?.[0]}</span>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
+                        <p className="text-xs text-muted-foreground">{p.team_name || "No team"}{p.position ? ` · ${p.position}` : ""}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {count > 0 && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                            {count} record{count !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                        {count > 0 && (
+                          <Button variant="ghost" size="icon" title="View Stats" onClick={() => setViewPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                            <BarChart2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {count > 0 && (
+                          <Button variant="ghost" size="icon" title="Edit Stats" onClick={() => setEditPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                        {count > 0 && (
+                          <Button variant="ghost" size="icon" title="Export PDF Report" onClick={() => setExportPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {count > 0 && (
+                          <Button variant="ghost" size="icon" title="Delete All Stats" onClick={() => handleDeleteStats(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Upload Modal */}
       <StatsUploadModal
