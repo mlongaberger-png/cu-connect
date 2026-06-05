@@ -41,6 +41,7 @@ Rules:
 - stat_types_present should list which categories have data: ["hitting"], ["pitching"], ["fielding"] or multiple.`;
 
     const llmParams = {
+      model: csvText ? undefined : "gemini_3_1_pro",
       prompt: csvText
         ? `${promptBase}\n\nHere is the CSV data:\n\`\`\`\n${csvText}\n\`\`\``
         : promptBase,

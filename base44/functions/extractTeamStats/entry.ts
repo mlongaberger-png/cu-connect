@@ -48,7 +48,7 @@ Rules:
 - stat_types_present per player should list which categories have data.`;
 
     const llmParams = {
-      model: "claude_sonnet_4_6",
+      model: csvText ? undefined : "gemini_3_1_pro",
       prompt: csvText
         ? `${promptBase}\n\nHere is the CSV data:\n\`\`\`\n${csvText}\n\`\`\``
         : promptBase,
