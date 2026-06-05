@@ -3,12 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload } from "lucide-react";
+import { Sparkles, BarChart2, Trash2, Search, Pencil, Upload, FileText } from "lucide-react";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
 import TeamStatsUploadModal from "@/components/stats/TeamStatsUploadModal";
 import EditStatsModal from "@/components/stats/EditStatsModal";
 import StatsUploadPicker from "@/components/stats/StatsUploadPicker";
 import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
+import StatsReportExporter from "@/components/stats/StatsReportExporter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 
@@ -20,6 +21,9 @@ export default function StatsManagerPanel() {
   const [editPlayer, setEditPlayer] = useState(null);
   const [teamUploadTeam, setTeamUploadTeam] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [exportPlayer, setExportPlayer] = useState(null);
+  const [exportTeam, setExportTeam] = useState(null);
+  const [showExportPicker, setShowExportPicker] = useState(false);
 
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
@@ -56,8 +60,11 @@ export default function StatsManagerPanel() {
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground">{allStats.length} record{allStats.length !== 1 ? "s" : ""}</div>
-          <Button size="sm" onClick={() => setShowPicker(true)} className="gap-1.5 h-8 text-xs">
-            <Upload className="w-3.5 h-3.5" /> Upload Stats
+          <Button size="sm" variant="outline" onClick={() => setShowPicker(true)} className="gap-1.5 h-8 text-xs border-border">
+            <Upload className="w-3.5 h-3.5" /> Upload
+          </Button>
+          <Button size="sm" onClick={() => setShowExportPicker(true)} className="gap-1.5 h-8 text-xs">
+            <FileText className="w-3.5 h-3.5" /> Export Report
           </Button>
         </div>
       </div>
@@ -110,6 +117,11 @@ export default function StatsManagerPanel() {
                     <Button variant="ghost" size="icon" title="Upload Stats" onClick={() => setStatsPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
                       <Sparkles className="w-4 h-4" />
                     </Button>
+                    {count > 0 && (
+                      <Button variant="ghost" size="icon" title="Export PDF Report" onClick={() => setExportPlayer(p)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                    )}
                     {count > 0 && (
                       <Button variant="ghost" size="icon" title="Delete All Stats" onClick={() => handleDeleteStats(p.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
                         <Trash2 className="w-4 h-4" />
@@ -166,11 +178,35 @@ export default function StatsManagerPanel() {
         onSelectPlayer={(player) => { setShowPicker(false); setStatsPlayer(player); }}
       />
 
+      {/* Export Picker — reuse same picker but wired to export */}
+      <StatsUploadPicker
+        open={showExportPicker}
+        onOpenChange={setShowExportPicker}
+        onSelectTeam={(team) => { setShowExportPicker(false); setExportTeam(team); }}
+        onSelectPlayer={(player) => { setShowExportPicker(false); setExportPlayer(player); }}
+      />
+
       {/* Team Stats Upload Modal */}
       <TeamStatsUploadModal
         open={!!teamUploadTeam}
         onOpenChange={(open) => { if (!open) setTeamUploadTeam(null); }}
         team={teamUploadTeam}
+      />
+
+      {/* Player Stats Report Export */}
+      <StatsReportExporter
+        open={!!exportPlayer}
+        onOpenChange={(open) => { if (!open) setExportPlayer(null); }}
+        mode="player"
+        player={exportPlayer}
+      />
+
+      {/* Team Stats Report Export — triggered from picker */}
+      <StatsReportExporter
+        open={!!exportTeam}
+        onOpenChange={(open) => { if (!open) setExportTeam(null); }}
+        mode="team"
+        team={exportTeam}
       />
     </div>
   );
