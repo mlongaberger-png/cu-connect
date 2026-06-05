@@ -24,25 +24,33 @@ export default function StatsUploadModal({ open, onOpenChange, player, teamId, t
     setStatus("uploading");
     setErrorMsg("");
 
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-    setStatus("extracting");
-    const response = await base44.functions.invoke("extractBaseballStats", {
-      file_url,
-      player_id: player.id,
-      player_name: `${player.first_name} ${player.last_name}`,
-      team_id: teamId || player.team_id,
-      team_name: teamName || player.team_name,
-      season_label: seasonLabel,
-    });
+      setStatus("extracting");
+      const response = await base44.functions.invoke("extractBaseballStats", {
+        file_url,
+        player_id: player.id,
+        player_name: `${player.first_name} ${player.last_name}`,
+        team_id: teamId || player.team_id,
+        team_name: teamName || player.team_name,
+        season_label: seasonLabel,
+      });
 
-    if (response.data?.success) {
-      setResult(response.data);
-      setStatus("done");
-      queryClient.invalidateQueries({ queryKey: ["playerStats", player.id] });
-    } else {
+      const data = response?.data;
+      if (data?.success) {
+        setResult(data);
+        setStatus("done");
+        queryClient.invalidateQueries({ queryKey: ["playerStats", player.id] });
+        queryClient.invalidateQueries({ queryKey: ["playerStats-all"] });
+      } else {
+        setStatus("error");
+        setErrorMsg(data?.error || "Extraction failed — the AI could not find stats. Try a clearer image or CSV.");
+      }
+    } catch (err) {
+      console.error("StatsUploadModal error:", err);
       setStatus("error");
-      setErrorMsg(response.data?.error || "Extraction failed. Please try a clearer image.");
+      setErrorMsg(err?.response?.data?.error || err?.message || "Upload failed. Please try again.");
     }
   };
 

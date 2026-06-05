@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import webpush from 'npm:web-push@3.6.7';
 
 Deno.serve(async (req) => {
@@ -89,7 +89,7 @@ Rules:
 
     if (stat_types.includes("hitting") && result.hitting) {
       const h = result.hitting;
-      const record = await base44.entities.PlayerStats.create({
+      const record = await base44.asServiceRole.entities.PlayerStats.create({
         ...base, stat_type: "hitting",
         hitting_avg: h.avg, hitting_ab: h.ab, hitting_h: h.h, hitting_r: h.r,
         hitting_rbi: h.rbi, hitting_hr: h.hr, hitting_bb: h.bb, hitting_k: h.k,
@@ -100,7 +100,7 @@ Rules:
 
     if (stat_types.includes("pitching") && result.pitching) {
       const p = result.pitching;
-      const record = await base44.entities.PlayerStats.create({
+      const record = await base44.asServiceRole.entities.PlayerStats.create({
         ...base, stat_type: "pitching",
         pitching_era: p.era, pitching_ip: p.ip, pitching_w: p.w, pitching_l: p.l,
         pitching_so: p.so, pitching_bb: p.bb, pitching_whip: p.whip
@@ -110,7 +110,7 @@ Rules:
 
     if (stat_types.includes("fielding") && result.fielding) {
       const f = result.fielding;
-      const record = await base44.entities.PlayerStats.create({
+      const record = await base44.asServiceRole.entities.PlayerStats.create({
         ...base, stat_type: "fielding",
         fielding_po: f.po, fielding_a: f.a, fielding_e: f.e, fielding_fpct: f.fpct
       });
