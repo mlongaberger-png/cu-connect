@@ -756,16 +756,16 @@ export default function DiagramDrawer({ play, sportType = "football", onSave, on
           </div>
 
           {/* ── Canvas area ── */}
-          <div className="flex-1 flex items-center justify-center bg-[hsl(0_0%_5%)] p-3 overflow-auto">
+          <div className="flex-1 flex items-stretch bg-[hsl(0_0%_5%)] overflow-hidden">
             <canvas
               ref={canvasRef}
               width={FW}
               height={FH}
-              className="rounded-xl border border-border touch-none block"
+              className="touch-none block"
               style={{
                 cursor: tool === "select" ? "grab" : tool === "erase" ? "cell" : "crosshair",
-                maxWidth: "100%",
-                maxHeight: "100%",
+                width: "100%",
+                height: "100%",
               }}
               onMouseDown={onPointerDown}
               onMouseMove={onPointerMove}
