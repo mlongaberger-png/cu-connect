@@ -1,0 +1,75 @@
+{
+  "name": "CoachProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Link to User table"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized coach email"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Denormalized coach name"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Active team assignment"
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Denormalized team name"
+    },
+    "sport_type": {
+      "type": "string",
+      "enum": [
+        "football",
+        "baseball",
+        "cheer"
+      ],
+      "description": "Sport this profile belongs to"
+    },
+    "role_type": {
+      "type": "string",
+      "enum": [
+        "head_coach",
+        "assistant_coach",
+        "manager"
+      ],
+      "default": "assistant_coach"
+    },
+    "bg_check_passed": {
+      "type": "boolean",
+      "default": false
+    },
+    "bg_check_expires": {
+      "type": "string",
+      "format": "date",
+      "description": "Background check expiration date"
+    },
+    "nays_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "nays_expires": {
+      "type": "string",
+      "format": "date",
+      "description": "NAYS certification expiration date"
+    },
+    "last_reminder_sent": {
+      "type": "string",
+      "enum": [
+        "none",
+        "two_month",
+        "one_month"
+      ],
+      "default": "none",
+      "description": "Tracks the most recent automated reminder tier sent"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

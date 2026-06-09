@@ -33,6 +33,7 @@ import GameDayPlaylists from "@/pages/GameDayPlaylists";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ParentCalendar from "@/pages/ParentCalendar";
 import Playbooks from "@/pages/Playbooks";
+import CoachesTraining from "@/pages/CoachesTraining";
 import MessagesLayout from "@/pages/MessagesLayout";
 import ParentSportsRegister from "@/pages/ParentSportsRegister";
 import SRD from "@/pages/SRD";
@@ -146,6 +147,7 @@ export default function AppShell() {
         <Route element={<StaffRoute />}>
           <Route path="/Sports" element={<Sports />} />
           <Route path="/Teams" element={<Teams />} />
+          <Route path="/CoachesTraining" element={<CoachesTraining />} />
           <Route path="/TeamDetail" element={<TeamDetail />} />
           <Route path="/Schedule" element={<Schedule />} />
           <Route path="/Announcements" element={<Announcements />} />

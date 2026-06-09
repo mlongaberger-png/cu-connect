@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Users, ChevronRight, Filter, Trash2 } from "lucide-react";
+import { Plus, Users, ChevronRight, Filter, Trash2, ShieldCheck } from "lucide-react";
 import TeamAvatarPicker, { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
 
@@ -75,6 +75,11 @@ export default function Teams() {
               </SelectContent>
             </Select>
           </div>
+          <Link to="/CoachesTraining">
+            <Button variant="outline" className="border-border gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Coaches Training
+            </Button>
+          </Link>
           {isAdmin && (
             <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" /> Add Team
