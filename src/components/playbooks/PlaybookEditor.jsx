@@ -22,6 +22,7 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
     status: playbook?.status || "draft",
     parent_visible: playbook?.parent_visible !== false,
     assigned_to: playbook?.assigned_to || "all",
+    sport_type: playbook?.sport_type || "football",
   });
 
   const [saving, setSaving] = useState(false);
@@ -62,7 +63,7 @@ export default function PlaybookEditor({ playbook, onClose, teams, user }) {
   const handleSavePlaybook = async () => {
     setSaving(true);
     const team = teams.find(t => t.id === form.team_id);
-    const data = { ...form, team_name: team?.name || form.team_name, created_by_email: user?.email, created_by_name: user?.full_name, sport_type: form.sport_type || playbook?.sport_type };
+    const data = { ...form, team_name: team?.name || form.team_name, created_by_email: user?.email, created_by_name: user?.full_name };
     if (isNew) {
       const created = await base44.entities.Playbook.create(data);
       queryClient.invalidateQueries({ queryKey: ["playbooks"] });
