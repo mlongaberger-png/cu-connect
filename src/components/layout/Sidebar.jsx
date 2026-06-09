@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen, GraduationCap } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const staffNavGroups = [
@@ -19,6 +19,7 @@ const staffNavGroups = [
     label: "Team",
     items: [
       { path: "/Teams", label: "Teams & Roster", icon: Users, roles: ["admin", "athletic_director"] },
+      { path: "/CoachesTraining", label: "Coaches Training", icon: GraduationCap, roles: ["admin", "athletic_director"] },
       { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
       { path: "/PracticePlans", label: "Practice Plans", icon: ClipboardList, roles: ["admin", "athletic_director", "coach"] },
       { path: "/GameDayPlaylists", label: "Game Day Music", icon: Music2, roles: ["admin", "athletic_director", "coach"] },
@@ -180,7 +181,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <Bell className="w-4 h-4" /> Notifications
           </Link>
           <Link to="/HelpCenter" onClick={onClose} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all">
-            <HelpCircle className="w-4 h-4" /> Help & FAQ
+            <HelpCircle className="w-4 h-4" /> Help &amp; FAQ
           </Link>
           <button
             onClick={() => logout()}
