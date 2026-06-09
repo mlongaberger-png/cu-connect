@@ -360,6 +360,44 @@ export default function DiagramDrawer({ play, sportType = "football", onSave, on
   const [saving, setSaving]                 = useState(false);
   const [renaming, setRenaming]             = useState(null);
 
+  // Default football formation (offense + defense) when no saved data
+  const defaultFootballPlayers = () => {
+    const los    = FH * 0.6; // line of scrimmage Y
+    const cx     = FW / 2;
+    // Offensive line (5 linemen) + skill positions
+    const offPlayers = [
+      { label: "LT", x: cx - 72, y: los + 28 },
+      { label: "LG", x: cx - 36, y: los + 28 },
+      { label: "C",  x: cx,      y: los + 28 },
+      { label: "RG", x: cx + 36, y: los + 28 },
+      { label: "RT", x: cx + 72, y: los + 28 },
+      { label: "TE", x: cx + 108,y: los + 28 },
+      { label: "QB", x: cx,      y: los + 60 },
+      { label: "RB", x: cx + 36, y: los + 88 },
+      { label: "WR", x: cx - 120,y: los + 28 },
+      { label: "WR", x: cx + 144,y: los + 72 },
+      { label: "FB", x: cx - 30, y: los + 88 },
+    ].map((p, i) => ({ id: `def-off-${i}`, type: "offense", x: p.x, y: p.y, label: p.label }));
+
+    // 4-3 Defense
+    const defPlayers = [
+      { label: "DE",  x: cx - 72, y: los - 28 },
+      { label: "DT",  x: cx - 24, y: los - 28 },
+      { label: "DT",  x: cx + 24, y: los - 28 },
+      { label: "DE",  x: cx + 72, y: los - 28 },
+      { label: "MLB", x: cx,      y: los - 62 },
+      { label: "OLB", x: cx - 54, y: los - 62 },
+      { label: "OLB", x: cx + 54, y: los - 62 },
+      { label: "CB",  x: cx - 120,y: los - 90 },
+      { label: "CB",  x: cx + 120,y: los - 90 },
+      { label: "SS",  x: cx - 50, y: los - 110 },
+      { label: "FS",  x: cx + 50, y: los - 110 },
+    ].map((p, i) => ({ id: `def-def-${i}`, type: "defense", x: p.x, y: p.y, label: p.label }));
+
+    playerCounter.current = 1;
+    return [...offPlayers, ...defPlayers];
+  };
+
   // Load saved data — backward-compatible (supports old players/paths keys)
   useEffect(() => {
     if (play?.diagram_data) {
@@ -369,6 +407,9 @@ export default function DiagramDrawer({ play, sportType = "football", onSave, on
         setPaths(saved.strokes   || saved.paths   || []);
         if (saved.counter) playerCounter.current = saved.counter;
       } catch {}
+    } else if ((sportType || "football") === "football") {
+      // Fresh diagram — pre-populate with default formation
+      setPlayers(defaultFootballPlayers());
     }
   }, [play?.id]);
 
