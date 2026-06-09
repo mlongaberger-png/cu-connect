@@ -25,53 +25,64 @@ const BLOCK_COLOR  = "#60a5fa";
 const MOTION_COLOR = "#34d399";
 const PLAYER_R     = 9;
 
-const FW = 520;
-const FH = 320;
+const FW = 320;
+const FH = 520;
 
 function snapV(v) { return Math.round(v / 18) * 18; }
 
 // ── Background draw functions ─────────────────────────────────────────────────
 
 function drawField(ctx, mode) {
+  // Vertical field: yard lines are horizontal bands
   ctx.fillStyle = FIELD_COLOR;
   ctx.fillRect(0, 0, FW, FH);
-  const stripeW = FW / 10;
+
+  // Alternating 10-yard stripes (horizontal bands)
+  const stripeH = FH / 10;
   for (let i = 0; i < 10; i++) {
     if (i % 2 === 0) {
       ctx.fillStyle = "rgba(0,0,0,0.07)";
-      ctx.fillRect(i * stripeW, 0, stripeW, FH);
+      ctx.fillRect(0, i * stripeH, FW, stripeH);
     }
   }
+
+  // Sidelines
   ctx.strokeStyle = LINE_COLOR;
   ctx.lineWidth = 2;
   ctx.strokeRect(4, 4, FW - 8, FH - 8);
+
+  // Yard lines (horizontal, every 10% of height)
   ctx.strokeStyle = LINE_COLOR;
   ctx.lineWidth = 1.5;
   for (let i = 1; i < 10; i++) {
-    const x = i * (FW / 10);
-    ctx.beginPath(); ctx.moveTo(x, 4); ctx.lineTo(x, FH - 4); ctx.stroke();
+    const y = i * (FH / 10);
+    ctx.beginPath(); ctx.moveTo(4, y); ctx.lineTo(FW - 4, y); ctx.stroke();
   }
+
+  // Hash marks (vertical ticks on left/right hash columns)
   if (mode !== "Youth") {
     ctx.strokeStyle = HASH_COLOR;
     ctx.lineWidth = 1.5;
-    const topHash = FH * 0.33;
-    const botHash = FH * 0.67;
+    const leftHash  = FW * 0.33;
+    const rightHash = FW * 0.67;
     for (let i = 0; i <= 50; i++) {
-      const x = 4 + i * ((FW - 8) / 50);
-      [topHash, botHash].forEach(y => {
-        ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
+      const y = 4 + i * ((FH - 8) / 50);
+      [leftHash, rightHash].forEach(x => {
+        ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.stroke();
       });
     }
   }
-  const los = FW * 0.4;
+
+  // Line of scrimmage (horizontal dashed line at 60% from top)
+  const los = FH * 0.6;
   ctx.strokeStyle = "#60a5fa";
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 4]);
-  ctx.beginPath(); ctx.moveTo(los, 4); ctx.lineTo(los, FH - 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4, los); ctx.lineTo(FW - 4, los); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = "rgba(96,165,250,0.8)";
   ctx.font = "bold 10px sans-serif";
-  ctx.fillText("LOS", los + 4, 16);
+  ctx.fillText("LOS", 8, los - 4);
 }
 
 function drawBaseballField(ctx) {
