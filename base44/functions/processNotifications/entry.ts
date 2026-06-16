@@ -10,6 +10,23 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Only POST accepted (scheduler always POST)
+    if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
+
+    // If a token is present, enforce admin role
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const caller = await base44.auth.me().catch(() => null);
+      if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const callerUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
+      const callerRole = callerUsers[0]?.role;
+      if (!['admin'].includes(callerRole)) {
+        console.error(`processNotifications: forbidden role '${callerRole}' for ${caller.email}`);
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+    // No auth header = scheduled automation; proceed as system
+
     // Fetch VAPID keys
     const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'vapid_keys' });
     if (!configs.length) {

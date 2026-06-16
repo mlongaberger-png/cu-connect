@@ -3,8 +3,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { email, role, relationship, players } = await req.json();
 
+    // Require authenticated admin or coach
+    const caller = await base44.auth.me().catch(() => null);
+    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const callerUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
+    const callerRole = callerUsers[0]?.role;
+    if (!['admin', 'coach'].includes(callerRole)) {
+      console.error(`inviteParent: forbidden role '${callerRole}' for ${caller.email}`);
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { email, role, relationship, players } = await req.json();
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
     // Invite the user — magic link will land them at /AcceptInvite
