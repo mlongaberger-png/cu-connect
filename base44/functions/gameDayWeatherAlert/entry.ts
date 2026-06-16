@@ -4,16 +4,31 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // This is a scheduled/admin function — verify caller is admin or system
-    const caller = await base44.auth.me().catch(() => null);
-    if (caller) {
+    // Allow scheduler via pre-shared secret header, or authenticated admin/AD via token
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const incomingCronSecret = req.headers.get("x-cron-secret");
+    const authHeader = req.headers.get("authorization");
+
+    if (incomingCronSecret) {
+      // Scheduler path — validate the shared secret
+      if (!cronSecret || incomingCronSecret !== cronSecret) {
+        console.error("gameDayWeatherAlert: invalid cron secret");
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else if (authHeader) {
+      // Human-caller path — validate role
+      const caller = await base44.auth.me().catch(() => null);
+      if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const dbUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
       const callerRole = dbUsers[0]?.role;
       if (!['admin', 'athletic_director'].includes(callerRole)) {
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
+    } else {
+      // No token, no cron secret — reject
+      console.error("gameDayWeatherAlert: unauthenticated request blocked");
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // If no auth token (scheduled run), proceed as system
 
     // Get all events scheduled for tomorrow
     const today = new Date();
