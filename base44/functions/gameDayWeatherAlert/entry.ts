@@ -4,31 +4,26 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow scheduler via pre-shared secret header, or authenticated admin/AD via token
-    const cronSecret = Deno.env.get("CRON_SECRET");
-    const incomingCronSecret = req.headers.get("x-cron-secret");
-    const authHeader = req.headers.get("authorization");
+    // Only POST requests are accepted (scheduler always uses POST)
+    if (req.method !== 'POST') {
+      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+    }
 
-    if (incomingCronSecret) {
-      // Scheduler path — validate the shared secret
-      if (!cronSecret || incomingCronSecret !== cronSecret) {
-        console.error("gameDayWeatherAlert: invalid cron secret");
-        return Response.json({ error: 'Forbidden' }, { status: 403 });
-      }
-    } else if (authHeader) {
-      // Human-caller path — validate role
+    // If a token is present, enforce admin/AD role
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
       const caller = await base44.auth.me().catch(() => null);
-      if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (!caller) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       const dbUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
       const callerRole = dbUsers[0]?.role;
       if (!['admin', 'athletic_director'].includes(callerRole)) {
+        console.error(`gameDayWeatherAlert: forbidden role '${callerRole}' for ${caller.email}`);
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
-    } else {
-      // No token, no cron secret — reject
-      console.error("gameDayWeatherAlert: unauthenticated request blocked");
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    // No auth header = Base44 scheduled automation invocation; proceed as system
 
     // Get all events scheduled for tomorrow
     const today = new Date();
