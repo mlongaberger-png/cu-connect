@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const channelId = body.channel_id || url.searchParams.get('channel_id');
     const limit = parseInt(body.limit || url.searchParams.get('limit') || '50');
-    const before = body.before || url.searchParams.get('before');
+    const skip = parseInt(body.skip || url.searchParams.get('skip') || '0');
     const parentMessageId = body.parent_message_id || url.searchParams.get('parent_message_id');
+    const sort = body.sort || url.searchParams.get('sort') || '-created_date';
 
     if (!channelId) {
       return Response.json({ error: 'channel_id required' }, { status: 400 });
@@ -56,24 +57,29 @@ Deno.serve(async (req) => {
       query.parent_message_id = null;
     }
 
-    // Use asServiceRole to bypass Message read RLS (read:true anyway, but this is cleaner)
+    // Fetch more than requested to account for filtered-out blocked messages
+    const fetchLimit = Math.min(limit + 200, 1000);
     const allMessages = await base44.asServiceRole.entities.Message.filter(
       query,
-      '-created_date',
-      limit
+      sort,
+      fetchLimit
     );
 
     // ── Apply block filter ────────────────────────────────────
-    const filtered = allMessages.filter(m => !blockedIds.has(m.sender_user_id));
-    const removed = allMessages.length - filtered.length;
+    const visible = allMessages.filter(m => !blockedIds.has(m.sender_user_id));
+    const removed = allMessages.length - visible.length;
+
+    // Apply skip + limit to filtered results
+    const paged = visible.slice(skip, skip + limit);
 
     console.log(
-      `[getMessagesFiltered] channel=${channelId} total=${allMessages.length} filtered=${removed} returned=${filtered.length}`
+      `[getMessagesFiltered] channel=${channelId} total=${allMessages.length} filtered=${removed} returned=${paged.length} skip=${skip} limit=${limit}`
     );
 
     return Response.json({
-      messages: filtered,
+      messages: paged,
       filtered_count: removed,
+      has_more: skip + limit < visible.length,
     });
   } catch (error) {
     console.error('[getMessagesFiltered]', error.message);

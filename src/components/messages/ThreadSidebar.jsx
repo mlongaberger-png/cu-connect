@@ -49,11 +49,15 @@ export default function ThreadSidebar({ parentMessage, channelId, onClose }) {
 
   const { data: replies = [], isLoading } = useQuery({
     queryKey: ["thread-replies", parentMessage?.id],
-    queryFn: () => base44.entities.Message.filter(
-      { channel_id: channelId, parent_message_id: parentMessage.id },
-      "created_date",
-      100
-    ),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getMessagesFiltered', {
+        channel_id: channelId,
+        parent_message_id: parentMessage.id,
+        limit: 100,
+        sort: "created_date",
+      });
+      return res.data?.messages || [];
+    },
     enabled: !!parentMessage?.id,
     refetchInterval: 3000,
   });

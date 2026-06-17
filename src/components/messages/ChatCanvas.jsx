@@ -243,16 +243,16 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   } = useInfiniteQuery({
     queryKey: ["messages", channelId],
     queryFn: async ({ pageParam = 0 }) => {
-      const msgs = await base44.entities.Message.filter(
-        { channel_id: channelId },
-        "-created_date",
-        50
-      );
-      return msgs.slice(pageParam, pageParam + 50);
+      const res = await base44.functions.invoke('getMessagesFiltered', {
+        channel_id: channelId,
+        limit: 50,
+        skip: pageParam,
+      });
+      return { messages: res.data?.messages || [], hasMore: res.data?.has_more ?? false };
     },
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < 50) return undefined;
-      return allPages.flat().length;
+      if (!lastPage.hasMore) return undefined;
+      return allPages.reduce((sum, p) => sum + p.messages.length, 0);
     },
     initialPageParam: 0,
     enabled: !!channelId,
@@ -307,7 +307,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const allMessages = data?.pages.flat() ?? [];
+  const allMessages = data?.pages?.flatMap(p => p.messages) ?? [];
 
   // When new messages arrive while viewing, clear unread immediately
   useEffect(() => {
