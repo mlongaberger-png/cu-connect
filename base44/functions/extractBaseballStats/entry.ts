@@ -35,6 +35,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: "file_url and player_id are required" }, { status: 400 });
     }
 
+    // Enforce team-scope: coaches can only access teams they coach; admins/ADs unrestricted
+    if (!["admin", "athletic_director"].includes(user.role) && team_id) {
+      const profiles = await base44.asServiceRole.entities.CoachProfile.filter({ user_id: user.id, team_id });
+      if (profiles.length === 0) {
+        return Response.json({ error: "Forbidden: not authorized for this team" }, { status: 403 });
+      }
+    }
+
+    // Verify the player actually belongs to the specified team
+    if (player_id && team_id) {
+      const playerRecords = await base44.asServiceRole.entities.Player.filter({ id: player_id, team_id });
+      if (playerRecords.length === 0) {
+        return Response.json({ error: "Forbidden: player does not belong to this team" }, { status: 403 });
+      }
+    }
+
     console.log(`[extractBaseballStats] Starting for player: ${player_name} (${player_id})`);
     console.log(`[extractBaseballStats] File URL: ${file_url}`);
 

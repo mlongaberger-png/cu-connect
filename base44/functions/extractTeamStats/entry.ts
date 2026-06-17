@@ -61,6 +61,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: "file_url and team_id are required" }, { status: 400 });
     }
 
+    // Enforce team-scope: coaches can only access teams they coach; admins/ADs unrestricted
+    if (!["admin", "athletic_director"].includes(user.role)) {
+      const profiles = await base44.asServiceRole.entities.CoachProfile.filter({ user_id: user.id, team_id });
+      if (profiles.length === 0) {
+        return Response.json({ error: "Forbidden: not authorized for this team" }, { status: 403 });
+      }
+    }
+
     console.log(`[extractTeamStats] Starting for team: ${team_name} (${team_id})`);
     console.log(`[extractTeamStats] File URL: ${file_url}`);
 

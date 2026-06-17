@@ -12,6 +12,14 @@ Deno.serve(async (req) => {
     const { file_url, team_id, team_name, sport_name } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
+    // Enforce team-scope: coaches can only access teams they coach; admins/ADs unrestricted
+    if (!['admin', 'athletic_director'].includes(user.role) && team_id) {
+      const profiles = await base44.asServiceRole.entities.CoachProfile.filter({ user_id: user.id, team_id });
+      if (profiles.length === 0) {
+        return Response.json({ error: 'Forbidden: not authorized for this team' }, { status: 403 });
+      }
+    }
+
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are extracting a sports team roster from a document for team "${team_name || 'Unknown'}" (${sport_name || 'sport'}).
 
