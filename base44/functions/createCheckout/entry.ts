@@ -63,9 +63,25 @@ Deno.serve(async (req) => {
 
       resolvedInvoices = fetched.filter(Boolean);
 
-      // Enforce ownership: each invoice must belong to the authenticated user
+      // Enforce ownership: invoice must belong to the authenticated user (direct match)
+      // OR the user must be a guardian with financial_contributor permission for that player
+      const invoicePlayerIds = [...new Set(resolvedInvoices.map(inv => inv.player_id).filter(Boolean))];
+      let guardianFinancialAccess = new Set();
+      if (invoicePlayerIds.length > 0) {
+        const guardianLinks = await base44.asServiceRole.entities.PlayerGuardian.filter({
+          user_email: user.email,
+        });
+        for (const link of guardianLinks) {
+          if (invoicePlayerIds.includes(link.player_id) && (link.permissions || []).includes('financial_contributor')) {
+            guardianFinancialAccess.add(link.player_id);
+          }
+        }
+      }
+
       for (const inv of resolvedInvoices) {
-        if (inv.parent_email && inv.parent_email !== user.email) {
+        const isDirectOwner = inv.parent_email && inv.parent_email === user.email;
+        const isFinancialGuardian = inv.player_id && guardianFinancialAccess.has(inv.player_id);
+        if (!isDirectOwner && !isFinancialGuardian) {
           return Response.json({ error: 'Forbidden: invoice does not belong to you' }, { status: 403 });
         }
       }
