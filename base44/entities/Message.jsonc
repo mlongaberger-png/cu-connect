@@ -39,5 +39,15 @@
   "required": [
     "channel_id",
     "content_text"
-  ]
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": {
+      "sender_user_id": "{{user.id}}"
+    },
+    "delete": {
+      "sender_user_id": "{{user.id}}"
+    }
+  }
 }
