@@ -24,15 +24,27 @@
     },
     "expires_at": {
       "type": "string",
-      "description": "ISO timestamp when the session naturally expires"
+      "description": "ISO timestamp when the session naturally expires (legacy 30-day window)"
     },
     "revoked_at": {
       "type": "string",
-      "description": "ISO timestamp \u2014 null means active, set on explicit logout"
+      "description": "ISO timestamp \u2014 null means active, set on explicit logout or rotation"
     },
     "last_active_at": {
       "type": "string",
-      "description": "ISO timestamp of last validated activity"
+      "description": "ISO timestamp of last validated activity (legacy, use last_used_at)"
+    },
+    "last_used_at": {
+      "type": "string",
+      "description": "ISO timestamp of last token usage \u2014 inactivity timer resets on every validateSession call"
+    },
+    "rotated_at": {
+      "type": "string",
+      "description": "ISO timestamp of the most recent token rotation \u2014 rotation required after 4 hours"
+    },
+    "max_expires_at": {
+      "type": "string",
+      "description": "ISO timestamp 7 days after created_date \u2014 session hard-deadline, forces re-login regardless of activity"
     }
   },
   "required": [
