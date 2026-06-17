@@ -15,6 +15,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Session guard — rejects revoked/inactive/expired sessions
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (token) {
+      try {
+        const sc = await base44.asServiceRole.functions.invoke('validateSession', { token, user_id: caller.id });
+        if (sc?.valid === false && sc?.reason !== 'session_not_found') {
+          return Response.json({ error: sc.error || 'Session invalid', reason: sc.reason }, { status: 401 });
+        }
+      } catch (e) {
+        // Session check itself failed — don't block. Function's own auth guard is satisfied.
+        console.error('[session-gate]', e.message);
+      }
+    }
+
     const { user_emails, title, body, url, team_id, room_id } = await req.json();
 
     if (!user_emails?.length || !title) {

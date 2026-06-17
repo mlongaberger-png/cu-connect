@@ -6,6 +6,21 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Session guard — rejects revoked/inactive/expired sessions
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (token) {
+      try {
+        const sc = await base44.asServiceRole.functions.invoke('validateSession', { token, user_id: user.id });
+        if (sc?.valid === false && sc?.reason !== 'session_not_found') {
+          return Response.json({ error: sc.error || 'Session invalid', reason: sc.reason }, { status: 401 });
+        }
+      } catch (e) {
+        // Session check itself failed — don't block. Function's own auth guard is satisfied.
+        console.error('[session-gate]', e.message);
+      }
+    }
+
     // Delegate cascading child-record cleanup to orphanedRecordCleaner (service-role call)
     const cleanupResult = await base44.asServiceRole.functions.invoke('orphanedRecordCleaner', {
       target_email: user.email,

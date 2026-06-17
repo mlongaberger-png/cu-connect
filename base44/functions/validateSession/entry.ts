@@ -31,15 +31,31 @@ function hashToken(token) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Accept token from body (when called from another backend function)
+    // or from Authorization header (when called directly by the client)
+    const body = await req.json().catch(() => ({}));
+    let token = body?.token || null;
+    let userIdFromToken = body?.user_id || null;
+
+    if (!token) {
+      const authHeader = req.headers.get('authorization');
+      token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    }
+
+    if (!token) {
+      return Response.json({ error: 'Unauthorized — no token in request' }, { status: 401 });
+    }
+
+    // Verify the platform token is still valid
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized — no valid platform token' }, { status: 401 });
     }
 
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) {
-      return Response.json({ error: 'Unauthorized — no token in request' }, { status: 401 });
+    // If caller passed a user_id, verify it matches the token (prevents token-swapping)
+    if (userIdFromToken && userIdFromToken !== user.id) {
+      return Response.json({ error: 'Unauthorized — token/user mismatch' }, { status: 401 });
     }
 
     const tokenHash = await hashToken(token);
@@ -52,10 +68,14 @@ Deno.serve(async (req) => {
     });
 
     if (sessions.length === 0) {
+      // Return 200 so gate callers can distinguish "not found" from truly invalid.
+      // Callers should allow session_not_found through (backward compat).
       return Response.json({
-        error: 'Unauthorized — session not found',
+        valid: false,
+        error: 'Session not found',
         reason: 'session_not_found',
-      }, { status: 401 });
+        note: 'User has no tracked session — caller may allow or deny at its discretion',
+      });
     }
 
     const session = sessions[0];

@@ -9,6 +9,22 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Session guard — rejects revoked/inactive/expired sessions
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (token) {
+      try {
+        const sc = await base44.asServiceRole.functions.invoke('validateSession', { token, user_id: user.id });
+        if (sc?.valid === false && sc?.reason !== 'session_not_found') {
+          return Response.json({ error: sc.error || 'Session invalid', reason: sc.reason }, { status: 401 });
+        }
+      } catch (e) {
+        // Session check itself failed (e.g. no session record, or platform error) — don't block.
+        // The function's own auth guard (auth.me()) is already satisfied.
+        console.error('[session-gate]', e.message);
+      }
+    }
+
     const { amount, description, player_id, player_name, team_name, invoice_ids, success_url, cancel_url } = await req.json();
 
     console.log('[createCheckout] invoice_ids received:', invoice_ids);
