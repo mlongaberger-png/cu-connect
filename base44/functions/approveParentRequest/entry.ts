@@ -12,16 +12,13 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const caller = await base44.auth.me();
-    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    // Re-fetch role from DB to prevent privilege escalation via stale token
-    const dbUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
-    const callerRole = dbUsers[0]?.role;
-    if (callerRole !== 'admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    const user = { ...caller, role: callerRole };
+    // ── Admin gate — DB role check + IP allowlist + audit log ─────────
+    const gate = await base44.asServiceRole.functions.invoke('requireAdminAuth', {
+      endpoint: 'approveParentRequest',
+      action: 'approve_parent_request',
+    });
+    if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const user = { email: gate.user_email, id: gate.user_id };
 
     const rawBody = await req.json();
     const parsed = approveRequestSchema.safeParse(rawBody);

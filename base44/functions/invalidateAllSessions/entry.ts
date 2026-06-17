@@ -11,14 +11,13 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // ── Admin guard ───────────────────────────────────────────────────
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const users = await base44.asServiceRole.entities.User.filter({ email: user.email });
-    if (!users.length || !['admin', 'athletic_director'].includes(users[0].role)) {
-      return Response.json({ error: 'Forbidden — admin only' }, { status: 403 });
-    }
+    // ── Admin gate — DB role check + IP allowlist + audit log ─────────
+    const gate = await base44.asServiceRole.functions.invoke('requireAdminAuth', {
+      endpoint: 'invalidateAllSessions',
+      action: 'invalidate_all_sessions',
+    });
+    if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const user = { id: gate.user_id, email: gate.user_email };
 
     // ── Fetch all active sessions ─────────────────────────────────────
     const allSessions = await base44.asServiceRole.entities.UserSession.list();

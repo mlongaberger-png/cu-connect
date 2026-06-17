@@ -4,15 +4,14 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Re-fetch caller role from DB — never trust the request payload
-    const caller = await base44.auth.me();
-    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const dbUser = await base44.asServiceRole.entities.User.filter({ email: caller.email });
-    const callerRole = dbUser[0]?.role;
-    if (callerRole !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
+    // ── Admin gate — DB role check + IP allowlist + audit log ─────────
+    const gate = await base44.asServiceRole.functions.invoke('requireAdminAuth', {
+      endpoint: 'adminDeleteAccount',
+      action: 'delete_user_account',
+    });
+    if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const caller = { email: gate.user_email, id: gate.user_id };
+    const callerRole = 'admin';
 
     // Session guard — rejects revoked/inactive/expired sessions
     const authHeader = req.headers.get('authorization');

@@ -4,11 +4,12 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Verify requester is admin
-    const user = await base44.auth.me();
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
+    // ── Admin gate — DB role check (not JWT claim) + IP allowlist + audit log ──
+    const gate = await base44.asServiceRole.functions.invoke('requireAdminAuth', {
+      endpoint: 'inviteStaff',
+      action: 'invite_staff',
+    });
+    if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const { email, role, sport_id, sport_name, team_id, team_name } = await req.json();
 
