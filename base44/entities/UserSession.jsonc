@@ -1,0 +1,42 @@
+{
+  "name": "UserSession",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the authenticated user"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized user email for queries"
+    },
+    "token_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the session token \u2014 never store raw tokens"
+    },
+    "device_info": {
+      "type": "string",
+      "description": "User-agent or device fingerprint string"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address at session creation"
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "ISO timestamp when the session naturally expires"
+    },
+    "revoked_at": {
+      "type": "string",
+      "description": "ISO timestamp \u2014 null means active, set on explicit logout"
+    },
+    "last_active_at": {
+      "type": "string",
+      "description": "ISO timestamp of last validated activity"
+    }
+  },
+  "required": [
+    "user_id",
+    "token_hash"
+  ]
+}

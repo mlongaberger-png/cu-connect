@@ -137,6 +137,11 @@ export const AuthProvider = ({ children }) => {
       setUser(enriched);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+
+      // Track this session at the app level (async, non-blocking)
+      base44.functions.invoke('trackSession', {
+        device_info: navigator?.userAgent || 'unknown',
+      }).catch(e => console.warn('Session tracking skipped:', e.message));
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
@@ -152,16 +157,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
+    // 1. Revoke the app-level session record (server-side)
+    try {
+      await base44.functions.invoke('revokeSession', { revoke_all: false });
+    } catch (e) {
+      console.warn('Session revocation skipped:', e.message);
+    }
+
+    // 2. Clear local state immediately
     setUser(null);
     setIsAuthenticated(false);
-    
+
+    // 3. Platform-level token invalidation + redirect
     if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
       base44.auth.logout(window.location.href);
     } else {
-      // Just remove the token without redirect
       base44.auth.logout();
+    }
+  };
+
+  const revokeAllSessions = async () => {
+    try {
+      const res = await base44.functions.invoke('revokeSession', { revoke_all: true });
+      return res.data;
+    } catch (e) {
+      console.warn('Revoke all sessions failed:', e.message);
+      throw e;
     }
   };
 
@@ -179,6 +201,7 @@ export const AuthProvider = ({ children }) => {
       authError,
       appPublicSettings,
       logout,
+      revokeAllSessions,
       navigateToLogin,
       checkAppState,
       refreshUser
