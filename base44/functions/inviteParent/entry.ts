@@ -3,7 +3,7 @@ import { z } from 'npm:zod@3.24.2';
 
 const inviteParentSchema = z.object({
   email: z.string().email(),
-  role: z.string().optional(),
+  role: z.enum(['parent', 'grandparent']).optional(),
   relationship: z.string().optional(),
   players: z.array(z.object({
     player_id: z.string(),
