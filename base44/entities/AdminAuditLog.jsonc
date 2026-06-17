@@ -1,0 +1,80 @@
+{
+  "name": "AdminAuditLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Admin user ID"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Admin email"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Function name that was accessed"
+    },
+    "action": {
+      "type": "string",
+      "description": "Action performed"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address of the request"
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "allowed",
+        "denied"
+      ],
+      "description": "Whether access was granted or denied"
+    }
+  },
+  "required": [
+    "user_id",
+    "endpoint",
+    "ip_address",
+    "result"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin"
+          ]
+        }
+      }
+    }
+  }
+}
