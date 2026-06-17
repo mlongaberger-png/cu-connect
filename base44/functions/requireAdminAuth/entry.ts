@@ -10,11 +10,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * Checks (any failure → 403, no detail):
  *   1. Auth — user must be logged in
  *   2. DB role — queries User entity directly (does NOT trust caller-supplied role)
- *   3. IP allowlist — matches req.ip against ADMIN_IP_ALLOWLIST (comma-separated, skip if unset)
- *   4. Logs to AdminAuditLog (allowed or denied)
+ *   3. Logs every attempt to AdminAuditLog (allowed or denied)
+ *
+ * IP allowlist: add a Deno.env.get + check block below when the secret is set.
  */
 
-/** Extract best-effort client IP from request headers */
 function getClientIP(req) {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || req.headers.get('x-real-ip')
@@ -57,24 +57,7 @@ Deno.serve(async (req) => {
       return Response.json({ allowed: false }, { status: 403 });
     }
 
-    // ── 3. IP allowlist ─────────────────────────────────────────────
-    const allowlist = Deno.env.get('ADMIN_IP_ALLOWLIST');
-    if (allowlist && ip) {
-      const allowedIPs = allowlist.split(',').map(s => s.trim());
-      if (!allowedIPs.includes(ip)) {
-        await base44.asServiceRole.entities.AdminAuditLog.create({
-          user_id: user.id,
-          user_email: user.email,
-          endpoint: endpoint || 'unknown',
-          action: action || 'unknown',
-          ip_address: ip,
-          result: 'denied',
-        }).catch(() => {});
-        return Response.json({ allowed: false }, { status: 403 });
-      }
-    }
-
-    // ── 4. Log allowed access ───────────────────────────────────────
+    // ── 3. Log allowed access ───────────────────────────────────────
     await base44.asServiceRole.entities.AdminAuditLog.create({
       user_id: user.id,
       user_email: user.email,
