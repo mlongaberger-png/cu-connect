@@ -2,16 +2,25 @@
   "name": "BlockedUser",
   "type": "object",
   "properties": {
+    "blocker_id": {
+      "type": "string",
+      "description": "User ID of the person doing the blocking"
+    },
     "blocker_email": {
       "type": "string",
-      "description": "Email of the user doing the blocking"
+      "description": "Denormalized email of the blocker"
+    },
+    "blocked_id": {
+      "type": "string",
+      "description": "User ID of the person being blocked"
     },
     "blocked_email": {
       "type": "string",
-      "description": "Email of the user being blocked"
+      "description": "Denormalized email of the blocked user"
     },
     "blocked_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Display name of the blocked user"
     },
     "reason": {
       "type": "string",
@@ -19,19 +28,21 @@
     }
   },
   "required": [
-    "blocker_email",
-    "blocked_email"
+    "blocker_id",
+    "blocked_id"
   ],
   "rls": {
     "create": {
-      "blocker_email": "{{user.email}}"
+      "blocker_id": "{{user.id}}"
     },
-    "read": true,
+    "read": {
+      "blocker_id": "{{user.id}}"
+    },
     "update": {
-      "blocker_email": "{{user.email}}"
+      "blocker_id": "{{user.id}}"
     },
     "delete": {
-      "blocker_email": "{{user.email}}"
+      "blocker_id": "{{user.id}}"
     }
   }
 }
