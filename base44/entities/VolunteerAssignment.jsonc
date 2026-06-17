@@ -50,5 +50,32 @@
     "opportunity_id",
     "player_id",
     "volunteer_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "volunteer_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director",
+            "coach"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    }
+  }
 }

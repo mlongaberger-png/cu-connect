@@ -45,5 +45,38 @@
   },
   "required": [
     "name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    }
+  }
 }

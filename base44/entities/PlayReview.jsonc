@@ -26,5 +26,17 @@
     "play_id",
     "player_id",
     "reviewed_by_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "reviewed_by_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "reviewed_by_email": "{{user.email}}"
+    },
+    "delete": {
+      "reviewed_by_email": "{{user.email}}"
+    }
+  }
 }

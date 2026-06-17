@@ -21,5 +21,17 @@
     "message_id",
     "user_id",
     "reaction_type"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_id": "{{user.id}}"
+    },
+    "read": true,
+    "update": {
+      "user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_id": "{{user.id}}"
+    }
+  }
 }

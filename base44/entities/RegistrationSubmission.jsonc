@@ -88,5 +88,33 @@
     "player_first_name",
     "player_last_name",
     "parent_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "parent_email": "{{user.email}}"
+    },
+    "read": {
+      "parent_email": "{{user.email}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    }
+  }
 }

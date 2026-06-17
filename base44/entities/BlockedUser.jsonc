@@ -21,5 +21,17 @@
   "required": [
     "blocker_email",
     "blocked_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "blocker_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "blocker_email": "{{user.email}}"
+    },
+    "delete": {
+      "blocker_email": "{{user.email}}"
+    }
+  }
 }

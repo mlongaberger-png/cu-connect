@@ -40,5 +40,19 @@
   "required": [
     "film_clip_id",
     "viewer_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "viewer_email": "{{user.email}}"
+    },
+    "read": {
+      "viewer_email": "{{user.email}}"
+    },
+    "update": {
+      "viewer_email": "{{user.email}}"
+    },
+    "delete": {
+      "viewer_email": "{{user.email}}"
+    }
+  }
 }

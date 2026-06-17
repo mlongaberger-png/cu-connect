@@ -38,5 +38,17 @@
   "required": [
     "team_id",
     "photo_url"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "uploader_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "uploader_email": "{{user.email}}"
+    },
+    "delete": {
+      "uploader_email": "{{user.email}}"
+    }
+  }
 }

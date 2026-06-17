@@ -63,5 +63,41 @@
     "team_id",
     "role_id",
     "date"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director",
+            "coach"
+          ]
+        }
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director",
+            "coach"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director",
+            "coach"
+          ]
+        }
+      }
+    }
+  }
 }

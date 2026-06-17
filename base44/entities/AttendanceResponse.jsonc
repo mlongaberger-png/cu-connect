@@ -36,5 +36,17 @@
     "attendance_request_id",
     "player_id",
     "status"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "responder_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "responder_email": "{{user.email}}"
+    },
+    "delete": {
+      "responder_email": "{{user.email}}"
+    }
+  }
 }

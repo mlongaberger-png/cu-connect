@@ -69,5 +69,17 @@
     "requester_email",
     "event_date",
     "carpool_type"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "requester_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "requester_email": "{{user.email}}"
+    },
+    "delete": {
+      "requester_email": "{{user.email}}"
+    }
+  }
 }

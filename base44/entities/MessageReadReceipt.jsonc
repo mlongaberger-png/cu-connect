@@ -26,5 +26,17 @@
   "required": [
     "message_id",
     "reader_email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "reader_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "reader_email": "{{user.email}}"
+    },
+    "delete": {
+      "reader_email": "{{user.email}}"
+    }
+  }
 }

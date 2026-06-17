@@ -54,5 +54,31 @@
   },
   "required": [
     "business_name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "submitted_by_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    }
+  }
 }

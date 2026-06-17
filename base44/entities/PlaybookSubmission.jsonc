@@ -77,5 +77,24 @@
     "assignment_id",
     "player_id",
     "playbook_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "player_email": "{{user.email}}"
+    },
+    "read": true,
+    "update": {
+      "player_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "admin",
+            "athletic_director"
+          ]
+        }
+      }
+    }
+  }
 }
