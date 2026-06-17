@@ -12,7 +12,11 @@
     },
     "token_hash": {
       "type": "string",
-      "description": "SHA-256 hash of the session token \u2014 never store raw tokens"
+      "description": "SHA-256 hash of the platform JWT \u2014 never store raw tokens"
+    },
+    "session_token_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the 256-bit session token (NIST SP 800-63B) \u2014 never store raw tokens"
     },
     "device_info": {
       "type": "string",

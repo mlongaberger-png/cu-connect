@@ -19,16 +19,29 @@ Deno.serve(async (req) => {
     const { device_info } = body;
 
     const authHeader = req.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) {
+    const platformToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!platformToken) {
       return Response.json({ error: 'No token in request' }, { status: 400 });
     }
 
-    // SHA-256 hash — raw token never stored
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(token));
+    // ── Generate 256-bit session token (NIST SP 800-63B) ──────────────
+    // crypto.getRandomValues is the Deno/Web Crypto equivalent of crypto.randomBytes(32)
+    const sessionTokenBytes = new Uint8Array(32);
+    crypto.getRandomValues(sessionTokenBytes);
+    const sessionToken = btoa(String.fromCharCode(...sessionTokenBytes))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // SHA-256 hash the session token — raw token never stored
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sessionToken));
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const sessionTokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Also hash the platform JWT for the existing token_hash column
+    const platformHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(platformToken));
+    const platformHashArray = Array.from(new Uint8Array(platformHashBuffer));
+    const platformTokenHash = platformHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     const nowISO = new Date().toISOString();
     const maxExpiresISO = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -37,12 +50,13 @@ Deno.serve(async (req) => {
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null;
     const device = device_info || req.headers.get('user-agent') || null;
 
-    // Check for duplicate — upsert by token_hash
-    const existing = await base44.asServiceRole.entities.UserSession.filter({ token_hash: tokenHash });
+    // Check for duplicate — upsert by platform token_hash
+    const existing = await base44.asServiceRole.entities.UserSession.filter({ token_hash: platformTokenHash });
     if (existing.length > 0) {
       const s = existing[0];
       // If previously revoked (rotation), reactivate with new data
       await base44.asServiceRole.entities.UserSession.update(s.id, {
+        session_token_hash: sessionTokenHash,
         last_active_at: nowISO,
         last_used_at: nowISO,
         rotated_at: s.rotated_at || nowISO,
@@ -55,6 +69,7 @@ Deno.serve(async (req) => {
       });
       return Response.json({
         session_id: s.id,
+        session_token: sessionToken,
         status: s.revoked_at ? 'reactivated' : 'updated',
         max_expires_at: s.max_expires_at || maxExpiresISO,
       });
@@ -64,7 +79,8 @@ Deno.serve(async (req) => {
     const session = await base44.asServiceRole.entities.UserSession.create({
       user_id: user.id,
       user_email: user.email,
-      token_hash: tokenHash,
+      token_hash: platformTokenHash,
+      session_token_hash: sessionTokenHash,
       device_info: device,
       ip_address: ip,
       expires_at: legacyExpiresISO,
@@ -76,6 +92,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       session_id: session.id,
+      session_token: sessionToken,
       status: 'created',
       max_expires_at: maxExpiresISO,
     });

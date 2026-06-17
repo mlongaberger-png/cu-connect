@@ -21,29 +21,45 @@ const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000;    // 7 days
 const ROTATION_WINDOW_MS = 4 * 60 * 60 * 1000;          // 4 hours
 
 function hashToken(token) {
-  const encoder = new TextEncoder();
-  return crypto.subtle.digest('SHA-256', encoder.encode(token)).then(hashBuffer => {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)).then(hashBuffer => {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   });
+}
+
+/** Generate a fresh 256-bit session token (NIST SP 800-63B) */
+function generateSessionToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Accept token from body (when called from another backend function)
-    // or from Authorization header (when called directly by the client)
+    // Accept session_token from body or X-Session-Token header (NIST SP 800-63B)
+    // Also accept platform token from body or Authorization header (legacy)
     const body = await req.json().catch(() => ({}));
-    let token = body?.token || null;
+    let sessionToken = body?.session_token || null;
+    let platformToken = body?.token || null;
     let userIdFromToken = body?.user_id || null;
 
-    if (!token) {
-      const authHeader = req.headers.get('authorization');
-      token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    // Session token from header takes priority over body
+    if (!sessionToken) {
+      sessionToken = req.headers.get('x-session-token') || null;
     }
 
-    if (!token) {
+    // Platform token from Authorization header
+    if (!platformToken) {
+      const authHeader = req.headers.get('authorization');
+      platformToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    }
+
+    if (!sessionToken && !platformToken) {
       return Response.json({ error: 'Unauthorized — no token in request' }, { status: 401 });
     }
 
@@ -58,14 +74,26 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized — token/user mismatch' }, { status: 401 });
     }
 
-    const tokenHash = await hashToken(token);
     const now = new Date();
     const nowISO = now.toISOString();
 
     // ── Look up the session ──────────────────────────────────────────
-    const sessions = await base44.asServiceRole.entities.UserSession.filter({
-      token_hash: tokenHash,
-    });
+    // Prefer session_token_hash lookup (NIST SP 800-63B); fall back to platform token_hash
+    let sessions = [];
+    if (sessionToken) {
+      const sessionTokenHash = await hashToken(sessionToken);
+      sessions = await base44.asServiceRole.entities.UserSession.filter({
+        session_token_hash: sessionTokenHash,
+      });
+    }
+
+    // Fall back to platform token lookup if session token didn't match
+    if (sessions.length === 0 && platformToken) {
+      const platformTokenHash = await hashToken(platformToken);
+      sessions = await base44.asServiceRole.entities.UserSession.filter({
+        token_hash: platformTokenHash,
+      });
+    }
 
     if (sessions.length === 0) {
       // Return 200 so gate callers can distinguish "not found" from truly invalid.
