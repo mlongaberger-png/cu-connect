@@ -1,0 +1,52 @@
+{
+  "name": "CalendarToken",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who owns this calendar token"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Denormalized user email"
+    },
+    "token_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the raw token \u2014 never store raw tokens"
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "ISO timestamp 90 days after creation"
+    },
+    "revoked_at": {
+      "type": "string",
+      "description": "ISO timestamp \u2014 null means active"
+    },
+    "last_used_at": {
+      "type": "string",
+      "description": "ISO timestamp of last ICS feed access"
+    },
+    "teams": {
+      "type": "string",
+      "description": "JSON array of team IDs this token scopes to"
+    }
+  },
+  "required": [
+    "user_id",
+    "token_hash"
+  ],
+  "rls": {
+    "create": {
+      "user_id": "{{user.id}}"
+    },
+    "read": {
+      "user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_id": "{{user.id}}"
+    }
+  }
+}

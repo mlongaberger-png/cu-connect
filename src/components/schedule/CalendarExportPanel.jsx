@@ -1,17 +1,35 @@
-import React, { useState } from "react";
-import { Download, Link, Calendar, X, Check, Smartphone } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Download, Link, Calendar, X, Check, Smartphone, RefreshCw, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateICSContent, downloadICS } from "@/utils/calendarExport";
+import { base44 } from "@/api/base44Client";
 
 export default function CalendarExportPanel({ events, teams, myTeamIds, onClose }) {
   const [copied, setCopied] = useState(false);
   const [showInstructions, setShowInstructions] = useState(null); // "google" | "apple"
+  const [token, setToken] = useState(null);
+  const [generating, setGenerating] = useState(false);
 
   const visibleEvents = myTeamIds
     ? events.filter(e => myTeamIds.includes(e.team_id))
     : events;
 
-  const subscriptionUrl = `${window.location.origin}/api/functions/icsCalendarFeed`;
+  // Generate token on mount
+  useEffect(() => {
+    const gen = async () => {
+      setGenerating(true);
+      try {
+        const res = await base44.functions.invoke('generateCalendarToken', { teams: myTeamIds || teams.map(t => t.id) });
+        if (res.data?.token) setToken(res.data.token);
+      } catch {}
+      setGenerating(false);
+    };
+    gen();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const subscriptionUrl = token
+    ? `${window.location.origin}/api/calendar/feed?token=${token}`
+    : null;
 
   const handleDownloadAll = () => {
     const ics = generateICSContent(visibleEvents);
@@ -26,20 +44,21 @@ export default function CalendarExportPanel({ events, teams, myTeamIds, onClose 
   };
 
   const handleAddToGoogle = () => {
-    // Google Calendar subscribe URL — uses the webcal:// protocol URL
+    if (!subscriptionUrl) return;
     const webcalUrl = subscriptionUrl.replace(/^https?:\/\//, "webcal://");
     const googleUrl = `https://www.google.com/calendar/render?cid=${encodeURIComponent(webcalUrl)}`;
     window.open(googleUrl, "_blank");
   };
 
   const copyUrl = async () => {
+    if (!subscriptionUrl) return;
     await navigator.clipboard.writeText(subscriptionUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleAddToApple = () => {
-    // On iOS/macOS, webcal:// links open directly in Calendar app
+    if (!subscriptionUrl) return;
     const webcalUrl = subscriptionUrl.replace(/^https?:\/\//, "webcal://");
     window.location.href = webcalUrl;
   };
@@ -116,15 +135,25 @@ export default function CalendarExportPanel({ events, teams, myTeamIds, onClose 
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Subscription URL (Advanced)</p>
           <p className="text-xs text-muted-foreground">Use this URL in any calendar app that supports webcal subscriptions (Outlook, etc).</p>
-          <div className="flex gap-2">
-            <div className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-xs text-muted-foreground truncate">
-              {subscriptionUrl}
+          {generating ? (
+            <div className="flex items-center gap-2 px-3 py-3 bg-surface border border-border rounded-lg text-xs text-muted-foreground">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Generating secure token…
             </div>
-            <Button size="sm" variant="outline" className="border-border flex-shrink-0" onClick={copyUrl}>
-              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Link className="w-3.5 h-3.5" />}
-              {copied ? "Copied!" : "Copy"}
-            </Button>
-          </div>
+          ) : !token ? (
+            <div className="flex items-center gap-2 px-3 py-3 bg-surface border border-border rounded-lg text-xs text-muted-foreground">
+              <Key className="w-3.5 h-3.5" /> Token unavailable — reload the panel.
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <div className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-xs text-muted-foreground truncate">
+                {subscriptionUrl}
+              </div>
+              <Button size="sm" variant="outline" className="border-border flex-shrink-0" onClick={copyUrl}>
+                {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Link className="w-3.5 h-3.5" />}
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

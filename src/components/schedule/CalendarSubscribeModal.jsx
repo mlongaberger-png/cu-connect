@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, Smartphone, Link } from "lucide-react";
+import { Copy, Check, Smartphone, Link, RefreshCw, Key } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { base44 } from "@/api/base44Client";
 
 export default function CalendarSubscribeModal({ open, onOpenChange, teams, myTeamIds = [] }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [token, setToken] = useState(null);
+  const [generating, setGenerating] = useState(false);
 
   // Pre-check the user's own teams, fall back to all teams
   const defaultSelected = myTeamIds.length > 0 ? myTeamIds : teams.map(t => t.id);
@@ -19,10 +22,35 @@ export default function CalendarSubscribeModal({ open, onOpenChange, teams, myTe
     );
   };
 
-  const feedUrl = `${window.location.origin}/api/calendar/feed?teams=${selectedIds.join(",")}`;
-  const webcalUrl = feedUrl.replace(/^https?:\/\//, "webcal://");
+  const generateToken = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await base44.functions.invoke('generateCalendarToken', { teams: selectedIds });
+      if (res.data?.token) {
+        setToken(res.data.token);
+        toast({ title: "Token ready", description: "Your calendar feed is now secured." });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to generate calendar token.", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  }, [selectedIds, toast]);
+
+  // Auto-generate on open
+  useEffect(() => {
+    if (open) {
+      generateToken();
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const feedUrl = token
+    ? `${window.location.origin}/api/calendar/feed?token=${token}`
+    : null;
+  const webcalUrl = feedUrl ? feedUrl.replace(/^https?:\/\//, "webcal://") : null;
 
   const handleCopy = async () => {
+    if (!feedUrl) return;
     await navigator.clipboard.writeText(feedUrl);
     setCopied(true);
     toast({ title: "Copied!", description: "Paste into Google Calendar or Outlook → 'Subscribe by URL'." });
@@ -70,40 +98,57 @@ export default function CalendarSubscribeModal({ open, onOpenChange, teams, myTe
 
         {/* Actions */}
         <div className="space-y-3 pt-1">
-          {/* Apple / iOS */}
-          <Button
-            className="w-full gap-2 bg-primary text-primary-foreground"
-            disabled={selectedIds.length === 0}
-            onClick={() => window.open(webcalUrl)}
-          >
-            <Smartphone className="w-4 h-4" />
-            Sync to Apple / iOS Calendar
-          </Button>
-
-          {/* Copy link for Google / Outlook */}
-          <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-              <Link className="w-3.5 h-3.5" /> For Google Calendar or Outlook — paste this URL:
-            </p>
-            <div className="flex gap-2">
-              <Input
-                readOnly
-                value={feedUrl}
-                className="flex-1 bg-surface border-border text-xs font-mono"
-                onFocus={e => e.target.select()}
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 border-border gap-1.5"
-                onClick={handleCopy}
-                disabled={selectedIds.length === 0}
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? "Copied" : "Copy"}
+          {generating ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Generating secure token…
+            </div>
+          ) : !token ? (
+            <div className="flex flex-col items-center gap-2 py-4">
+              <Key className="w-6 h-6 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground text-center">No calendar token. Regenerating…</p>
+              <Button size="sm" variant="outline" className="border-border" onClick={generateToken}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry
               </Button>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Apple / iOS */}
+              <Button
+                className="w-full gap-2 bg-primary text-primary-foreground"
+                disabled={selectedIds.length === 0}
+                onClick={() => window.open(webcalUrl)}
+              >
+                <Smartphone className="w-4 h-4" />
+                Sync to Apple / iOS Calendar
+              </Button>
+
+              {/* Copy link for Google / Outlook */}
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <Link className="w-3.5 h-3.5" /> For Google Calendar or Outlook — paste this URL:
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={feedUrl}
+                    className="flex-1 bg-surface border-border text-xs font-mono"
+                    onFocus={e => e.target.select()}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 border-border gap-1.5"
+                    onClick={handleCopy}
+                    disabled={selectedIds.length === 0}
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -1,20 +1,14 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 function toICalDate(dateStr, timeStr) {
   if (!dateStr) return null;
   try {
-    // Build a combined datetime string
     if (timeStr && /^\d{2}:\d{2}/.test(timeStr)) {
       const dt = new Date(`${dateStr}T${timeStr}:00`);
-      if (!isNaN(dt)) {
-        return dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-      }
+      if (!isNaN(dt)) return dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
     }
-    // Date-only → all-day (treat as noon UTC to avoid timezone shifts)
     const dt = new Date(`${dateStr}T12:00:00Z`);
-    if (!isNaN(dt)) {
-      return dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    }
+    if (!isNaN(dt)) return dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   } catch {}
   return null;
 }
@@ -31,12 +25,53 @@ function escapeIcal(str) {
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
-    const teamsParam = url.searchParams.get("teams") || "";
-    const teamIds = teamsParam.split(",").map(s => s.trim()).filter(Boolean);
+    const rawToken = url.searchParams.get("token") || "";
+
+    // ── Reject unauthenticated requests ─────────────────────────────
+    if (!rawToken) {
+      return new Response("Missing calendar token. Generate one from your profile.", { status: 401 });
+    }
 
     const base44 = createClientFromRequest(req);
-    const allEvents = await base44.asServiceRole.entities.Event.list("-date", 500);
 
+    // ── Hash token & lookup ─────────────────────────────────────────
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawToken));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const tokens = await base44.asServiceRole.entities.CalendarToken.filter({
+      token_hash: tokenHash,
+      revoked_at: null,
+    });
+
+    if (tokens.length === 0) {
+      return new Response("Invalid or revoked calendar token.", { status: 401 });
+    }
+
+    const tokenRecord = tokens[0];
+
+    // ── Check expiry ────────────────────────────────────────────────
+    if (tokenRecord.expires_at && new Date(tokenRecord.expires_at) < new Date()) {
+      await base44.asServiceRole.entities.CalendarToken.update(tokenRecord.id, {
+        revoked_at: new Date().toISOString(),
+      });
+      return new Response("Calendar token expired. Generate a new one from your profile.", { status: 401 });
+    }
+
+    // ── Bump last_used_at ───────────────────────────────────────────
+    const nowISO = new Date().toISOString();
+    await base44.asServiceRole.entities.CalendarToken.update(tokenRecord.id, {
+      last_used_at: nowISO,
+    });
+
+    // ── Scope: stored teams or user's own events ────────────────────
+    let teamIds = [];
+    if (tokenRecord.teams) {
+      try { teamIds = JSON.parse(tokenRecord.teams); } catch {}
+    }
+
+    // ── Fetch events ────────────────────────────────────────────────
+    const allEvents = await base44.asServiceRole.entities.Event.list("-date", 500);
     const events = teamIds.length > 0
       ? allEvents.filter(e => teamIds.includes(e.team_id))
       : allEvents;
