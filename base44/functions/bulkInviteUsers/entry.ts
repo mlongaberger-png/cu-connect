@@ -2,8 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
  * Bulk-invite users to the app.
- * POST body: { users: [{ name, email, role }] }
- * Only admins can invite other admins; non-admins are limited to role "user".
+ * POST body: { users: [{ name, email }] }
+ * "role" is not accepted — it is not stored in the DB and must be rejected.
  */
 Deno.serve(async (req) => {
   try {
@@ -18,21 +18,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'users must be a non-empty array' }, { status: 400 });
     }
 
+    for (const u of users) {
+      // Reject any payload that includes "role" — it is not stored in the DB
+      if ('role' in u) {
+        return Response.json({ error: 'Invalid field: role is not accepted' }, { status: 400 });
+      }
+    }
+
     const results = [];
     for (const u of users) {
       if (!u.email) {
         results.push({ email: u.email || '(missing)', status: 'skipped', reason: 'Missing email' });
         continue;
       }
-      const role = u.role === 'admin' ? 'admin' : 'user';
-      // Non-admins cannot invite admins
-      if (role === 'admin' && user.role !== 'admin') {
-        results.push({ email: u.email, status: 'skipped', reason: 'Only admins can invite admins' });
-        continue;
-      }
       try {
-        await base44.users.inviteUser(u.email, role);
-        results.push({ email: u.email, status: 'invited', role });
+        await base44.users.inviteUser(u.email, 'user');
+        results.push({ email: u.email, status: 'invited' });
       } catch (e) {
         results.push({ email: u.email, status: 'failed', reason: e.message });
       }
