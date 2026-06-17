@@ -1,7 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 import Stripe from 'npm:stripe@14.21.0';
+import { z } from 'npm:zod@3.24.2';
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
+
+const checkoutSchema = z.object({
+  amount: z.number().optional(),
+  description: z.string().optional(),
+  player_id: z.string().optional(),
+  player_name: z.string().optional(),
+  team_name: z.string().optional(),
+  invoice_ids: z.array(z.string()).optional(),
+  success_url: z.string().optional(),
+  cancel_url: z.string().optional(),
+}).strict();
 
 Deno.serve(async (req) => {
   try {
@@ -25,7 +37,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { amount, description, player_id, player_name, team_name, invoice_ids, success_url, cancel_url } = await req.json();
+    const rawBody = await req.json();
+    const parsed = checkoutSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { amount, description, player_id, player_name, team_name, invoice_ids, success_url, cancel_url } = parsed.data;
 
     console.log('[createCheckout] invoice_ids received:', invoice_ids);
 

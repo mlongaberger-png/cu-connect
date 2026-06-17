@@ -1,4 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { z } from 'npm:zod@3.24.2';
+
+const approveRequestSchema = z.object({
+  request_id: z.string().min(1),
+  action: z.enum(['approve', 'reject']),
+  player_ids: z.array(z.string()).optional(),
+  alternate_email: z.string().optional(),
+}).strict();
 
 Deno.serve(async (req) => {
   try {
@@ -15,7 +23,12 @@ Deno.serve(async (req) => {
     }
     const user = { ...caller, role: callerRole };
 
-    const { request_id, action, player_ids, alternate_email } = await req.json();
+    const rawBody = await req.json();
+    const parsed = approveRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { request_id, action, player_ids, alternate_email } = parsed.data;
     if (!request_id || !action) {
       return Response.json({ error: 'request_id and action are required.' }, { status: 400 });
     }

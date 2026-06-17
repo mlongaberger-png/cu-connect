@@ -1,9 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { z } from 'npm:zod@3.24.2';
+
+const parentSignupSchema = z.object({
+  parent_name: z.string().min(1),
+  parent_email: z.string().email(),
+  parent_phone: z.string().optional(),
+  child_names: z.string().min(1),
+  sport_interest: z.string().optional(),
+  notes: z.string().optional(),
+}).strict();
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { parent_name, parent_email, parent_phone, child_names, sport_interest, notes } = await req.json();
+    const rawBody = await req.json();
+    const parsed = parentSignupSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { parent_name, parent_email, parent_phone, child_names, sport_interest, notes } = parsed.data;
 
     if (!parent_name || !parent_email || !child_names) {
       return Response.json({ error: 'Name, email, and child name(s) are required.' }, { status: 400 });

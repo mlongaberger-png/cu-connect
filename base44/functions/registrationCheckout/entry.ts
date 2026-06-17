@@ -1,12 +1,39 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import Stripe from 'npm:stripe@14.21.0';
+import { z } from 'npm:zod@3.24.2';
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
+
+const checkoutSchema = z.object({
+  registration_id: z.string(),
+  submission_data: z.object({
+    player_first_name: z.string(),
+    player_last_name: z.string(),
+    player_dob: z.string().optional(),
+    jersey_number: z.string().optional(),
+    position: z.string().optional(),
+    medical_notes: z.string().optional(),
+    emergency_contact: z.string().optional(),
+    emergency_phone: z.string().optional(),
+    parent_name: z.string(),
+    parent_email: z.string().email(),
+    parent_phone: z.string().optional(),
+    custom_field_1_value: z.string().optional(),
+    custom_field_2_value: z.string().optional(),
+  }).strict(),
+  success_url: z.string().optional(),
+  cancel_url: z.string().optional(),
+}).strict();
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { registration_id, submission_data, success_url, cancel_url } = await req.json();
+    const rawBody = await req.json();
+    const parsed = checkoutSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { registration_id, submission_data, success_url, cancel_url } = parsed.data;
 
     const registrations = await base44.asServiceRole.entities.TeamRegistration.filter({ id: registration_id });
     if (!registrations.length) {

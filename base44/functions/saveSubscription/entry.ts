@@ -1,4 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { z } from 'npm:zod@3.24.2';
+
+const subscriptionSchema = z.object({
+  endpoint: z.string().min(1),
+  keys: z.object({
+    p256dh: z.string(),
+    auth: z.string(),
+  }).optional(),
+  remove: z.boolean().optional(),
+}).strict();
 
 Deno.serve(async (req) => {
   try {
@@ -6,7 +16,12 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { endpoint, keys, remove } = await req.json();
+    const rawBody = await req.json();
+    const parsed = subscriptionSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { endpoint, keys, remove } = parsed.data;
 
     if (!endpoint) {
       return Response.json({ error: 'Missing endpoint' }, { status: 400 });

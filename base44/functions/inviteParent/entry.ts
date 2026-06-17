@@ -1,4 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { z } from 'npm:zod@3.24.2';
+
+const inviteParentSchema = z.object({
+  email: z.string().email(),
+  role: z.string().optional(),
+  relationship: z.string().optional(),
+  players: z.array(z.object({
+    player_id: z.string(),
+    player_name: z.string().optional(),
+  }).strict()).optional(),
+}).strict();
 
 Deno.serve(async (req) => {
   try {
@@ -14,7 +25,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { email, role, relationship, players } = await req.json();
+    const rawBody = await req.json();
+    const parsed = inviteParentSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
+    }
+    const { email, role, relationship, players } = parsed.data;
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
     // Invite the user — magic link will land them at /AcceptInvite
