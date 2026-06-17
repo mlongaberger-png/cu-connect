@@ -16,6 +16,11 @@ Deno.serve(async (req) => {
 
     if (!inv.parent_email) return Response.json({ error: 'No parent email on invoice' }, { status: 400 });
 
+    // Enforce ownership: only the invoice's parent or staff may send reminders
+    if (inv.parent_email !== user.email && !['admin', 'athletic_director', 'coach'].includes(user.role)) {
+      return Response.json({ error: 'Forbidden: not your invoice' }, { status: 403 });
+    }
+
     const amountDue = ((inv.amount - (inv.paid_amount || 0)) / 100).toFixed(2);
     const dueDateStr = inv.due_date
       ? new Date(inv.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })

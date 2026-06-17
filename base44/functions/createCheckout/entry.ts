@@ -29,6 +29,14 @@ Deno.serve(async (req) => {
       );
 
       resolvedInvoices = fetched.filter(Boolean);
+
+      // Enforce ownership: each invoice must belong to the authenticated user
+      for (const inv of resolvedInvoices) {
+        if (inv.parent_email && inv.parent_email !== user.email) {
+          return Response.json({ error: 'Forbidden: invoice does not belong to you' }, { status: 403 });
+        }
+      }
+
       console.log('[createCheckout] resolved invoices:', resolvedInvoices.map(i => ({ id: i.id, status: i.status, amount: i.amount, paid_amount: i.paid_amount })));
 
       for (const inv of resolvedInvoices) {

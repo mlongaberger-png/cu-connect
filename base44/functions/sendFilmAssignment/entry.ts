@@ -16,6 +16,14 @@ Deno.serve(async (req) => {
     const assignment = assignments[0];
     if (!assignment) return Response.json({ error: "Assignment not found" }, { status: 404 });
 
+    // Enforce team-scope: coaches can only send for teams they coach; admins/ADs unrestricted
+    if (!["admin", "athletic_director"].includes(user.role) && assignment.team_id) {
+      const profiles = await base44.asServiceRole.entities.CoachProfile.filter({ user_id: user.id, team_id: assignment.team_id });
+      if (profiles.length === 0) {
+        return Response.json({ error: "Forbidden: not authorized for this team" }, { status: 403 });
+      }
+    }
+
     // Fetch the film clip
     const clips = await base44.asServiceRole.entities.FilmClip.filter({ id: assignment.film_clip_id });
     const clip = clips[0];
