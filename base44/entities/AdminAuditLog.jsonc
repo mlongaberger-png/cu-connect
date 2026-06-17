@@ -38,16 +38,7 @@
     "result"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
-        }
-      }
-    },
+    "create": true,
     "read": {
       "user_condition": {
         "role": {
