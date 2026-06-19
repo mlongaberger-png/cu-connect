@@ -49,24 +49,23 @@ Deno.serve(async (req) => {
     ]);
 
     // ── Fetch messages ────────────────────────────────────────
-    const query = { channel_id: channelId };
-    if (parentMessageId !== null && parentMessageId !== undefined) {
-      query.parent_message_id = parentMessageId;
-    } else {
-      // Top-level only (no parent_message_id) when not drilling into a thread
-      query.parent_message_id = null;
-    }
-
-    // Fetch more than requested to account for filtered-out blocked messages
+    // Fetch all messages for the channel, then filter by parent_message_id in JS.
+    // Filtering null in the DB query is unreliable when the field is absent vs explicitly null.
     const fetchLimit = Math.min(limit + 200, 1000);
     const allMessages = await base44.asServiceRole.entities.Message.filter(
-      query,
+      { channel_id: channelId },
       sort,
       fetchLimit
     );
 
+    // Thread drill-down: caller supplied a specific parent_message_id
+    // Top-level: no parentMessageId supplied — show only messages without a parent
+    const threadFiltered = (parentMessageId !== null && parentMessageId !== undefined && parentMessageId !== '')
+      ? allMessages.filter(m => m.parent_message_id === parentMessageId)
+      : allMessages.filter(m => !m.parent_message_id);
+
     // ── Apply block filter ────────────────────────────────────
-    const visible = allMessages.filter(m => !blockedIds.has(m.sender_user_id));
+    const visible = threadFiltered.filter(m => !blockedIds.has(m.sender_user_id));
     const removed = allMessages.length - visible.length;
 
     // Apply skip + limit to filtered results
