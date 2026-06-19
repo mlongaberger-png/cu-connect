@@ -35,8 +35,12 @@ export default function ParentCalendar() {
     queryFn: () => base44.entities.Team.list(),
   });
   const { data: events = [] } = useQuery({
-    queryKey: ["events"],
-    queryFn: () => base44.entities.Event.list("-date"),
+    queryKey: ["events-parent", userEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getEventsFiltered', {});
+      return res.data?.events || [];
+    },
+    enabled: !!userEmail,
   });
   const { data: myAssignments = [] } = useQuery({
     queryKey: ["my-volunteer-assignments", userEmail],

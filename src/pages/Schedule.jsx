@@ -79,8 +79,12 @@ export default function Schedule() {
   });
 
   const { data: events = [], isLoading } = useQuery({
-    queryKey: ["events"],
-    queryFn: () => base44.entities.Event.list("-date"),
+    queryKey: ["events", isStaff ? "staff" : "parent"],
+    queryFn: async () => {
+      if (isStaff) return base44.entities.Event.list("-date");
+      const res = await base44.functions.invoke('getEventsFiltered', {});
+      return res.data?.events || [];
+    },
   });
 
   // Build suggestions from existing events
