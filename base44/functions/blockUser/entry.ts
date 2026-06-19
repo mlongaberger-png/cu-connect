@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       return Response.json({ blocked: true, id: existing[0].id, note: 'Already blocked' });
     }
 
-    const record = await base44.entities.BlockedUser.create({
+    const record = await base44.asServiceRole.entities.BlockedUser.create({
       blocker_id: user.id,
       blocker_email: user.email,
       blocked_id,
