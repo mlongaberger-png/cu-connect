@@ -51,11 +51,11 @@ export default function SecurityReport() {
           CU Connect Security Audit
         </h1>
         <p className="text-muted-foreground mb-2 text-sm">
-          Phase 1: Session Enforcement & Entity RLS
+          Phase 1 Fixes + Phase 2 QA Verification Sweep
         </p>
         <p className="text-muted-foreground mb-6 text-sm">
-          Generate a downloadable PDF report documenting the security
-          fixes applied to this application.
+          Full report covering all 10 security findings, patches applied,
+          and QA verification results with PASS/FAIL table.
         </p>
 
         <button
