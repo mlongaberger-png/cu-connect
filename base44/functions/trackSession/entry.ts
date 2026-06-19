@@ -54,14 +54,35 @@ Deno.serve(async (req) => {
     const existing = await base44.asServiceRole.entities.UserSession.filter({ token_hash: platformTokenHash });
     if (existing.length > 0) {
       const s = existing[0];
-      // If previously revoked (rotation), reactivate with new data
+      // If previously revoked, do NOT reactivate — force a new record instead
+      if (s.revoked_at) {
+        const newSession = await base44.asServiceRole.entities.UserSession.create({
+          user_id: user.id,
+          user_email: user.email,
+          token_hash: platformTokenHash,
+          session_token_hash: sessionTokenHash,
+          device_info: device,
+          ip_address: ip,
+          expires_at: legacyExpiresISO,
+          last_active_at: nowISO,
+          last_used_at: nowISO,
+          rotated_at: nowISO,
+          max_expires_at: maxExpiresISO,
+        });
+        return Response.json({
+          session_id: newSession.id,
+          session_token: sessionToken,
+          status: 'created',
+          max_expires_at: maxExpiresISO,
+        });
+      }
+      // Active session — update metadata only, never clear revoked_at
       await base44.asServiceRole.entities.UserSession.update(s.id, {
         session_token_hash: sessionTokenHash,
         last_active_at: nowISO,
         last_used_at: nowISO,
         rotated_at: s.rotated_at || nowISO,
         max_expires_at: s.max_expires_at || maxExpiresISO,
-        revoked_at: null,
         ip_address: ip,
         device_info: device,
         user_email: user.email,
@@ -70,7 +91,7 @@ Deno.serve(async (req) => {
       return Response.json({
         session_id: s.id,
         session_token: sessionToken,
-        status: s.revoked_at ? 'reactivated' : 'updated',
+        status: 'updated',
         max_expires_at: s.max_expires_at || maxExpiresISO,
       });
     }
