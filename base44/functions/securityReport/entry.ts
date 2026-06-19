@@ -1,3 +1,4 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { jsPDF } from 'npm:jspdf@4.0.0';
 
 // ── Findings data ─────────────────────────────────────────────────────────────
@@ -452,6 +453,12 @@ function buildPDF() {
 // ── Handler ───────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user || user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const doc = buildPDF();
     const pdfBytes = doc.output('arraybuffer');
 
