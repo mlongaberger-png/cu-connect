@@ -44,9 +44,12 @@ export default function SecurityReport() {
       const a = document.createElement("a");
       a.href = url;
       a.download = "CU_Connect_Final_Security_Remediation_Report_v1.0.pdf";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      // keep the blob URL alive so the persistent link works; revoke after 5 min
       setSignedUrl(url);
+      setTimeout(() => URL.revokeObjectURL(url), 5 * 60 * 1000);
     } catch (err) {
       setError(err.message || "Failed to generate report.");
     } finally {
@@ -85,10 +88,14 @@ export default function SecurityReport() {
         </button>
 
         {signedUrl && (
-          <p className="mt-4 text-sm text-green-400 flex items-center justify-center gap-2">
+          <a
+            href={signedUrl}
+            download="CU_Connect_Final_Security_Remediation_Report_v1.0.pdf"
+            className="inline-flex items-center gap-2 mt-4 px-4 py-2 text-sm font-semibold text-green-400 bg-green-500/10 border border-green-500/30 rounded-xl hover:bg-green-500/20 transition-colors"
+          >
             <FileText className="w-4 h-4" />
-            Report downloaded successfully
-          </p>
+            CU_Connect_Final_Security_Remediation_Report_v1.0.pdf
+          </a>
         )}
 
         {error && (
