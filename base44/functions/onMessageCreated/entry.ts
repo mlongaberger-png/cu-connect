@@ -139,7 +139,15 @@ Deno.serve(async (req) => {
       last_message_preview: sender_name ? `${sender_name}: ${(content_text || '').slice(0, 80)}` : (content_text || '').slice(0, 80),
     }).catch(() => {});
 
-    const channelLabel = channel.name || 'Team Chat';
+    // HTML-escape user content before embedding in email bodies
+    const escapeHtml = (str) => String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+
+    const channelLabel = escapeHtml(channel.name || 'Team Chat');
     const notifBody = sender_name ? `${sender_name}: ${content_text || ''}` : (content_text || 'New message');
     const notifPayload = JSON.stringify({
       title: channelLabel,
@@ -206,9 +214,9 @@ Deno.serve(async (req) => {
           base44.asServiceRole.integrations.Core.SendEmail({
             to: email,
             subject: `New message in ${channelLabel}`,
-            body: `<p><strong>${sender_name || 'Someone'}</strong> sent a message in <strong>${channelLabel}</strong>:</p>
-<blockquote style="border-left:3px solid #c8a84b;margin:8px 0;padding:8px 12px;color:#555;">${(content_text || '').slice(0, 300)}</blockquote>
-<p><a href="https://app.cornerstone-athletics.com/messages?channelId=${channel_id}" style="background:#c8a84b;color:#000;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">Open Chat</a></p>`,
+            body: `<p><strong>${escapeHtml(sender_name || 'Someone')}</strong> sent a message in <strong>${channelLabel}</strong>:</p>
+<blockquote style="border-left:3px solid #c8a84b;margin:8px 0;padding:8px 12px;color:#555;">${escapeHtml((content_text || '').slice(0, 300))}</blockquote>
+<p><a href="https://app.cornerstone-athletics.com/messages?channelId=${escapeHtml(channel_id)}" style="background:#c8a84b;color:#000;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">Open Chat</a></p>`,
           }).then(() => { emailSent++; }).catch(err => console.error(`Email failed for ${email}:`, err.message))
         );
       }
