@@ -88,15 +88,19 @@ export default function SecurityReport() {
         </button>
 
         {/* Manual direct download link — always visible */}
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col items-center gap-2">
           <a
-            href="/api/functions/securityReport"
-            download="CU_Connect_Final_Security_Remediation_Report_v1.0.pdf"
+            href="https://appbuilder-prod.base44.com/api/apps/69bae2515552e76ca1fbd6a0/functions/securityReport"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-xl hover:bg-primary/10 transition-colors"
           >
             <FileText className="w-4 h-4" />
             CU_Connect_Final_Security_Remediation_Report_v1.0.pdf
           </a>
+          <p className="text-[11px] text-muted-foreground break-all select-all px-2">
+            https://appbuilder-prod.base44.com/api/apps/69bae2515552e76ca1fbd6a0/functions/securityReport
+          </p>
         </div>
 
         {signedUrl && (
