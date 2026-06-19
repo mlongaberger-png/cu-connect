@@ -111,6 +111,7 @@ export default function ParentPortal() {
     queryKey: ["my-guardian-links", userEmail, playerLinked],
     queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
     enabled: !!userEmail,
+    staleTime: 60_000,
   });
 
   // Aggregate permissions from all guardian links (for restricted family members)
@@ -129,28 +130,34 @@ export default function ParentPortal() {
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
+    staleTime: 60_000,
   });
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
+    staleTime: 60_000,
   });
   const { data: events = [] } = useQuery({
     queryKey: ["events"],
     queryFn: () => base44.entities.Event.list("-date"),
+    staleTime: 60_000,
   });
   const { data: announcements = [] } = useQuery({
     queryKey: ["announcements"],
     queryFn: () => base44.entities.Announcement.list("-created_date"),
+    staleTime: 60_000,
   });
   const { data: sports = [] } = useQuery({
     queryKey: ["sports"],
     queryFn: () => base44.entities.Sport.list(),
+    staleTime: 300_000,
   });
 
   const { data: allPayments = [] } = useQuery({
     queryKey: ["payments-all", userEmail],
     queryFn: () => base44.entities.Payment.list(),
     enabled: !!userEmail,
+    staleTime: 60_000,
   });
 
   // Players linked via PlayerGuardian records (supports multiple guardians per player)
@@ -177,6 +184,7 @@ export default function ParentPortal() {
     queryKey: ["attendance-requests-parent", myTeamIds.join(",")],
     queryFn: () => base44.entities.AttendanceRequest.list("-created_date"),
     enabled: myTeamIds.length > 0,
+    staleTime: 60_000,
   });
   const myAttendanceRequests = allAttendanceRequests.filter(r => myTeamIds.includes(r.team_id));
 
@@ -185,6 +193,7 @@ export default function ParentPortal() {
     queryKey: ["my-rsvp-responses", userEmail],
     queryFn: () => base44.entities.AttendanceResponse.filter({ responder_email: userEmail }),
     enabled: !!userEmail,
+    staleTime: 60_000,
   });
 
   // Pending signature requests
@@ -196,6 +205,7 @@ export default function ParentPortal() {
       return all.filter(s => myKidIds.has(s.player_id) && s.status === "pending");
     },
     enabled: myKidIds.size > 0,
+    staleTime: 60_000,
   });
 
   // Volunteer assignments
@@ -203,12 +213,14 @@ export default function ParentPortal() {
     queryKey: ["my-vol-assignments", userEmail],
     queryFn: () => base44.entities.VolunteerAssignment.filter({ volunteer_email: userEmail }),
     enabled: !!userEmail,
+    staleTime: 60_000,
   });
 
   const { data: myAccessRequests = [] } = useQuery({
     queryKey: ["my-access-requests", userEmail],
     queryFn: () => base44.entities.AccessRequest.filter({ parent_email: userEmail }),
     enabled: !!userEmail && myKids.length === 0,
+    staleTime: 60_000,
   });
   const pendingRequest = myAccessRequests.find(r => r.status === "pending");
   const approvedRequest = myAccessRequests.find(r => r.status === "approved");
