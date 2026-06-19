@@ -77,16 +77,6 @@ export default function ParentPortal() {
     if (refreshUser) refreshUser();
   }, []);
 
-  // Auto-open event detail panel when deep-linked via ?eventId=
-  useEffect(() => {
-    if (!deepLinkedEventId || !events.length) return;
-    const target = events.find(e => e.id === deepLinkedEventId);
-    if (target) {
-      setSelectedEvent(target);
-      setDeepLinkedEventId(null); // clear so it only fires once
-    }
-  }, [deepLinkedEventId, events]);
-
   // Check for payment return, game reminder confirm, or event deep-link
   const [highlightAttendanceId, setHighlightAttendanceId] = useState(null);
   const [deepLinkedEventId, setDeepLinkedEventId] = useState(null);
@@ -142,6 +132,16 @@ export default function ParentPortal() {
     queryFn: () => base44.entities.Event.list("-date"),
     staleTime: 60_000,
   });
+
+  // Auto-open event detail panel when deep-linked via ?eventId=
+  useEffect(() => {
+    if (!deepLinkedEventId || !events.length) return;
+    const target = events.find(e => e.id === deepLinkedEventId);
+    if (target) {
+      setSelectedEvent(target);
+      setDeepLinkedEventId(null);
+    }
+  }, [deepLinkedEventId, events]);
   const { data: announcements = [] } = useQuery({
     queryKey: ["announcements"],
     queryFn: () => base44.entities.Announcement.list("-created_date"),
