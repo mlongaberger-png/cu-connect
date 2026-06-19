@@ -56,19 +56,6 @@ export default function ChatSidebar({ activeChannelId }) {
 
   const unreadScheduleCount = unreadScheduleEvents.length;
 
-  // Combined app icon badge effect
-  useEffect(() => {
-    if (!('setAppBadge' in navigator)) return;
-    const messageTotal = Object.values(unreadMap || {}).reduce((a, b) => a + b, 0);
-    const scheduleTotal = currentUser?.allow_schedule_notifications !== false ? unreadScheduleCount : 0;
-    const finalBadgeCount = messageTotal + scheduleTotal;
-    if (finalBadgeCount > 0) {
-      navigator.setAppBadge(finalBadgeCount).catch(() => {});
-    } else {
-      navigator.clearAppBadge().catch(() => {});
-    }
-  }, [unreadMap, unreadScheduleCount, currentUser?.allow_schedule_notifications]);
-
   const canCreate = ["admin", "athletic_director", "coach"].includes(currentUser?.role);
   const isAdmin = currentUser?.role === "admin";
 
@@ -100,6 +87,19 @@ export default function ChatSidebar({ activeChannelId }) {
     }
     return acc;
   }, {});
+
+  // Combined app icon badge effect
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return;
+    const messageTotal = Object.values(unreadMap).reduce((a, b) => a + b, 0);
+    const scheduleTotal = currentUser?.allow_schedule_notifications !== false ? unreadScheduleCount : 0;
+    const finalBadgeCount = messageTotal + scheduleTotal;
+    if (finalBadgeCount > 0) {
+      navigator.setAppBadge(finalBadgeCount).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  }, [unreadMap, unreadScheduleCount, currentUser?.allow_schedule_notifications]);
 
   const resetUnreadMutation = useMutation({
     mutationFn: (channelId) => {
