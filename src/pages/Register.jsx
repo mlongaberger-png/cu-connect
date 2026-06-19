@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, CheckCircle, AlertCircle, Loader2, ChevronRight, DollarSign } from "lucide-react";
+import { Shield, CheckCircle, AlertCircle, Loader2, ChevronRight, DollarSign, ArrowLeft } from "lucide-react";
 
 function RegistrationBrowser({ onSelect }) {
+  const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const sportParam = urlParams.get("sport") || "";
 
@@ -47,8 +49,14 @@ function RegistrationBrowser({ onSelect }) {
   );
 
   return (
-    <div className="min-h-screen bg-background py-10 px-4">
+    <div className="min-h-screen bg-background py-10 px-4 pb-28">
       <div className="max-w-2xl mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <span className="text-sm text-muted-foreground">Back</span>
+        </div>
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Shield className="w-7 h-7 text-primary" />

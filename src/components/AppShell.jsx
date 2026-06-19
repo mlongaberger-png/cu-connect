@@ -143,6 +143,7 @@ export default function AppShell() {
         <Route path="/Playbooks" element={<Playbooks />} />
         <Route path="/Messages" element={<MessagesLayout />} />
         <Route path="/sports-directory" element={<ParentSportsRegister />} />
+        <Route path="/Register" element={<Register />} />
 
         {/* ── Staff-only routes — redirects non-staff to /Portal ── */}
         <Route element={<StaffRoute />}>
@@ -170,7 +171,6 @@ export default function AppShell() {
       <Route path="/srd" element={<SRD />} />
       <Route path="/SecurityReport" element={<SecurityReport />} />
 
-      <Route path="/Register" element={<Register />} />
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
       {/* Catch-all → role home */}
