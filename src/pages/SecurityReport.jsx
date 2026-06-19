@@ -26,15 +26,29 @@ export default function SecurityReport() {
     setLoading(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke("getSecurityReportUrl", {});
-      if (res.data?.signed_url) {
-        setSignedUrl(res.data.signed_url);
-        window.open(res.data.signed_url, "_blank");
-      } else {
-        setError("No signed URL returned from server.");
+      const token = (await base44.auth.me()).__token || "";
+      const res = await fetch("/api/functions/securityReport", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
       }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "CU_Connect_Final_Security_Remediation_Report_v1.0.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+      setSignedUrl(url);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to generate report.");
+      setError(err.message || "Failed to generate report.");
     } finally {
       setLoading(false);
     }
@@ -51,11 +65,10 @@ export default function SecurityReport() {
           CU Connect Security Audit
         </h1>
         <p className="text-muted-foreground mb-2 text-sm">
-          Phase 1 Fixes + Phase 2 QA Verification Sweep
+          Final Security Remediation Report — v1.0
         </p>
         <p className="text-muted-foreground mb-6 text-sm">
-          Full report covering all 10 security findings, patches applied,
-          and QA verification results with PASS/FAIL table.
+          All 10 findings resolved. Executive summary, findings table, before/after evidence, and scope statement.
         </p>
 
         <button
@@ -72,15 +85,10 @@ export default function SecurityReport() {
         </button>
 
         {signedUrl && (
-          <a
-            href={signedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-4 px-4 py-2 text-sm text-primary hover:underline"
-          >
+          <p className="mt-4 text-sm text-green-400 flex items-center justify-center gap-2">
             <FileText className="w-4 h-4" />
-            Open downloaded report
-          </a>
+            Report downloaded successfully
+          </p>
         )}
 
         {error && (
