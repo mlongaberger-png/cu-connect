@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
 
     const { blocked_id } = schema.parse(await req.json());
 
-    const blocks = await base44.entities.BlockedUser.filter({
+    const blocks = await base44.asServiceRole.entities.BlockedUser.filter({
       blocker_id: user.id,
       blocked_id,
     });
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     // Delete all matching blocks
     for (const b of blocks) {
-      await base44.entities.BlockedUser.delete(b.id);
+      await base44.asServiceRole.entities.BlockedUser.delete(b.id);
     }
 
     console.log(`[unblockUser] ${user.email} unblocked ${blocked_id}`);

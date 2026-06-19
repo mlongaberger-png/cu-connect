@@ -132,9 +132,17 @@ export default function BulkEventImporter({ open, onOpenChange, teams }) {
 
   const allExpanded = rows.flatMap(r => expandRecurring(r, teams));
 
+  const ALLOWED_EVENT_FIELDS = new Set([
+    "title", "type", "team_id", "team_name", "sport_name",
+    "date", "start_time", "end_time", "arrival_time",
+    "location", "opponent", "notes", "tournament_round", "uniform_info",
+  ]);
+
   const handleImport = async () => {
     setImporting(true);
-    const valid = allExpanded.filter(e => e.title && e.date);
+    const valid = allExpanded
+      .filter(e => e.title && e.date)
+      .map(e => Object.fromEntries(Object.entries(e).filter(([k]) => ALLOWED_EVENT_FIELDS.has(k))));
     await base44.entities.Event.bulkCreate(valid);
     queryClient.invalidateQueries({ queryKey: ["events"] });
     setImportedCount(valid.length);

@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     }
 
     // Check for existing block (idempotent)
-    const existing = await base44.entities.BlockedUser.filter({
+    const existing = await base44.asServiceRole.entities.BlockedUser.filter({
       blocker_id: user.id,
       blocked_id,
     });
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       return Response.json({ blocked: true, id: existing[0].id, note: 'Already blocked' });
     }
 
-    const record = await base44.entities.BlockedUser.create({
+    const record = await base44.asServiceRole.entities.BlockedUser.create({
       blocker_id: user.id,
       blocker_email: user.email,
       blocked_id,
