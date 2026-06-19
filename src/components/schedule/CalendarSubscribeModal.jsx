@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Copy, Check, Smartphone, Link, RefreshCw, Key } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
 
 export default function CalendarSubscribeModal({ open, onOpenChange, teams, myTeamIds = [] }) {
   const { toast } = useToast();
@@ -45,7 +46,7 @@ export default function CalendarSubscribeModal({ open, onOpenChange, teams, myTe
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const feedUrl = token
-    ? `${window.location.origin}/api/calendar/feed?token=${token}`
+    ? `${appParams.appBaseUrl || window.location.origin}/api/apps/${appParams.appId}/functions/icsCalendarFeed?token=${token}`
     : null;
   const webcalUrl = feedUrl ? feedUrl.replace(/^https?:\/\//, "webcal://") : null;
 
