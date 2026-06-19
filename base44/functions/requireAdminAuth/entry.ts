@@ -12,7 +12,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  *   2. DB role — queries User entity directly (does NOT trust caller-supplied role)
  *   3. Logs every attempt to AdminAuditLog (allowed or denied)
  *
- * IP allowlist: add a Deno.env.get + check block below when the secret is set.
+ * IP allowlist: NOT enforced — x-forwarded-for is attacker-controllable in this environment
+ * and platform-level IP pinning is unavailable. Mitigation: DB role check + full audit log
+ * of every attempt (including IP) provides detection; block at the network/CDN layer instead.
  */
 
 function getClientIP(req) {
