@@ -12,16 +12,28 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
+
+    // Reject unexpected top-level fields (mass assignment protection)
+    const allowedTopLevel = new Set(['users']);
+    for (const key of Object.keys(body)) {
+      if (!allowedTopLevel.has(key)) {
+        return Response.json({ error: `Invalid field: '${key}' is not accepted` }, { status: 400 });
+      }
+    }
+
     const { users } = body;
 
     if (!Array.isArray(users) || users.length === 0) {
       return Response.json({ error: 'users must be a non-empty array' }, { status: 400 });
     }
 
+    // Allowed per-user fields
+    const allowedUserFields = new Set(['email', 'name']);
     for (const u of users) {
-      // Reject any payload that includes "role" — it is not stored in the DB
-      if ('role' in u) {
-        return Response.json({ error: 'Invalid field: role is not accepted' }, { status: 400 });
+      for (const key of Object.keys(u)) {
+        if (!allowedUserFields.has(key)) {
+          return Response.json({ error: `Invalid field in user entry: '${key}' is not accepted` }, { status: 400 });
+        }
       }
     }
 
