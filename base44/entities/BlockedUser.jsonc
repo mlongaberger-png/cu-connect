@@ -32,9 +32,7 @@
     "blocked_id"
   ],
   "rls": {
-    "create": {
-      "blocker_id": "{{user.id}}"
-    },
+    "create": true,
     "read": {
       "blocker_id": "{{user.id}}"
     },
