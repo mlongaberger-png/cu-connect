@@ -453,12 +453,6 @@ function buildPDF() {
 // ── Handler ───────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user || !['admin', 'athletic_director'].includes(user.role)) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const doc = buildPDF();
     const pdfBytes = doc.output('arraybuffer');
 
