@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Navigate } from "react-router-dom";
 import { FileText, Download, Shield, Loader2 } from "lucide-react";
@@ -26,15 +25,19 @@ export default function SecurityReport() {
     setLoading(true);
     setError(null);
     try {
-      const token = (await base44.auth.me()).__token || "";
-      const res = await fetch("/api/functions/securityReport", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      });
+      const token = localStorage.getItem("base44_access_token") || "";
+      const appId = import.meta.env.VITE_BASE44_APP_ID;
+      const res = await fetch(
+        `https://appbuilder-prod.base44.com/api/apps/${appId}/functions/securityReport`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({}),
+        }
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Server error ${res.status}`);
@@ -47,7 +50,6 @@ export default function SecurityReport() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      // keep the blob URL alive so the persistent link works; revoke after 5 min
       setSignedUrl(url);
       setTimeout(() => URL.revokeObjectURL(url), 5 * 60 * 1000);
     } catch (err) {
