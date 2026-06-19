@@ -87,6 +87,18 @@ export default function SecurityReport() {
           {loading ? "Generating..." : "Generate & Download PDF"}
         </button>
 
+        {/* Manual direct download link — always visible */}
+        <div className="mt-3">
+          <a
+            href="/api/functions/securityReport"
+            download="CU_Connect_Final_Security_Remediation_Report_v1.0.pdf"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-xl hover:bg-primary/10 transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            CU_Connect_Final_Security_Remediation_Report_v1.0.pdf
+          </a>
+        </div>
+
         {signedUrl && (
           <a
             href={signedUrl}
