@@ -1,10 +1,14 @@
 import { useEffect, useRef } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import jsPDF from "jspdf";
 
 export default function SRD() {
+  const { user } = useAuth();
   const generated = useRef(false);
 
   useEffect(() => {
+    if (!user || user.role !== "admin") return;
     if (generated.current) return;
     generated.current = true;
     generateSRD();
@@ -546,6 +550,8 @@ export default function SRD() {
 
     doc.save("CU_Connect_SRD_v1.0.pdf");
   }
+
+  if (!user || user.role !== "admin") return <Navigate to="/Portal" replace />;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
