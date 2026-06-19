@@ -62,7 +62,8 @@ export default function MessagesLayout() {
   const { data: latestMessages = [] } = useQuery({
     queryKey: ["global-latest-messages"],
     queryFn: () => base44.entities.Message.list("-created_date", 5),
-    refetchInterval: 5000,
+    refetchInterval: 15000,
+    staleTime: 10000,
     enabled: !!user && localStorage.getItem("alerts_enabled") === "true",
   });
 
