@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Navigate } from "react-router-dom";
-import { FileText, Download, Shield, Loader2 } from "lucide-react";
+import { FileText, Download, Shield, Loader2, LayoutDashboard } from "lucide-react";
+import { Link } from "react-router-dom";
 import { jsPDF } from "jspdf";
 
 // ── Findings data ─────────────────────────────────────────────────────────────
@@ -468,7 +469,15 @@ export default function SecurityReport() {
           {loading ? "Generating..." : "Generate & Download PDF"}
         </button>
 
-        <div className="mt-8 p-4 rounded-xl border border-border bg-card">
+        <Link
+          to="/UIUXAuditReport"
+          className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10 transition-colors"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          View UI/UX Audit Report →
+        </Link>
+
+        <div className="mt-6 p-4 rounded-xl border border-border bg-card">
           <p className="text-xs text-muted-foreground">
             <span className="font-semibold text-yellow-500">⚠ Internal Use Only</span>
             <br />
