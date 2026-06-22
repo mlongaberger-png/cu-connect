@@ -38,6 +38,7 @@ import MessagesLayout from "@/pages/MessagesLayout";
 import ParentSportsRegister from "@/pages/ParentSportsRegister";
 import SRD from "@/pages/SRD";
 import SecurityReport from "@/pages/SecurityReport";
+import UIUXAuditReport from "@/pages/UIUXAuditReport";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -170,6 +171,7 @@ export default function AppShell() {
       {/* Internal review only — not linked in navigation */}
       <Route path="/srd" element={<SRD />} />
       <Route path="/SecurityReport" element={<SecurityReport />} />
+      <Route path="/UIUXAuditReport" element={<UIUXAuditReport />} />
 
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
