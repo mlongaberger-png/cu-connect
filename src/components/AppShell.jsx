@@ -39,6 +39,7 @@ import ParentSportsRegister from "@/pages/ParentSportsRegister";
 import SRD from "@/pages/SRD";
 import SecurityReport from "@/pages/SecurityReport";
 import UIUXAuditReport from "@/pages/UIUXAuditReport";
+import IssuesFixedReport from "@/pages/IssuesFixedReport";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -172,6 +173,7 @@ export default function AppShell() {
       <Route path="/srd" element={<SRD />} />
       <Route path="/SecurityReport" element={<SecurityReport />} />
       <Route path="/UIUXAuditReport" element={<UIUXAuditReport />} />
+      <Route path="/IssuesFixedReport" element={<IssuesFixedReport />} />
 
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
