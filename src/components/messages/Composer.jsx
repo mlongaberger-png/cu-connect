@@ -70,7 +70,7 @@ export default function Composer({ channelId, channel }) {
   if (isBroadcastOnly) return <div className="p-4 text-center text-sm text-muted-foreground bg-muted border-t border-border">📢 Read-only channel</div>;
 
   return (
-    <form onSubmit={handleSend} className="border-t border-border bg-card p-3 flex gap-2 items-end">
+    <form onSubmit={handleSend} className="border-t border-border bg-card p-3 flex gap-2 items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}>
       {/* Photo Upload */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
       <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors shrink-0 disabled:opacity-50">
