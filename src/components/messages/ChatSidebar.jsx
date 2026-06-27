@@ -76,7 +76,7 @@ export default function ChatSidebar({ activeChannelId }) {
     queryKey: ["channel-members", user?.email],
     queryFn: () => base44.entities.ChannelMember.filter({ user_email: user?.email }),
     enabled: !!user?.email,
-    refetchInterval: 5000,
+    refetchInterval: () => document.visibilityState === 'hidden' ? false : 30000,
   });
 
   // Only count unreads for channels that actually exist and are visible

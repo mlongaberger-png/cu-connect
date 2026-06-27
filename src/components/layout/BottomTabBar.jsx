@@ -20,8 +20,19 @@ function useUnreadMessageCount(user) {
       } catch {}
     };
     check();
-    const interval = setInterval(check, 30000);
-    return () => clearInterval(interval);
+    let interval = null;
+    const start = () => { if (!interval) interval = setInterval(check, 30000); };
+    const stop = () => { if (interval) { clearInterval(interval); interval = null; } };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') stop();
+      else start();
+    };
+    if (document.visibilityState !== 'hidden') start();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      stop();
+    };
   }, [user?.email]);
   return unread;
 }

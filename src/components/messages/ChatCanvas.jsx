@@ -256,8 +256,18 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     },
     initialPageParam: 0,
     enabled: !!channelId,
-    refetchInterval: 8000, // Poll every 8 seconds for new messages
   });
+
+  // Realtime subscription — refetch messages only when actual changes occur
+  useEffect(() => {
+    if (!channelId) return;
+    const unsubscribe = base44.entities.Message.subscribe((event) => {
+      if (event.data?.channel_id === channelId) {
+        queryClient.invalidateQueries({ queryKey: ["messages", channelId] });
+      }
+    });
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+  }, [channelId, queryClient]);
 
   // Pull-to-refresh state
   const [isPulling, setIsPulling] = useState(false);
@@ -325,8 +335,16 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
       return base44.entities.MessageReaction.filter({});
     },
     enabled: !!channelId && allMessages.length > 0,
-    refetchInterval: 8000,
   });
+
+  // Realtime subscription — refetch reactions only when changes occur
+  useEffect(() => {
+    if (!channelId) return;
+    const unsubscribe = base44.entities.MessageReaction.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ["reactions", channelId] });
+    });
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+  }, [channelId, queryClient]);
 
   const reactMutation = useMutation({
     mutationFn: async ({ messageId, emoji }) => {
