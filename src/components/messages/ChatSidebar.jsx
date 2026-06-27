@@ -274,7 +274,7 @@ export default function ChatSidebar({ activeChannelId }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 flex flex-col">
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 8px)' }}>
         <div className="flex-1">
           <TabsContent value="teams" className="m-0 space-y-1">
             {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
