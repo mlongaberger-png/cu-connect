@@ -326,15 +326,13 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     }
   }, [allMessages.length]); // eslint-disable-line
 
-  // Reactions
+  // Reactions — only fetch for messages currently loaded in this channel
+  const msgIds = allMessages.map(m => m.id);
   const { data: reactions = [] } = useQuery({
-    queryKey: ["reactions", channelId],
-    queryFn: async () => {
-      const msgIds = allMessages.map(m => m.id);
-      if (!msgIds.length) return [];
-      return base44.entities.MessageReaction.filter({});
-    },
-    enabled: !!channelId && allMessages.length > 0,
+    queryKey: ["reactions", channelId, msgIds],
+    queryFn: () => base44.entities.MessageReaction.filter({ message_id: { $in: msgIds } }),
+    enabled: msgIds.length > 0,
+    staleTime: 30000,
   });
 
   // Realtime subscription — refetch reactions only when changes occur
