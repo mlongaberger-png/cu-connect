@@ -131,7 +131,10 @@ export default function RegistrationTypesPanel() {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: (reg) => base44.entities.TeamRegistration.update(reg.id, { is_open: !reg.is_open }),
+    mutationFn: (reg) => base44.functions.invoke("toggleRegistrationStatus", {
+      registration_id: reg.id,
+      is_open: !reg.is_open,
+    }).then(res => res.data),
     onSuccess: (data, reg) => {
       qc.invalidateQueries({ queryKey: ["team-registrations-all"] });
       toast({
