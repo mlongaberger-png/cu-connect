@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Pencil, ExternalLink, ChevronDown, ChevronRight, ClipboardList } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 const SEASONS = ["Fall", "Winter", "Spring", "Summer", "Year Round"];
 
@@ -78,7 +79,7 @@ function SportGroup({ sport, registrations, onEdit, onToggle }) {
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => onToggle(reg)}
+                  onClick={(e) => { e.stopPropagation(); onToggle(reg); }}
                   title={reg.is_open ? "Close registration" : "Open registration"}
                   className="text-xs px-2.5 py-1 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -131,7 +132,22 @@ export default function RegistrationTypesPanel() {
 
   const toggleMutation = useMutation({
     mutationFn: (reg) => base44.entities.TeamRegistration.update(reg.id, { is_open: !reg.is_open }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["team-registrations-all"] }),
+    onSuccess: (data, reg) => {
+      qc.invalidateQueries({ queryKey: ["team-registrations-all"] });
+      toast({
+        title: reg.is_open ? "Registration closed" : "Registration reopened",
+        description: reg.is_open
+          ? "Parents can no longer see or submit this form."
+          : "Parents can now see and submit this form.",
+      });
+    },
+    onError: (err) => {
+      toast({
+        title: "Failed to update registration",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleEdit = (reg) => {
