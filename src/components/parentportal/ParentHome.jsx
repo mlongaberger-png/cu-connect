@@ -12,6 +12,7 @@ import { formatDate, formatTime12h } from "@/utils/dateTime";
 import { format, isPast, parseISO } from "date-fns";
 import AthleteCard from "@/components/parentportal/AthleteCard";
 import AthleteProfileModal from "@/components/parentportal/AthleteProfileModal";
+import DocumentsModal from "@/components/parentportal/DocumentsModal";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import FieldStatusBanner from "@/components/parentportal/FieldStatusBanner";
@@ -30,6 +31,7 @@ export default function ParentHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedAthlete, setSelectedAthlete] = useState(null);
+  const [showDocuments, setShowDocuments] = useState(false);
   const userEmail = user?.email;
 
   const { data: guardianLinks = [] } = useQuery({
@@ -177,6 +179,13 @@ export default function ParentHome() {
         team={selectedAthlete.team}
         sport={selectedAthlete.sport}
         onClose={() => setSelectedAthlete(null)}
+      />
+    )}
+    {showDocuments && (
+      <DocumentsModal
+        players={myKids}
+        teams={teams}
+        onClose={() => setShowDocuments(false)}
       />
     )}
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6 pb-24">
@@ -397,7 +406,7 @@ export default function ParentHome() {
       {/* 6. Documents Summary */}
       <section
         className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
-        onClick={() => navigate("/ParentPortal?tab=documents")}
+        onClick={() => setShowDocuments(true)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
