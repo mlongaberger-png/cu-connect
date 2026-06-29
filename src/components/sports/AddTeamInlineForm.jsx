@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -11,7 +11,6 @@ const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
 const seasonOptions = ["fall", "winter", "spring", "summer"];
 
 export default function AddTeamInlineForm({ sport }) {
-  const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState({
     name: "",
     age_group: "12U",
@@ -28,7 +27,6 @@ export default function AddTeamInlineForm({ sport }) {
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       queryClient.invalidateQueries({ queryKey: ["sports"] });
       setForm({ name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: String(new Date().getFullYear()) });
-      setExpanded(false);
     },
   });
 
@@ -42,23 +40,10 @@ export default function AddTeamInlineForm({ sport }) {
     });
   };
 
-  if (!expanded) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => setExpanded(true)}
-        className="w-full border-dashed border-border text-muted-foreground hover:text-foreground"
-      >
-        <Plus className="w-4 h-4 mr-2" /> Add Team
-      </Button>
-    );
-  }
-
   return (
-    <div className="border border-border rounded-xl p-4 space-y-3 bg-surface/50">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-foreground">New Team</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Add a New Team</span>
         <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
           <Lock className="w-3 h-3" /> {sport.name}
         </span>
@@ -72,7 +57,6 @@ export default function AddTeamInlineForm({ sport }) {
             placeholder="e.g. 10U Lions"
             className="bg-surface border-border mt-1"
             required
-            autoFocus
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -122,12 +106,9 @@ export default function AddTeamInlineForm({ sport }) {
             className="bg-surface border-border mt-1"
           />
         </div>
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="ghost" onClick={() => setExpanded(false)}>Cancel</Button>
-          <Button type="submit" className="bg-primary text-primary-foreground" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Creating…" : "Create Team"}
-          </Button>
-        </div>
+        <Button type="submit" className="w-full bg-primary text-primary-foreground" disabled={createMutation.isPending || !form.name.trim()}>
+          {createMutation.isPending ? "Adding Team…" : "Add Team"}
+        </Button>
       </form>
     </div>
   );
