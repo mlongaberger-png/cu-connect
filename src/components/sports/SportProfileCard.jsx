@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Pencil, Check, X, Users, Trophy, Image } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import AddTeamInlineForm from "@/components/sports/AddTeamInlineForm";
 
 export default function SportProfileCard({ sport, teams, canEdit, onRegisterClick, openRegistrations = [], onRegistrationClick }) {
   const [editing, setEditing] = useState(false);
@@ -78,6 +79,12 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
             <Label className="text-sm">Registration Open</Label>
           </div>
         </div>
+
+        {canEdit && (
+          <div className="pt-2 border-t border-border">
+            <AddTeamInlineForm sport={sport} />
+          </div>
+        )}
       </div>
     );
   }
