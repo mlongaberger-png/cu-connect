@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Pencil, Check, X, Users, Trophy, Image } from "lucide-react";
+import { Pencil, Check, X, Users, Trophy, Image, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 import AddTeamInlineForm from "@/components/sports/AddTeamInlineForm";
 
 export default function SportProfileCard({ sport, teams, canEdit, onRegisterClick, openRegistrations = [], onRegistrationClick }) {
@@ -14,6 +15,7 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
   const [form, setForm] = useState({ ...sport });
   const [uploadingImage, setUploadingImage] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const sportTeams = teams.filter(t => t.sport_id === sport.id && t.is_active !== false);
 
@@ -21,7 +23,11 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
     mutationFn: (data) => base44.entities.Sport.update(sport.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sports"] });
+      toast({ title: `${sport.name} saved!`, className: "bg-green-500/20 border-green-500/50 text-green-400" });
       setEditing(false);
+    },
+    onError: (error) => {
+      toast({ title: "Save failed", description: error?.message || "Please try again.", variant: "destructive" });
     }
   });
 
@@ -34,7 +40,10 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
     setUploadingImage(false);
   };
 
-  const handleSave = () => updateMutation.mutate(form);
+  const handleSave = () => {
+    const { name, icon, season, description, overview, what_to_expect, hero_image_url, age_groups, registration_open } = form;
+    updateMutation.mutate({ name, icon, season, description, overview, what_to_expect, hero_image_url, age_groups, registration_open });
+  };
   const handleCancel = () => { setForm({ ...sport }); setEditing(false); };
 
   if (editing) {
@@ -45,7 +54,7 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={handleCancel}><X className="w-4 h-4" /></Button>
             <Button size="sm" onClick={handleSave} disabled={updateMutation.isPending} className="bg-primary text-primary-foreground">
-              <Check className="w-4 h-4 mr-1" /> Save
+              {updateMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />} Save
             </Button>
           </div>
         </div>
