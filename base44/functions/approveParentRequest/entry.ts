@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     // ── Admin gate — DB role check + IP allowlist + audit log ─────────
-    const gate = await base44.asServiceRole.functions.invoke('requireAdminAuth', {
+    const gate = await base44.functions.invoke('requireAdminAuth', {
       endpoint: 'approveParentRequest',
       action: 'approve_parent_request',
     });
