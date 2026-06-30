@@ -400,7 +400,10 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
           {channel?.avatar_url && (
             <img src={channel.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
           )}
-          <span className="font-semibold text-sm text-foreground">
+          <span
+            className="font-semibold text-sm truncate max-w-[180px] md:max-w-[300px] lg:max-w-[500px]"
+            title={channel?.name}
+          >
             {channel?.name || "Loading…"}
           </span>
         </div>
