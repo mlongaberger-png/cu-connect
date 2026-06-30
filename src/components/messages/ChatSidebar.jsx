@@ -64,7 +64,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const { data: orgTeams = [] } = useQuery({
     queryKey: ["org-teams"],
     queryFn: () => base44.entities.Team.list(),
-    enabled: !!currentUser,
+    enabled: !!user,
   });
 
   const { data: allChannels = [] } = useQuery({
