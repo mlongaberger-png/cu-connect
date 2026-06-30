@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronRight, Search, MessageSquare, DollarSign, Users, FileText, Calendar, ShieldCheck, FileDown } from "lucide-react";
+import { HelpCircle, ChevronDown, ChevronRight, Search, MessageSquare, DollarSign, Users, FileText, Calendar, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/AuthContext";
-import NotificationFixReport from "@/components/reports/NotificationFixReport";
 
 const FAQ_SECTIONS = [
   {
@@ -181,21 +180,6 @@ export default function HelpCenter() {
         </div>
       </div>
 
-      {/* Fix Reports */}
-      <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <FileDown className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Recent Fix Reports</h2>
-            <p className="text-sm text-muted-foreground">Download a PDF summary of recently shipped fixes.</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <NotificationFixReport />
-        </div>
-      </div>
     </div>
   );
 }
