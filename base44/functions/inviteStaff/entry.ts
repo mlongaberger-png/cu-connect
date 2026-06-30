@@ -1,16 +1,45 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+
+function getClientIP(req) {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+}
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // ── Admin gate — DB role check (not JWT claim) + IP allowlist + audit log ──
-    const gate = await base44.functions.invoke('requireAdminAuth', {
-      endpoint: 'inviteStaff',
-      action: 'invite_staff',
-    });
-    if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    // ── Admin gate — DB role check (not JWT claim) + audit log ──────
+    const user = await base44.auth.me();
+    const ip = getClientIP(req);
 
+    if (!user) {
+      await base44.asServiceRole.entities.AdminAuditLog.create({
+        user_id: 'unknown', user_email: 'unknown',
+        endpoint: 'inviteStaff', action: 'invite_staff',
+        ip_address: ip, result: 'denied',
+      }).catch(() => {});
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const userRecord = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    if (userRecord.length === 0 || userRecord[0].role !== 'admin') {
+      await base44.asServiceRole.entities.AdminAuditLog.create({
+        user_id: user.id, user_email: user.email,
+        endpoint: 'inviteStaff', action: 'invite_staff',
+        ip_address: ip, result: 'denied',
+      }).catch(() => {});
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await base44.asServiceRole.entities.AdminAuditLog.create({
+      user_id: user.id, user_email: user.email,
+      endpoint: 'inviteStaff', action: 'invite_staff',
+      ip_address: ip, result: 'allowed',
+    }).catch(() => {});
+
+    // ── Invitation logic ───────────────────────────────────────────
     const { email, role, sport_id, sport_name, team_id, team_name } = await req.json();
 
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
@@ -28,14 +57,12 @@ Deno.serve(async (req) => {
     await base44.users.inviteUser(email, workspaceRole, redirectPath);
 
     // Set the app-level role on the User record after invite
-    // The user record is created on first login; attempt to update if it already exists
     try {
       const existingUsers = await base44.asServiceRole.entities.User.filter({ email });
       if (existingUsers.length > 0) {
         await base44.asServiceRole.entities.User.update(existingUsers[0].id, { role });
       }
     } catch (roleErr) {
-      // Non-fatal: user may not exist yet (pre-login), role will be set on first login or next invite
       console.warn('Could not pre-set app role (user may not exist yet):', roleErr.message);
     }
 

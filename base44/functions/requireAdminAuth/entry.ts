@@ -4,7 +4,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * requireAdminAuth — reusable admin gate.
  *
  * Other admin functions invoke this as the first thing they do:
- *   const gate = await base44.asServiceRole.functions.invoke('requireAdminAuth', { endpoint: 'myFunction', action: 'delete_user' });
+ *   const gate = await base44.functions.invoke('requireAdminAuth', { endpoint: 'myFunction', action: 'delete_user' });
  *   if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
  *
  * Checks (any failure → 403, no detail):
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         ip_address: ip || 'unknown',
         result: 'denied',
       }).catch(() => {});
-      return Response.json({ allowed: false }, { status: 403 });
+      return Response.json({ allowed: false });
     }
 
     // ── 2. DB role check (not JWT claim) ────────────────────────────
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         ip_address: ip || 'unknown',
         result: 'denied',
       }).catch(() => {});
-      return Response.json({ allowed: false }, { status: 403 });
+      return Response.json({ allowed: false });
     }
 
     // ── 3. Log allowed access ───────────────────────────────────────
@@ -72,6 +72,6 @@ Deno.serve(async (req) => {
     return Response.json({ allowed: true, user_id: user.id, user_email: user.email });
   } catch (error) {
     console.error('[requireAdminAuth]', error.message);
-    return Response.json({ allowed: false }, { status: 403 });
+    return Response.json({ allowed: false });
   }
 });

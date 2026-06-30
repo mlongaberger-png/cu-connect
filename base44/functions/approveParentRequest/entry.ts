@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { z } from 'npm:zod@3.24.2';
 
 const approveRequestSchema = z.object({
@@ -8,17 +8,46 @@ const approveRequestSchema = z.object({
   alternate_email: z.string().optional(),
 }).strict();
 
+function getClientIP(req) {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // ── Admin gate — DB role check + IP allowlist + audit log ─────────
-    const gate = await base44.functions.invoke('requireAdminAuth', {
-      endpoint: 'approveParentRequest',
-      action: 'approve_parent_request',
-    });
-    if (!gate.allowed) return Response.json({ error: 'Forbidden' }, { status: 403 });
-    const user = { email: gate.user_email, id: gate.user_id };
+    // ── Admin gate — DB role check (not JWT claim) + audit log ──────
+    const authUser = await base44.auth.me();
+    const ip = getClientIP(req);
+
+    if (!authUser) {
+      await base44.asServiceRole.entities.AdminAuditLog.create({
+        user_id: 'unknown', user_email: 'unknown',
+        endpoint: 'approveParentRequest', action: 'approve_parent_request',
+        ip_address: ip, result: 'denied',
+      }).catch(() => {});
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const userRecord = await base44.asServiceRole.entities.User.filter({ id: authUser.id });
+    if (userRecord.length === 0 || userRecord[0].role !== 'admin') {
+      await base44.asServiceRole.entities.AdminAuditLog.create({
+        user_id: authUser.id, user_email: authUser.email,
+        endpoint: 'approveParentRequest', action: 'approve_parent_request',
+        ip_address: ip, result: 'denied',
+      }).catch(() => {});
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await base44.asServiceRole.entities.AdminAuditLog.create({
+      user_id: authUser.id, user_email: authUser.email,
+      endpoint: 'approveParentRequest', action: 'approve_parent_request',
+      ip_address: ip, result: 'allowed',
+    }).catch(() => {});
+
+    const user = { email: authUser.email, id: authUser.id };
 
     const rawBody = await req.json();
     const parsed = approveRequestSchema.safeParse(rawBody);
