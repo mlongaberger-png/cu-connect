@@ -50,7 +50,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
   const rawDate = msg.created_date;
   const timestamp = rawDate
     ? new Date(rawDate.endsWith("Z") ? rawDate : rawDate + "Z")
-        .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Chicago" })
+        .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
     : null;
   const isPhoto = /^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim());
 
