@@ -30,6 +30,14 @@ export default function Composer({ channelId, channel }) {
 
   const isBroadcastOnly = channel?.is_broadcast_only && user?.role === "parent";
 
+  const shortName = channel?.name?.slice(0, 30) ?? "";
+  const placeholder =
+    channel?.type === "direct"
+      ? `Message ${shortName}…`
+      : shortName
+        ? `Message #${shortName}…`
+        : "Message…";
+
   const sendMutation = useMutation({
     mutationFn: (data) => base44.entities.Message.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["messages", channelId] }),
@@ -87,7 +95,7 @@ export default function Composer({ channelId, channel }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-        placeholder="Message…"
+        placeholder={placeholder}
         className="flex-1 min-h-[40px] max-h-[120px] resize-none overflow-y-auto py-2 bg-background text-sm"
         rows={1}
       />
