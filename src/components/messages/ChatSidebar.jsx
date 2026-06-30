@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye, Trash2 } from "lucide-react";
 import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
+import MultiTeamSelect from "@/components/messages/MultiTeamSelect";
 import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 
@@ -22,6 +23,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const [showNewDm, setShowNewDm] = useState(false);
   const [showCarpoolRequest, setShowCarpoolRequest] = useState(false);
   const [newChannelForm, setNewChannelForm] = useState({ name: "", type: "team", team_id: "" });
+  const [selectedTeamIds, setSelectedTeamIds] = useState([]);
   const [hiddenChannels, setHiddenChannels] = useState(() => JSON.parse(localStorage.getItem("cu_hidden_channels") || "[]"));
   const [showHiddenRecords, setShowHiddenRecords] = useState(false);
 
@@ -130,11 +132,18 @@ export default function ChatSidebar({ activeChannelId }) {
   const announceChannels = allChannels.filter(ch => ch.type === "announcement");
 
   const createChannelMutation = useMutation({
-    mutationFn: (data) => base44.entities.Channel.create(data),
+    mutationFn: async (data) => {
+      // data can be a single channel or an array of channels to create
+      if (Array.isArray(data)) {
+        return base44.entities.Channel.bulkCreate(data);
+      }
+      return base44.entities.Channel.create(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["channels"] });
       setShowCreate(false);
       setNewChannelForm({ name: "", type: "team", team_id: "" });
+      setSelectedTeamIds([]);
     },
   });
 
@@ -145,11 +154,23 @@ export default function ChatSidebar({ activeChannelId }) {
 
   const handleCreateChannel = () => {
     if (!newChannelForm.name.trim()) return;
-    createChannelMutation.mutate({
-      name: newChannelForm.name.trim(),
-      type: newChannelForm.type,
-      team_id: newChannelForm.team_id || undefined,
-    });
+    const name = newChannelForm.name.trim();
+    const type = newChannelForm.type;
+
+    if (selectedTeamIds.length > 0) {
+      // Create one channel per selected team
+      const channels = selectedTeamIds.map(id => {
+        const team = orgTeams.find(t => t.id === id);
+        return { name, type, team_id: id };
+      });
+      createChannelMutation.mutate(channels);
+    } else {
+      createChannelMutation.mutate({
+        name,
+        type,
+        team_id: newChannelForm.team_id || undefined,
+      });
+    }
   };
 
   const formatLastMessageTime = (isoStr) => {
@@ -339,7 +360,7 @@ export default function ChatSidebar({ activeChannelId }) {
       </div>
 
       {/* Create Channel Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+      <Dialog open={showCreate} onOpenChange={(v) => { setShowCreate(v); if (!v) setSelectedTeamIds([]); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Channel</DialogTitle>
@@ -366,24 +387,21 @@ export default function ChatSidebar({ activeChannelId }) {
               </SelectContent>
             </Select>
             {(newChannelForm.type === "team" || newChannelForm.type === "announcement") && (
-              <Select
-                value={newChannelForm.team_id}
-                onValueChange={v => setNewChannelForm(f => ({ ...f, team_id: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Link to team (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {orgTeams.map(t => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiTeamSelect
+                teams={orgTeams}
+                selectedIds={selectedTeamIds}
+                onChange={setSelectedTeamIds}
+                placeholder="Link to teams (optional)"
+              />
             )}
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
               <Button onClick={handleCreateChannel} disabled={createChannelMutation.isPending}>
-                Create
+                {createChannelMutation.isPending
+                  ? "Creating…"
+                  : selectedTeamIds.length > 1
+                    ? `Create (${selectedTeamIds.length})`
+                    : "Create"}
               </Button>
             </div>
           </div>
