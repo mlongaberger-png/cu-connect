@@ -9,6 +9,8 @@ import RecentAnnouncements from "@/components/dashboard/RecentAnnouncements";
 import PerformanceHero from "@/components/dashboard/PerformanceHero";
 import { useAuth } from "@/lib/AuthContext";
 
+const DASHBOARD_STALE_MS = 60_000;
+
 export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role;
@@ -16,13 +18,13 @@ export default function Dashboard() {
   const isParent = role === "parent" || role === "user" || role === "grandparent";
 
   // All hooks must be called unconditionally
-  const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list() });
-  const { data: teams = [] } = useQuery({ queryKey: ["teams"], queryFn: () => base44.entities.Team.list() });
-  const { data: players = [] } = useQuery({ queryKey: ["players"], queryFn: () => base44.entities.Player.list(), enabled: isStaff });
-  const { data: events = [] } = useQuery({ queryKey: ["events"], queryFn: () => base44.entities.Event.list("-date") });
-  const { data: announcements = [] } = useQuery({ queryKey: ["announcements"], queryFn: () => base44.entities.Announcement.list("-created_date") });
-  const { data: submissions = [] } = useQuery({ queryKey: ["reg-submissions-all"], queryFn: () => base44.entities.RegistrationSubmission.filter({ status: "pending" }), enabled: isStaff });
-  const { data: payments = [] } = useQuery({ queryKey: ["payments-dashboard"], queryFn: () => base44.entities.Payment.list(), enabled: isStaff });
+  const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list(), staleTime: DASHBOARD_STALE_MS });
+  const { data: teams = [] } = useQuery({ queryKey: ["teams"], queryFn: () => base44.entities.Team.list(), staleTime: DASHBOARD_STALE_MS });
+  const { data: players = [] } = useQuery({ queryKey: ["players"], queryFn: () => base44.entities.Player.list(), enabled: isStaff, staleTime: DASHBOARD_STALE_MS });
+  const { data: events = [] } = useQuery({ queryKey: ["events"], queryFn: () => base44.entities.Event.list("-date"), staleTime: DASHBOARD_STALE_MS });
+  const { data: announcements = [] } = useQuery({ queryKey: ["announcements"], queryFn: () => base44.entities.Announcement.list("-created_date"), staleTime: DASHBOARD_STALE_MS });
+  const { data: submissions = [] } = useQuery({ queryKey: ["reg-submissions-all"], queryFn: () => base44.entities.RegistrationSubmission.filter({ status: "pending" }), enabled: isStaff, staleTime: DASHBOARD_STALE_MS });
+  const { data: payments = [] } = useQuery({ queryKey: ["payments-dashboard"], queryFn: () => base44.entities.Payment.list(), enabled: isStaff, staleTime: DASHBOARD_STALE_MS });
 
   // Parents get the dedicated home dashboard
   if (isParent) return <ParentHome />;
