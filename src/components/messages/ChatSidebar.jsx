@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye, Trash2 } from "lucide-react";
+import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye, Trash2, Users, Newspaper } from "lucide-react";
 import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import MultiTeamSelect from "@/components/messages/MultiTeamSelect";
+import EmptyChannelState from "@/components/messages/EmptyChannelState";
 import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 import { useToast } from "@/components/ui/use-toast";
@@ -306,7 +307,7 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="flex-1">
           <TabsContent value="teams" className="m-0 space-y-1">
             {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No team channels yet</p>
+              <EmptyChannelState icon={Users} message="No team channels yet" />
             ) : (
               teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
@@ -322,7 +323,7 @@ export default function ChatSidebar({ activeChannelId }) {
               <MessageSquarePlus className="w-4 h-4" /> New Direct Message
             </Button>
             {directChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No direct messages yet</p>
+              <EmptyChannelState icon={MessageSquare} message="No direct messages yet" ctaLabel="New Direct Message" onCta={() => setShowNewDm(true)} />
             ) : (
               directChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
@@ -338,7 +339,7 @@ export default function ChatSidebar({ activeChannelId }) {
               <Car className="w-4 h-4" /> Request a Ride
             </Button>
             {carpoolChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No carpool channels yet</p>
+              <EmptyChannelState icon={Car} message="No carpool channels yet" ctaLabel="Request a Ride" onCta={() => setShowCarpoolRequest(true)} />
             ) : (
               carpoolChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
@@ -346,7 +347,7 @@ export default function ChatSidebar({ activeChannelId }) {
 
           <TabsContent value="announce" className="m-0 space-y-1">
             {announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-4 text-center">No announcement channels yet</p>
+              <EmptyChannelState icon={Newspaper} message="No news posts yet" />
             ) : (
               announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
