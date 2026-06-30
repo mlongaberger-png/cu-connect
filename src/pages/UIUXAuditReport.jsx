@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Navigate } from "react-router-dom";
 import { LayoutDashboard, Download, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import buildQuickRefPDF from "@/components/reports/UIUXQuickRefReport";
 
 const FINDINGS = [
   {
@@ -731,6 +732,16 @@ export default function UIUXAuditReport() {
     }
   };
 
+  const handleQuickRef = () => {
+    setLoading(true);
+    try {
+      const doc = buildQuickRefPDF();
+      doc.save("CU_Connect_UIUX_Fixes_Quick_Reference.pdf");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
       <div className="text-center max-w-md">
@@ -767,6 +778,19 @@ export default function UIUXAuditReport() {
             <Download className="w-4 h-4" />
           )}
           {loading ? "Generating..." : "Generate & Download PDF"}
+        </button>
+
+        <button
+          onClick={handleQuickRef}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:bg-secondary/80 transition-colors disabled:opacity-50"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          Quick Reference (18 Prompts)
         </button>
 
         <p className="text-xs text-muted-foreground mt-3">
