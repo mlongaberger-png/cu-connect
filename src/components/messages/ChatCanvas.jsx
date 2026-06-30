@@ -438,20 +438,20 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
           {/* Mute toggle */}
           <button
             onClick={() => toggleMuteMutation.mutate(!isMuted)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
               isMuted
-                ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
-                : "text-muted-foreground hover:text-foreground hover:bg-surface"
+                ? "bg-amber-500/25 text-amber-400 border border-amber-500/50 hover:bg-amber-500/35"
+                : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
             }`}
           >
             {isMuted ? (
               <>
-                <BellOff className="w-3.5 h-3.5" />
-                <span className="text-xs font-semibold">Mute On</span>
+                <BellOff className="w-4 h-4" />
+                <span className="text-xs font-semibold">Muted</span>
               </>
             ) : (
               <>
-                <Bell className="w-3.5 h-3.5" />
+                <Bell className="w-4 h-4" />
                 <span className="text-xs">Mute</span>
               </>
             )}
