@@ -80,21 +80,44 @@
   ],
   "rls": {
     "create": {
-      "player_email": "{{user.email}}"
+      "data.player_email": "{{user.email}}"
     },
     "read": true,
     "update": {
-      "player_email": "{{user.email}}"
+      "$or": [
+        {
+          "data.player_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "coach"
+          }
+        }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
         }
-      }
+      ]
     }
   }
 }
