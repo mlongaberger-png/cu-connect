@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import MessagingTermsGate from "@/components/messages/MessagingTermsGate";
@@ -12,14 +12,14 @@ import { X } from "lucide-react";
 
 function InAppBanner({ message, onDismiss, onOpen }) {
   useEffect(() => {
-    const timer = setTimeout(onDismiss, 4000);
+    const timer = setTimeout(onDismiss, 5000);
     return () => clearTimeout(timer);
   }, [onDismiss]);
 
   return (
     <div
       onClick={onOpen}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 cursor-pointer
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-50 cursor-pointer
         bg-card border-2 border-primary/20 shadow-xl rounded-xl p-3 
         flex items-center gap-3 w-80 max-w-[90vw] 
         animate-in slide-in-from-top duration-300"
@@ -32,8 +32,9 @@ function InAppBanner({ message, onDismiss, onOpen }) {
         }
       </div>
 
-      {/* Text */}
+      {/* Text — channel name + sender + preview */}
       <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold text-primary truncate uppercase tracking-wide">{message.channel_name || "New message"}</p>
         <p className="text-sm font-bold text-foreground truncate">{message.sender_name || "Someone"}</p>
         <p className="text-xs text-muted-foreground truncate">{message.content_text}</p>
       </div>
@@ -54,41 +55,62 @@ export default function MessagesLayout() {
   const channelId = searchParams.get("channelId");
   const { user } = useAuth();
   const myId = user?.id || user?.email;
+  const queryClient = useQueryClient();
   const [banner, setBanner] = useState(null);
   const [activeThreadParent, setActiveThreadParent] = useState(null);
   const lastSeenMessageId = useRef(null);
+  const channelsRef = useRef([]);
 
-  // Poll latest messages across all channels to detect new ones
-  const { data: latestMessages = [] } = useQuery({
-    queryKey: ["global-latest-messages"],
-    queryFn: () => base44.entities.Message.list("-created_date", 5),
-    refetchInterval: 60000,
-    staleTime: 10000,
-    enabled: !!user && localStorage.getItem("alerts_enabled") === "true",
+  // Cache all channels so we can resolve the channel name for the in-app banner.
+  const { data: allChannels = [] } = useQuery({
+    queryKey: ["channels"],
+    queryFn: () => base44.entities.Channel.list("-last_message_at"),
+    enabled: !!user,
   });
+  useEffect(() => { channelsRef.current = allChannels; }, [allChannels]);
 
+  // Realtime in-app notification: the instant a new message is created in any
+  // channel other than the one currently open, show a banner and refresh the
+  // sidebar unread badges. This is purely a client-side UI notification and
+  // fires INDEPENDENTLY of email/push (handled server-side by onMessageCreated)
+  // and of the NotificationPreference messages_method setting — both always fire.
   useEffect(() => {
-    if (!latestMessages.length || !myId) return;
-    const newest = latestMessages[0];
+    if (!user) return;
 
-    // Skip on first load — just seed the ref
-    if (!lastSeenMessageId.current) {
-      lastSeenMessageId.current = newest.id;
-      return;
-    }
+    const unsubscribe = base44.entities.Message.subscribe((event) => {
+      // Only react to brand-new messages
+      if (event.type && event.type !== "create") return;
+      const msg = event.data;
+      if (!msg || !msg.id) return;
 
-    // Already seen this one
-    if (newest.id === lastSeenMessageId.current) return;
-    lastSeenMessageId.current = newest.id;
+      // Seed the dedupe ref on the first event so we never banner history
+      if (!lastSeenMessageId.current) {
+        lastSeenMessageId.current = msg.id;
+        return;
+      }
+      if (msg.id === lastSeenMessageId.current) return;
+      lastSeenMessageId.current = msg.id;
 
-    const alertsEnabled = localStorage.getItem("alerts_enabled") === "true";
-    const isOwnMessage = newest.sender_user_id === myId || newest.sender_user_id === user?.email;
-    const isActiveChannel = newest.channel_id === channelId;
+      // Don't notify for your own messages or the channel you're already viewing
+      const isOwn = msg.sender_user_id === myId || msg.sender_user_id === user?.email;
+      const isActiveChannel = msg.channel_id === channelId;
+      if (isOwn || isActiveChannel) return;
 
-    if (alertsEnabled && !isOwnMessage && !isActiveChannel) {
-      setBanner(newest);
-    }
-  }, [latestMessages, myId, channelId, user?.email]);
+      const channel = channelsRef.current.find(c => c.id === msg.channel_id);
+      const preview = (msg.content_text || "").replace(/^!\[photo\]\(.+\)$/, "📷 Photo");
+
+      setBanner({
+        ...msg,
+        channel_name: channel?.name || "New message",
+        content_text: preview,
+      });
+
+      // Refresh channel-members so sidebar unread badges update in real time
+      queryClient.invalidateQueries({ queryKey: ["channel-members"] });
+    });
+
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
+  }, [user, myId, channelId, queryClient]);
 
   return (
     <MessagingTermsGate>
