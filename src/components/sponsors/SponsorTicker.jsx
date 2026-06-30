@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Building2 } from "lucide-react";
+import { Building2, X } from "lucide-react";
 
 // ── Pixel-grid SVG overlay (subtle) ──────────────────────────────────────────
 const PixelGridOverlay = () => (
@@ -27,7 +27,15 @@ const TIER_COLORS = {
 export default function SponsorTicker() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [animClass, setAnimClass] = useState("jb-visible");
+  const [visible, setVisible] = useState(
+    () => sessionStorage.getItem("ticker_dismissed") !== "1"
+  );
   const intervalRef = useRef(null);
+
+  const dismiss = () => {
+    sessionStorage.setItem("ticker_dismissed", "1");
+    setVisible(false);
+  };
 
   const { data: sponsors = [] } = useQuery({
     queryKey: ["layout-sponsors"],
@@ -49,6 +57,7 @@ export default function SponsorTicker() {
     return () => clearInterval(intervalRef.current);
   }, [sponsors.length]);
 
+  if (!visible) return null;
   if (!sponsors.length) return null;
 
   const sponsor = sponsors[activeIdx];
@@ -163,11 +172,31 @@ export default function SponsorTicker() {
 
   if (sponsor.website_url) {
     return (
-      <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer" className="block no-underline">
-        {Jumbotron}
-      </a>
+      <div className="relative px-3 pt-3 pb-1">
+        <a href={sponsor.website_url} target="_blank" rel="noopener noreferrer" className="block no-underline">
+          {Jumbotron}
+        </a>
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss sponsors"
+          className="absolute top-1 right-2 text-muted-foreground hover:text-foreground"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
     );
   }
 
-  return Jumbotron;
+  return (
+    <div className="relative px-3 pt-3 pb-1">
+      {Jumbotron}
+      <button
+        onClick={dismiss}
+        aria-label="Dismiss sponsors"
+        className="absolute top-1 right-2 text-muted-foreground hover:text-foreground"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
 }
