@@ -296,9 +296,12 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
 
   const handleTouchEnd = async () => {
     if (pullDistance > 50) {
+      navigator.vibrate?.(10);
       setIsPulling(true);
-      await refetchMessages();
-      setIsPulling(false);
+      refetchMessages().finally(() => {
+        setIsPulling(false);
+        navigator.vibrate?.(15);
+      });
     }
     setPullDistance(0);
     touchStartY.current = null;
