@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { LayoutDashboard, Download, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import buildQuickRefPDF from "@/components/reports/UIUXQuickRefReport";
+import buildIssuesFixedReport from "@/components/reports/UIUXIssuesFixedReport";
 
 const FINDINGS = [
   {
@@ -742,6 +743,16 @@ export default function UIUXAuditReport() {
     }
   };
 
+  const handleIssuesFixed = () => {
+    setLoading(true);
+    try {
+      const doc = buildIssuesFixedReport();
+      doc.save("CU_Connect_UIUX_Issues_and_Fixes.pdf");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
       <div className="text-center max-w-md">
@@ -791,6 +802,19 @@ export default function UIUXAuditReport() {
             <Download className="w-4 h-4" />
           )}
           Quick Reference (18 Prompts)
+        </button>
+
+        <button
+          onClick={handleIssuesFixed}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-secondary-foreground rounded-xl text-sm font-semibold hover:bg-secondary/80 transition-colors disabled:opacity-50"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          Issues &amp; Fixes (Issue → Fixed)
         </button>
 
         <p className="text-xs text-muted-foreground mt-3">
