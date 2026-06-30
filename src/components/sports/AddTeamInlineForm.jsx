@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Lock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 
-const ageGroups = ["8U", "10U", "12U", "14U"];
+const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
+const seasons = ["fall", "winter", "spring", "summer"];
 
 export default function AddTeamInlineForm({ sport }) {
   const [expanded, setExpanded] = useState(false);
@@ -16,18 +18,23 @@ export default function AddTeamInlineForm({ sport }) {
     age_group: "8U",
     head_coach: "",
     coach_email: "",
-    season: "",
+    season: "fall",
     year: String(new Date().getFullYear()),
   });
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Team.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       queryClient.invalidateQueries({ queryKey: ["sports"] });
-      setForm({ name: "", age_group: "8U", head_coach: "", coach_email: "", season: "", year: String(new Date().getFullYear()) });
+      toast({ title: "Team created!", className: "bg-green-500/20 border-green-500/50 text-green-400" });
+      setForm({ name: "", age_group: "8U", head_coach: "", coach_email: "", season: "fall", year: String(new Date().getFullYear()) });
       setExpanded(false);
+    },
+    onError: (error) => {
+      toast({ title: "Failed to create team", description: error?.message || "Please try again.", variant: "destructive" });
     },
   });
 
@@ -103,12 +110,12 @@ export default function AddTeamInlineForm({ sport }) {
 
           <div>
             <Label className="text-xs">Season</Label>
-            <Input
-              value={form.season}
-              onChange={(e) => setForm(f => ({ ...f, season: e.target.value }))}
-              placeholder="e.g. Fall"
-              className="bg-surface border-border mt-1"
-            />
+            <Select value={form.season} onValueChange={(v) => setForm(f => ({ ...f, season: v }))}>
+              <SelectTrigger className="bg-surface border-border mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {seasons.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
