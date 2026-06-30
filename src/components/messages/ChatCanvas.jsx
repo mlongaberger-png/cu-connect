@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import Composer from "./Composer";
 import EventCard from "./cards/EventCard";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 
 function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact }) {
@@ -50,7 +51,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
   const rawDate = msg.created_date;
   const timestamp = rawDate
     ? new Date(rawDate.endsWith("Z") ? rawDate : rawDate + "Z")
-        .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+        .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: timeZone ?? undefined })
     : null;
   const isPhoto = /^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim());
 
