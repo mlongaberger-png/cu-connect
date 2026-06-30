@@ -245,7 +245,7 @@ export default function ChatSidebar({ activeChannelId }) {
         {/* Hide/unhide on hover */}
         <span
           onClick={(e) => toggleHideChannel(ch.id, e)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-background shrink-0"
+          className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-background shrink-0"
           title={isHidden ? "Unhide" : "Hide"}
         >
           {isHidden
@@ -263,7 +263,7 @@ export default function ChatSidebar({ activeChannelId }) {
                 deleteChannelMutation.mutate(ch.id);
               }
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/10 shrink-0"
+            className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-red-500/10 shrink-0"
             title="Delete channel"
           >
             <Trash2 className="w-3.5 h-3.5 text-red-400" />
