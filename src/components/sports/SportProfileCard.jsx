@@ -207,6 +207,13 @@ export default function SportProfileCard({ sport, teams, canEdit, onRegisterClic
             Register an Athlete
           </Button>
         )}
+
+        {/* Admin: add team directly from card */}
+        {canEdit && (
+          <div className="pt-2 border-t border-border">
+            <AddTeamInlineForm sport={sport} />
+          </div>
+        )}
       </div>
     </div>
   );
