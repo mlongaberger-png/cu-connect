@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft, MessageSquareText, RefreshCw, CornerUpLeft } from "lucide-react";
+import { BellOff, Bell, ArrowLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -483,8 +483,10 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
             <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
           </div>
         ) : topLevelMessages.length === 0 ? (
-          <div className="flex justify-center py-8">
-            <p className="text-sm text-muted-foreground">No messages yet. Say hello! 👋</p>
+          <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+            <MessageSquare className="w-10 h-10 opacity-30" />
+            <p className="text-base text-center">No messages in this channel yet.</p>
+            <p className="text-sm text-center opacity-70">Be the first to say something!</p>
           </div>
         ) : (
           <>

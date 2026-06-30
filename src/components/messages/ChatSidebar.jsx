@@ -232,7 +232,7 @@ export default function ChatSidebar({ activeChannelId }) {
           </div>
           <div className="flex items-center justify-between gap-2 mt-0.5">
             <span className={`text-xs truncate ${unread > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
-              {preview || <span className="italic opacity-50">No messages yet</span>}
+              {preview || <span>No messages yet</span>}
             </span>
             {unread > 0 && (
               <span className="shrink-0 bg-primary text-primary-foreground text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
