@@ -7,6 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
 import EventCard from "./cards/EventCard";
+import ScoreCard from "./cards/ScoreCard";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import EmojiReactionPicker from "./EmojiReactionPicker";
@@ -18,6 +19,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
   const [isSwiping, setIsSwiping] = useState(false);
   const longPressTimer = useRef(null);
   const startXRef = useRef(0);
+  const { timeZone } = useOrgTimezone();
 
   const handleBubbleTouchStart = (e) => {
     longPressTimer.current = setTimeout(() => setShowPicker(true), 500);
@@ -490,17 +492,22 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
                 <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
               </div>
             )}
-            {topLevelMessages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                msg={msg}
-                isOwn={msg.sender_user_id === myId}
-                onOpenThread={onOpenThread || (() => {})}
-                replyCount={replyCountMap[msg.id] || 0}
-                reactions={reactionsMap[msg.id] || []}
-                onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
-              />
-            ))}
+            {topLevelMessages.map((msg) => {
+              if (msg.sender_name === "Score Bot" || msg.message_type === "score_update") {
+                return <ScoreCard key={msg.id} message={msg} />;
+              }
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  isOwn={msg.sender_user_id === myId}
+                  onOpenThread={onOpenThread || (() => {})}
+                  replyCount={replyCountMap[msg.id] || 0}
+                  reactions={reactionsMap[msg.id] || []}
+                  onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
+                />
+              );
+            })}
           </>
         )}
       </div>
