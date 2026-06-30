@@ -12,11 +12,13 @@ import { X } from "lucide-react";
  * message lands in a channel the user belongs to (and isn't currently viewing),
  * no matter which page they're on. Clicking the banner jumps to that channel.
  *
+ * IMPORTANT: base44 realtime `subscribe()` does NOT replay history — it only
+ * delivers events that occur AFTER the subscription is established. So there
+ * is no "first event is history" to skip; every create event is a genuinely new
+ * message and must be bannered (deduped by id, never eaten).
+ *
  * This is a CLIENT-SIDE UI notification only — it fires independently of, and in
  * addition to, the server-side email + OS web-push dispatch in `onMessageCreated`.
- * It does NOT consult NotificationPreference.messages_method: the in-app banner
- * is always shown for eligible messages (own messages and the active channel
- * are suppressed).
  */
 export default function MessageNotifier() {
   const navigate = useNavigate();
@@ -25,7 +27,14 @@ export default function MessageNotifier() {
   const myId = user?.id || user?.email;
   const queryClient = useQueryClient();
   const [banner, setBanner] = useState(null);
-  const lastSeenMessageId = useRef(null);
+
+  // Dedupe by message id (never eat the first message — there's no replay)
+  const shownIds = useRef(new Set());
+
+  // Messages held while we confirm membership (ChannelMember records are
+  // created by onMessageCreated AFTER the instant Message event, so the
+  // membership gate can momentarily miss a channel we're genuinely a member of)
+  const pendingRef = useRef([]);
   const channelsRef = useRef([]);
   const membershipsRef = useRef(new Set());
 
@@ -47,12 +56,35 @@ export default function MessageNotifier() {
   useEffect(() => { channelsRef.current = allChannels; }, [allChannels]);
   useEffect(() => {
     membershipsRef.current = new Set((myMemberships || []).map((m) => m.channel_id));
-  }, [myMemberships]);
+
+    // Flush any pending messages whose channel membership has now resolved
+    if (pendingRef.current.length === 0) return;
+    const stillPending = [];
+    for (const msg of pendingRef.current) {
+      if (membershipsRef.current.has(msg.channel_id)) {
+        showBanner(msg);
+      } else {
+        stillPending.push(msg);
+      }
+    }
+    pendingRef.current = stillPending.slice(-20); // bound memory
+  }, [myMemberships]); // eslint-disable-line
 
   // The channel the user is actively viewing (only meaningful on /Messages)
   const activeChannelId = location.pathname.startsWith("/Messages")
     ? new URLSearchParams(location.search).get("channelId")
     : null;
+
+  const showBanner = (msg) => {
+    const channel = channelsRef.current.find((c) => c.id === msg.channel_id);
+    const preview = (msg.content_text || "").replace(/^!\[photo\]\(.+\)$/, "📷 Photo");
+    setBanner({
+      ...msg,
+      channel_name: channel?.name || "New message",
+      content_text: preview,
+    });
+    queryClient.invalidateQueries({ queryKey: ["channel-members"] });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -62,37 +94,29 @@ export default function MessageNotifier() {
       const msg = event.data;
       if (!msg || !msg.id) return;
 
-      // Seed the dedupe ref on the first event so we never banner history
-      if (!lastSeenMessageId.current) {
-        lastSeenMessageId.current = msg.id;
-        return;
-      }
-      if (msg.id === lastSeenMessageId.current) return;
-      lastSeenMessageId.current = msg.id;
+      // Dedupe (e.g. event delivered twice on reconnect) — never eat the first message
+      if (shownIds.current.has(msg.id)) return;
+      shownIds.current.add(msg.id);
+      if (shownIds.current.size > 200) shownIds.current = new Set([...shownIds.current].slice(-200));
 
       // Never banner your own messages or the channel you're currently viewing
       const isOwn = msg.sender_user_id === myId || msg.sender_user_id === user?.email;
       if (isOwn) return;
       if (msg.channel_id === activeChannelId) return;
 
-      // Only notify for channels the user is actually a member of
-      if (!membershipsRef.current.has(msg.channel_id)) return;
-
-      const channel = channelsRef.current.find((c) => c.id === msg.channel_id);
-      const preview = (msg.content_text || "").replace(/^!\[photo\]\(.+\)$/, "📷 Photo");
-
-      setBanner({
-        ...msg,
-        channel_name: channel?.name || "New message",
-        content_text: preview,
-      });
-
-      // Refresh sidebar unread badges in real time
-      queryClient.invalidateQueries({ queryKey: ["channel-members"] });
+      if (membershipsRef.current.has(msg.channel_id)) {
+        showBanner(msg);
+      } else {
+        // Our ChannelMember record may not exist yet (onMessageCreated creates it
+        // asynchronously) or our membership query hasn't refreshed. Hold the
+        // message and re-check when memberships update.
+        pendingRef.current = [...pendingRef.current, msg].slice(-20);
+        queryClient.invalidateQueries({ queryKey: ["channel-members"] });
+      }
     });
 
     return () => { if (typeof unsubscribe === "function") unsubscribe(); };
-  }, [user, myId, activeChannelId, queryClient]);
+  }, [user, myId, activeChannelId, queryClient]); // eslint-disable-line
 
   // Auto-dismiss after 5s
   useEffect(() => {
