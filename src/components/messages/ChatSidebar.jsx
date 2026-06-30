@@ -14,6 +14,7 @@ import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import MultiTeamSelect from "@/components/messages/MultiTeamSelect";
 import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ChatSidebar({ activeChannelId }) {
   const [, setSearchParams] = useSearchParams();
@@ -131,19 +132,25 @@ export default function ChatSidebar({ activeChannelId }) {
   const carpoolChannels = allChannels.filter(ch => ch.type === "carpool");
   const announceChannels = allChannels.filter(ch => ch.type === "announcement");
 
+  const { toast } = useToast();
+
   const createChannelMutation = useMutation({
     mutationFn: async (data) => {
-      // data can be a single channel or an array of channels to create
       if (Array.isArray(data)) {
-        return base44.entities.Channel.bulkCreate(data);
+        return Promise.all(data.map(ch => base44.entities.Channel.create(ch)));
       }
       return base44.entities.Channel.create(data);
     },
-    onSuccess: () => {
+    onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ["channels"] });
       setShowCreate(false);
       setNewChannelForm({ name: "", type: "team", team_id: "" });
       setSelectedTeamIds([]);
+      const count = Array.isArray(variables) ? variables.length : 1;
+      toast({ title: `${count} channel${count > 1 ? "s" : ""} created successfully` });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to create channel. Please try again.", description: error?.message, variant: "destructive" });
     },
   });
 
