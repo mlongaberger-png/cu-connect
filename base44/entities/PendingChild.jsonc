@@ -74,30 +74,52 @@
   ],
   "rls": {
     "create": {
-      "parent_email": "{{user.email}}"
+      "data.parent_email": "{{user.email}}"
     },
     "read": {
-      "parent_email": "{{user.email}}"
+      "$or": [
+        {
+          "data.parent_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
     },
     "update": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
         }
-      }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
         }
-      }
+      ]
     }
   }
 }
