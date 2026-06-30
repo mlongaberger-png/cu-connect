@@ -392,7 +392,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur shrink-0">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur shrink-0 overflow-visible">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSearchParams({})}
@@ -401,7 +401,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
             <ArrowLeft className="w-4 h-4" />
           </button>
           {channel?.avatar_url && (
-            <img src={channel.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+            <img src={channel.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover mt-0.5" />
           )}
           <span
             className="font-semibold text-sm truncate max-w-[180px] md:max-w-[300px] lg:max-w-[500px]"
