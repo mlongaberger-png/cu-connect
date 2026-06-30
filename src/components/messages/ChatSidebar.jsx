@@ -276,7 +276,7 @@ export default function ChatSidebar({ activeChannelId }) {
   return (
     <Tabs defaultValue="teams" className="h-full flex flex-col bg-card overflow-hidden">
 
-      <div className="flex-shrink-0 border-b border-border bg-card z-20 shadow-sm">
+      <div className="flex-shrink-0 border-b border-border bg-card relative z-[60] shadow-sm">
         <div className="flex items-center justify-between p-4">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-primary" /> Messages
