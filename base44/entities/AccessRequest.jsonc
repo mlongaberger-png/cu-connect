@@ -56,34 +56,46 @@
   "rls": {
     "create": true,
     "read": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
         }
-      }
+      ]
     },
     "update": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
         }
-      }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "athletic_director"
-          ]
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
         }
-      }
+      ]
     }
   }
 }
