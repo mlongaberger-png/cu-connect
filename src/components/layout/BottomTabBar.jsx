@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Calendar, MessageSquare, UserCircle,
@@ -93,8 +93,12 @@ export default function BottomTabBar({ onOpenSidebar }) {
   const openRegCount = useOpenRegistrations();
 
   // Remember current path for the active tab whenever location changes
-  const activeTab = tabs.find(t => t.root && location.pathname.startsWith(t.root));
-  if (activeTab?.root) setTabMemory(activeTab.root, location.pathname + location.search);
+  const activeIndex = tabs.findIndex(t => t.root && location.pathname.startsWith(t.root));
+  const activeTab = activeIndex !== -1 ? tabs[activeIndex] : null;
+
+  useEffect(() => {
+    if (activeTab?.root) setTabMemory(activeTab.root, location.pathname + location.search);
+  }, [activeTab?.root, location.pathname, location.search]);
 
   const handleTabPress = useCallback((tab) => {
     const mem = getTabMemory();
@@ -119,7 +123,16 @@ export default function BottomTabBar({ onOpenSidebar }) {
         backfaceVisibility: "hidden",
       }}
     >
-      <div className="flex items-stretch">
+      <div className="relative flex items-stretch">
+        {activeIndex !== -1 && (
+          <motion.div
+            className="absolute bottom-0 h-0.5 w-10 bg-primary rounded-full pointer-events-none"
+            animate={{
+              left: `calc(${(activeIndex + 0.5) * (100 / tabs.length)}% - 20px)`,
+            }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, mass: 0.5 }}
+          />
+        )}
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = tab.root && location.pathname.startsWith(tab.root);
@@ -161,18 +174,6 @@ export default function BottomTabBar({ onOpenSidebar }) {
               }`}
               style={{ minHeight: 56 }}
             >
-              <AnimatePresence>
-                {isActive && (
-                  <motion.span
-                    layoutId="tab-indicator"
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-primary rounded-full"
-                    initial={{ opacity: 0, scaleX: 0.5 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    exit={{ opacity: 0, scaleX: 0.5 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                  />
-                )}
-              </AnimatePresence>
               <motion.div animate={{ scale: isActive ? 1.1 : 1 }} transition={{ duration: 0.15 }} className="relative">
                 <Icon className="w-5 h-5" />
                 {tab.root === "/Messages" && unreadMessages > 0 && (
