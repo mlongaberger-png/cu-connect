@@ -57,9 +57,9 @@ export default function ParentSignup() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-dvh bg-background flex flex-col overflow-y-auto overscroll-contain">
       {/* Header */}
-      <header className="bg-sidebar border-b border-sidebar-border px-6 py-4 flex items-center gap-3">
+      <header className="bg-sidebar border-b border-sidebar-border px-6 py-4 flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0">
           <img
             src="https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0/2ff00e9bd_file_0000000089d071f8be26c9f306ac7ce1.png"
@@ -74,8 +74,8 @@ export default function ParentSignup() {
       </header>
 
       {/* Form */}
-      <div className="flex-1 flex items-start justify-center p-4 md:p-8">
-        <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-lg w-full space-y-6">
+      <div className="py-6 px-4 md:px-8 pb-safe-nav">
+        <div className="bg-card border border-border rounded-2xl p-6 md:p-8 max-w-lg w-full space-y-6 mx-auto">
           <div>
             <h2 className="text-2xl font-bold text-foreground">First-Time Parent Sign Up</h2>
             <p className="text-sm font-normal text-muted-foreground/70 mt-0.5">(New to CU)</p>
