@@ -5,6 +5,7 @@ const approveRequestSchema = z.object({
   request_id: z.string().min(1),
   action: z.enum(['approve', 'reject']),
   player_ids: z.array(z.string()).optional(),
+  team_ids: z.array(z.string()).optional(),
   alternate_email: z.string().optional(),
 }).strict();
 
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
     if (!parsed.success) {
       return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
     }
-    const { request_id, action, player_ids, alternate_email } = parsed.data;
+    const { request_id, action, player_ids, team_ids, alternate_email } = parsed.data;
     if (!request_id || !action) {
       return Response.json({ error: 'request_id and action are required.' }, { status: 400 });
     }
@@ -193,6 +194,39 @@ Deno.serve(async (req) => {
               // Backfill user_id onto an existing guardian record that's missing it
               await base44.asServiceRole.entities.PlayerGuardian.update(existing[0].id, { user_id: existingUserId });
               console.log(`Backfilled user_id on existing guardian link ${existing[0].id}`);
+            }
+          }
+        }
+      }
+
+      // ── STEP 3b: Add parent to selected team channels ───────────────────────
+      if (team_ids && team_ids.length > 0) {
+        for (const tid of team_ids) {
+          let teamChannels = [];
+          try {
+            teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: tid, type: 'team' });
+          } catch (e) {
+            console.warn(`Could not fetch channels for team ${tid}:`, e.message);
+            continue;
+          }
+
+          for (const ch of teamChannels) {
+            for (const linkEmail of emailsToLink) {
+              const existingMember = await base44.asServiceRole.entities.ChannelMember.filter({
+                channel_id: ch.id,
+                user_email: linkEmail,
+              });
+              if (existingMember.length === 0) {
+                await base44.asServiceRole.entities.ChannelMember.create({
+                  channel_id: ch.id,
+                  user_email: linkEmail,
+                  user_id: existingUserId || undefined,
+                  user_name: accessReq.parent_name,
+                });
+                console.log(`Added ${linkEmail} to channel "${ch.name}" (team ${tid})`);
+              } else if (existingUserId && !existingMember[0].user_id) {
+                await base44.asServiceRole.entities.ChannelMember.update(existingMember[0].id, { user_id: existingUserId });
+              }
             }
           }
         }

@@ -16,12 +16,14 @@ export default function AccessRequestsPanel() {
   const { toast } = useToast();
   const [reviewingReq, setReviewingReq] = useState(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
+  const [selectedTeamIds, setSelectedTeamIds] = useState([]);
   const [alternateEmail, setAlternateEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState("pending");
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerTeamFilter, setPlayerTeamFilter] = useState("all");
   const [playerSportFilter, setPlayerSportFilter] = useState("all");
+  const [teamSearch, setTeamSearch] = useState("");
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["access-requests"],
@@ -32,6 +34,21 @@ export default function AccessRequestsPanel() {
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
   });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams-active"],
+    queryFn: () => base44.entities.Team.filter({ is_active: true }),
+  });
+
+  const filteredTeams = useMemo(() => {
+    return teams.filter(t => {
+      if (teamSearch) {
+        const q = teamSearch.toLowerCase();
+        return (t.name || "").toLowerCase().includes(q) || (t.sport_name || "").toLowerCase().includes(q);
+      }
+      return true;
+    }).sort((a, b) => (a.sport_name || "").localeCompare(b.sport_name || "") || (a.name || "").localeCompare(b.name || ""));
+  }, [teams, teamSearch]);
 
   // Unique sports and teams for filters
   const sportOptions = useMemo(() => [...new Set(players.map(p => p.sport_name).filter(Boolean))].sort(), [players]);
@@ -59,10 +76,18 @@ export default function AccessRequestsPanel() {
   const openReview = (req) => {
     setReviewingReq(req);
     setSelectedPlayerIds([]);
+    setSelectedTeamIds([]);
     setAlternateEmail(req.alternate_email || "");
     setPlayerSearch("");
+    setTeamSearch("");
     setPlayerTeamFilter("all");
     setPlayerSportFilter("all");
+  };
+
+  const toggleTeam = (tid) => {
+    setSelectedTeamIds(prev =>
+      prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]
+    );
   };
 
   const togglePlayer = (pid) => {
@@ -83,6 +108,7 @@ export default function AccessRequestsPanel() {
       request_id: reqToProcess.id,
       action,
       player_ids: action === "approve" ? playerIds : [],
+      team_ids: action === "approve" ? [...selectedTeamIds] : [],
       alternate_email: altEmail,
     }).then(res => {
       if (res.data?.success) {
@@ -219,6 +245,59 @@ export default function AccessRequestsPanel() {
                   onChange={e => setAlternateEmail(e.target.value)}
                   className="font-mono text-sm"
                 />
+              </div>
+
+              {/* Grant Team Access */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  Grant team access <span className="text-muted-foreground font-normal">(optional)</span>
+                  {selectedTeamIds.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-semibold">{selectedTeamIds.length} selected</span>
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Select teams to give this parent access to team chats, schedules, and resources.
+                </p>
+
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    className="pl-8 h-8 text-xs"
+                    placeholder="Search teams…"
+                    value={teamSearch}
+                    onChange={e => setTeamSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                  {filteredTeams.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-2 text-center">
+                      {teams.length === 0 ? "No active teams yet." : "No teams match your search."}
+                    </p>
+                  ) : filteredTeams.map(t => (
+                    <label key={t.id} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      selectedTeamIds.includes(t.id)
+                        ? "bg-primary/10 border-primary/40"
+                        : "bg-surface border-border hover:border-primary/30"
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={selectedTeamIds.includes(t.id)}
+                        onChange={() => toggleTeam(t.id)}
+                        className="accent-primary"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{t.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t.sport_name}{t.age_group ? ` · ${t.age_group}` : ""}{t.season ? ` · ${t.season}` : ""}
+                        </p>
+                      </div>
+                      {selectedTeamIds.includes(t.id) && (
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                      )}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Link to Players */}
