@@ -18,7 +18,7 @@ const STEPS = [
   {
     number: 3,
     title: "Confirm your identity",
-    description: "Type DELETE in the confirmation box below to verify you understand this action is permanent and cannot be undone.",
+    description: "Type Delete in the confirmation box below to verify you understand this action is permanent and cannot be undone.",
   },
 ];
 
@@ -37,7 +37,7 @@ export default function DeleteAccountModal({ open, onClose }) {
   };
 
   const handleDelete = async () => {
-    if (confirmText !== "DELETE") return;
+    if (confirmText.toLowerCase() !== "delete") return;
     setDeleting(true);
     await base44.functions.invoke("deleteAccount", {});
     setDone(true);
@@ -97,20 +97,20 @@ export default function DeleteAccountModal({ open, onClose }) {
         ) : (
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              Type <strong className="text-foreground">DELETE</strong> below to permanently delete your account.
+              Type <strong className="text-foreground">Delete</strong> below to permanently delete your account.
             </p>
             <input
               type="text"
               value={confirmText}
               onChange={e => setConfirmText(e.target.value)}
-              placeholder="Type DELETE to confirm"
+              placeholder="Type Delete to confirm"
               className="w-full rounded-lg border border-red-900/50 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500"
             />
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(0)} disabled={deleting}>Back</Button>
               <Button
                 onClick={handleDelete}
-                disabled={confirmText !== "DELETE" || deleting}
+                disabled={confirmText.toLowerCase() !== "delete" || deleting}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-40"
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete My Account"}

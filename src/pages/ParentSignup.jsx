@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -37,24 +38,28 @@ export default function ParentSignup() {
     }
   };
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card border border-border rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+  const successPopup = submitted && (
+    <Dialog open={submitted} onOpenChange={() => setSubmitted(false)}>
+      <DialogContent className="max-w-md bg-card border-border text-center">
+        <DialogHeader>
+          <DialogTitle className="sr-only">Request Submitted</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
           <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-8 h-8 text-green-400" />
           </div>
           <h2 className="text-xl font-bold text-foreground">Request Submitted!</h2>
           <p className="text-sm text-muted-foreground">
-            Thank you! An administrator will review your request and send you an email once your account is approved.
+            Thank you! An administrator will review your request and send you an approval email once your account is approved.
           </p>
           <p className="text-xs text-muted-foreground">
             Check your inbox at <span className="text-primary">{form.parent_email}</span> for updates.
           </p>
+          <Button onClick={() => setSubmitted(false)} className="w-full">Close</Button>
         </div>
-      </div>
-    );
-  }
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <div className="h-dvh bg-background flex flex-col overflow-y-auto overscroll-contain">
@@ -184,6 +189,7 @@ export default function ParentSignup() {
           </p>
         </div>
       </div>
+      {successPopup}
     </div>
   );
 }
