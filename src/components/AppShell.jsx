@@ -40,6 +40,7 @@ import SRD from "@/pages/SRD";
 import SecurityReport from "@/pages/SecurityReport";
 import UIUXAuditReport from "@/pages/UIUXAuditReport";
 import IssuesFixedReport from "@/pages/IssuesFixedReport";
+import Applications from "@/pages/Applications";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -162,6 +163,7 @@ export default function AppShell() {
           <Route path="/SeasonManager" element={<SeasonManager />} />
           <Route path="/DataExport" element={<DataExport />} />
           <Route path="/PracticePlans" element={<PracticePlans />} />
+          <Route path="/Applications" element={<Applications />} />
         </Route>
 
       </Route>

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen, GraduationCap } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen, GraduationCap, Inbox } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const staffNavGroups = [
@@ -22,6 +22,7 @@ const staffNavGroups = [
       { path: "/CoachesTraining", label: "Coaches Training", icon: GraduationCap, roles: ["admin", "athletic_director"] },
       { path: "/Sports", label: "Sports", icon: Trophy, roles: ["admin"] },
       { path: "/PracticePlans", label: "Practice Plans", icon: ClipboardList, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/Applications", label: "Applications", icon: Inbox, roles: ["admin", "athletic_director", "coach"] },
       { path: "/GameDayPlaylists", label: "Game Day Music", icon: Music2, roles: ["admin", "athletic_director", "coach"] },
       { path: "/Playbooks", label: "Playbooks", icon: BookOpen, roles: ["admin", "athletic_director", "coach"] },
       { path: "/Gallery", label: "Gallery", icon: Image, roles: ["admin", "athletic_director", "coach"] },

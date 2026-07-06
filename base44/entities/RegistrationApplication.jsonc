@@ -1,0 +1,129 @@
+{
+  "name": "RegistrationApplication",
+  "type": "object",
+  "properties": {
+    "parent_user_id": {
+      "type": "string",
+      "description": "User ID of the submitting parent"
+    },
+    "parent_name": {
+      "type": "string",
+      "description": "Full name of the submitting parent"
+    },
+    "parent_email": {
+      "type": "string",
+      "description": "Email of the submitting parent"
+    },
+    "athlete_first_name": {
+      "type": "string",
+      "description": "Athlete first name"
+    },
+    "athlete_last_name": {
+      "type": "string",
+      "description": "Athlete last name"
+    },
+    "athlete_dob": {
+      "type": "string",
+      "format": "date",
+      "description": "Athlete date of birth"
+    },
+    "target_team_id": {
+      "type": "string",
+      "description": "ID of the team the parent is applying to"
+    },
+    "target_team_name": {
+      "type": "string",
+      "description": "Team name (denormalized)"
+    },
+    "sport_name": {
+      "type": "string",
+      "description": "Sport name (denormalized)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "waitlisted",
+        "archived"
+      ],
+      "default": "pending",
+      "description": "Current application status"
+    },
+    "applied_at": {
+      "type": "string",
+      "description": "ISO timestamp of when the application was submitted"
+    },
+    "waitlisted_at": {
+      "type": "string",
+      "description": "ISO timestamp of when the application was waitlisted"
+    }
+  },
+  "required": [
+    "parent_user_id",
+    "parent_email",
+    "athlete_first_name",
+    "athlete_last_name",
+    "target_team_id"
+  ],
+  "rls": {
+    "create": {
+      "data.parent_user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.parent_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "coach"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "coach"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    }
+  }
+}
