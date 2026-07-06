@@ -112,7 +112,7 @@ export default function Register() {
   );
 
   return (
-    <div className="min-h-screen bg-background py-10 px-4 pb-28">
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain py-10 px-4 pb-safe-nav">
       <div className="max-w-xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
