@@ -160,15 +160,13 @@ export default function Schedule() {
         channel_id: form.team_id,
       });
       await base44.entities.Message.create({
-        content: parts.join(" · "),
-        channel: "team",
+        content_text: parts.join(" · "),
         channel_id: form.team_id,
-        channel_name: team.name,
         sender_name: user?.full_name || "Staff",
-        sender_email: user?.email || "",
+        sender_user_id: user?.id || "",
         sender_avatar: user?.avatar_url || "",
-        attendance_request_id: attendanceReq.id,
-        event_id: created.id,
+        message_type: "event",
+        metadata: JSON.stringify({ event_id: created.id, attendance_request_id: attendanceReq.id }),
       });
       queryClient.invalidateQueries({ queryKey: ["messages", form.team_id] });
       queryClient.invalidateQueries({ queryKey: ["attendance-requests", form.team_id] });
