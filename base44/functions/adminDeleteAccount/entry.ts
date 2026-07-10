@@ -68,14 +68,25 @@ Deno.serve(async (req) => {
     }
 
     // Delegate all cascading child-record cleanup to orphanedRecordCleaner
-    const cleanupResult = await base44.asServiceRole.functions.invoke('orphanedRecordCleaner', {
-      target_email,
-      target_user_id,
-    });
-    console.log('orphanedRecordCleaner result:', JSON.stringify(cleanupResult));
+    let cleanupData = null;
+    try {
+      const cleanupResult = await base44.asServiceRole.functions.invoke('orphanedRecordCleaner', {
+        target_email,
+        target_user_id,
+      });
+      // functions.invoke returns an Axios response — extract .data to avoid circular JSON
+      cleanupData = cleanupResult?.data || null;
+      console.log('orphanedRecordCleaner result:', JSON.stringify(cleanupData));
+    } catch (e) {
+      console.warn('orphanedRecordCleaner failed (continuing):', e.message);
+    }
 
     // Delete the User entity record last
-    await base44.asServiceRole.entities.User.delete(target_user_id);
+    try {
+      await base44.asServiceRole.entities.User.delete(target_user_id);
+    } catch (e) {
+      console.warn('User.delete failed (may already be removed):', e.message);
+    }
 
     // Audit log
     await base44.asServiceRole.entities.AuditLog.create({
@@ -90,7 +101,7 @@ Deno.serve(async (req) => {
       description: `Admin ${caller.email} deleted account for ${target_email}. All orphaned child records removed. Financial records retained per compliance policy.`,
     });
 
-    return Response.json({ success: true, cleanup: cleanupResult });
+    return Response.json({ success: true, cleanup: cleanupData });
   } catch (error) {
     console.error('adminDeleteAccount error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

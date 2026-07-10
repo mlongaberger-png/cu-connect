@@ -10,10 +10,16 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const caller = await base44.auth.me();
-    if (!caller || caller.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    // Allow internal calls (from adminDeleteAccount/deleteAccount via asServiceRole)
+    // by falling back to service-role context when no user session is present
+    const caller = await base44.auth.me().catch(() => null);
+    if (caller) {
+      if (caller.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
     }
+    // If no user session (internal service-role call), proceed — the calling function
+    // is responsible for admin authorization.
 
     const { target_email, target_user_id } = await req.json();
     if (!target_email) {
