@@ -18,11 +18,7 @@ import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function ChatSidebar({ activeChannelId }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "teams";
-  const handleTabChange = (value) => {
-    setSearchParams(prev => { prev.set("tab", value); return prev; });
-  };
+  const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
@@ -120,26 +116,22 @@ export default function ChatSidebar({ activeChannelId }) {
   });
 
   const select = (id) => {
-    setSearchParams(prev => { prev.set("channelId", id); return prev; });
+    setSearchParams({ channelId: id });
     resetUnreadMutation.mutate(id);
   };
 
-  // Build a Set of channel IDs the current user is a member of
-  const myChannelIds = new Set((myMemberships || []).map(m => m.channel_id));
-
-  // Filter channels by type — only show channels the user is a member of
+  // Filter channels by type
   const userEmail = currentUser?.email;
-  const teamChannels = allChannels.filter(ch => ch.type === "team" && myChannelIds.has(ch.id));
+  const teamChannels = allChannels.filter(ch => ch.type === "team");
   const directChannels = allChannels.filter(ch => {
     if (ch.type !== "direct") return false;
-    if (!myChannelIds.has(ch.id)) return false;
     try {
       const members = JSON.parse(ch.member_emails || "[]");
       return members.includes(userEmail);
     } catch { return false; }
   });
-  const carpoolChannels = allChannels.filter(ch => ch.type === "carpool" && myChannelIds.has(ch.id));
-  const announceChannels = allChannels.filter(ch => ch.type === "announcement" && myChannelIds.has(ch.id));
+  const carpoolChannels = allChannels.filter(ch => ch.type === "carpool");
+  const announceChannels = allChannels.filter(ch => ch.type === "announcement");
 
   const { toast } = useToast();
 
@@ -283,7 +275,7 @@ export default function ChatSidebar({ activeChannelId }) {
   };
 
   return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col bg-card overflow-hidden">
+    <Tabs defaultValue="teams" className="h-full flex flex-col bg-card overflow-hidden">
 
       <div className="flex-shrink-0 border-b border-border bg-card relative z-[60] shadow-sm">
         <div className="flex items-center justify-between p-4">
