@@ -292,7 +292,7 @@ export default function NotificationBell() {
                           : <Calendar className="w-3.5 h-3.5 text-blue-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-!2">
+                        <div className="flex items-start justify-between gap-2">
                           <p className={`text-sm leading-tight line-clamp-1 ${isUnread ? "font-semibold text-foreground" : "text-foreground"}`}>{n.title}</p>
                           <span className="text-xs text-muted-foreground flex-shrink-0">{relativeTime(n.date)}</span>
                         </div>
