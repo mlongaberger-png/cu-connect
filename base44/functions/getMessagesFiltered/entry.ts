@@ -37,6 +37,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'channel_id required' }, { status: 400 });
     }
 
+    const role = user.role;
+
+    // Admins and ADs bypass channel membership checks
+    const isStaff = role === 'admin' || role === 'athletic_director';
+
+    if (!isStaff) {
+      // Verify the caller is a ChannelMember of the requested channel
+      const memberships = await base44.asServiceRole.entities.ChannelMember.filter(
+        { channel_id: channelId, user_email: user.email },
+        null,
+        1
+      );
+      if (memberships.length === 0) {
+        console.log(`[getMessagesFiltered] DENIED user=${user.email} channel=${channelId} (not a member)`);
+        return Response.json({ messages: [], filtered_count: 0, has_more: false });
+      }
+    }
+
     // ── Build the blocked-ID set ──────────────────────────────
     const [blockedByMe, blockedMe] = await Promise.all([
       base44.asServiceRole.entities.BlockedUser.filter({ blocker_id: user.id }, null, 500),

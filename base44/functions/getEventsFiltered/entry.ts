@@ -46,7 +46,8 @@ Deno.serve(async (req) => {
     if (teamIds.length === 0) return Response.json({ events: [] });
 
     const allEvents = await base44.asServiceRole.entities.Event.list('-date', 500);
-    const events = allEvents.filter(e => teamIds.includes(e.team_id));
+    // Parents see their teams' events PLUS org-wide events (null/empty team_id)
+    const events = allEvents.filter(e => !e.team_id || teamIds.includes(e.team_id));
 
     console.log(`[getEventsFiltered] user=${user.email} role=${role} teams=${teamIds.length} events=${events.length}`);
     return Response.json({ events });
