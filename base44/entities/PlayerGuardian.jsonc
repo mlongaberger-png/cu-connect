@@ -60,6 +60,9 @@
           "user_condition": {
             "role": "coach"
           }
+        },
+        {
+          "data.user_email": "{{user.email}}"
         }
       ]
     },
