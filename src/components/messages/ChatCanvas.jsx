@@ -209,6 +209,19 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
         await base44.entities.ChannelMember.update(membership.id, { unread_count: 0 });
       }
     },
+    onMutate: async () => {
+      if (!user?.email || !channelId) return {};
+      const queryKey = ["channel-members", user.email];
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (old = []) =>
+        old.map(m => m.channel_id === channelId ? { ...m, unread_count: 0 } : m)
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["channel-members", user?.email], ctx.prev);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["channel-members"] });
     },

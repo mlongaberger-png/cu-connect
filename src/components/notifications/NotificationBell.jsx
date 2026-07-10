@@ -253,7 +253,7 @@ export default function NotificationBell() {
                   return (
                     <div
                       key={n.id}
-                      onClick={() => markOneRead(n)}
+                      onClick={() => { markOneRead(n); setOpen(false); }}
                       className={`flex items-start gap-3 px-4 py-3 hover:bg-surface transition-colors cursor-pointer border-b border-border/50 last:border-0 ${isUnread ? "bg-primary/5 border-l-2 border-l-primary" : "border-l-2 border-l-transparent"}`}
                     >
                       <div className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center flex-shrink-0 mt-0.5 text-sm">
