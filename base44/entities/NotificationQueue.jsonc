@@ -51,6 +51,10 @@
     "error": {
       "type": "string",
       "description": "Error message if processing failed"
+    },
+    "read_at": {
+      "type": "string",
+      "description": "ISO timestamp when the user read this notification (null = unread)"
     }
   },
   "required": [
@@ -97,6 +101,9 @@
           "user_condition": {
             "role": "coach"
           }
+        },
+        {
+          "data.user_email": "{{user.email}}"
         }
       ]
     },
