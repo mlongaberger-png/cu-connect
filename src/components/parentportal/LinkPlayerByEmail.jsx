@@ -3,8 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, CheckCircle, AlertCircle, Trophy } from "lucide-react";
+import AddChildForm from "@/components/parentportal/AddChildForm";
 
-export default function LinkPlayerByEmail({ currentUserEmail, onLinked }) {
+export default function LinkPlayerByEmail({ currentUserEmail, onLinked, parentName }) {
   const [searchEmail, setSearchEmail] = useState("");
   const [found, setFound] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -88,10 +89,24 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked }) {
       </form>
 
       {notFound && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>No players found with that email. Double-check the email or contact your organization admin.</span>
-        </div>
+        <>
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>No existing profile found with that email — you can add your child manually below.</span>
+          </div>
+          <div className="mt-4 pt-4 border-t border-border">
+            <h4 className="font-semibold text-foreground mb-1">Add Your Child</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Enter your child's info and we'll match them if they're in the system, or submit for admin review.
+            </p>
+            <AddChildForm
+              parentEmail={currentUserEmail}
+              parentName={parentName || ""}
+              onChildAdded={onLinked}
+              showSkip={false}
+            />
+          </div>
+        </>
       )}
 
       {found && (

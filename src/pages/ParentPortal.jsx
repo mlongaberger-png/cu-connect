@@ -8,6 +8,7 @@ import PlayerDocuments from "@/components/parentportal/PlayerDocuments";
 import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
 import { PlayerPaymentCard } from "@/components/parentportal/PlayerPayments";
 import LinkPlayerByEmail from "@/components/parentportal/LinkPlayerByEmail";
+import AddChildForm from "@/components/parentportal/AddChildForm";
 import CalendarView from "@/components/schedule/CalendarView";
 import EventDetailPanel from "@/components/schedule/EventDetailPanel";
 import CalendarExportPanel from "@/components/schedule/CalendarExportPanel";
@@ -378,15 +379,13 @@ export default function ParentPortal() {
           ) : (
             <>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
-                We're finishing your setup. If your admin has sent you an invite, check your email. Otherwise, search for your child below.
+                We're finishing your setup. If your admin has sent you an invite, check your email. Otherwise, add your child below — if they're already in the system we'll link you automatically, otherwise we'll submit their info for review.
               </p>
-              <LinkPlayerByEmail
-                currentUserEmail={userEmail}
-                onLinked={() => setPlayerLinked(p => !p)}
+              <AddChildForm
+                parentEmail={userEmail}
+                parentName={user?.full_name || user?.display_name || ""}
+                onChildAdded={() => setPlayerLinked(p => !p)}
               />
-              <p className="text-xs text-muted-foreground mt-4">
-                Not finding your child? Contact your organization admin to verify the email on file.
-              </p>
             </>
           )}
         </div>
