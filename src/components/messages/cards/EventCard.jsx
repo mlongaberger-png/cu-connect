@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, MapPin, Check, Car, X, Loader2 } from "lucide-react";
 
 const STATUS_BADGES = {
@@ -20,7 +21,8 @@ const ACTIONS = [
 export default function EventCard({ msg }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [optimisticStatus, setOptimisticStatus] = useState(null);
+  const { toast } = useToast();
+  const [optimisticRsvp, setOptimisticRsvp] = useState(null);
 
   const meta = (() => {
     try { return JSON.parse(msg.metadata || "{}"); } catch { return {}; }
@@ -83,14 +85,16 @@ export default function EventCard({ msg }) {
   const hasNotGoing = myResponses.some(r => r.status === "not_attending");
   const hasCarpool = myCarpool.length > 0;
 
-  const currentStatus = optimisticStatus
+  // Optimistic state takes priority over real data
+  const currentStatus = optimisticRsvp
     || (hasGoing ? "going" : null)
     || (hasNotGoing ? "not_going" : null)
     || (hasCarpool ? "need_ride" : null);
 
   const rsvpMutation = useMutation({
     mutationFn: async (status) => {
-      if (!reqId || eligiblePlayers.length === 0) return;
+      if (!reqId) throw new Error("Missing event link for RSVP.");
+      if (eligiblePlayers.length === 0) throw new Error("No eligible athletes found for this team.");
       await Promise.all(eligiblePlayers.map(player => {
         const existing = myResponses.find(r => r.player_id === player.id);
         if (existing) {
@@ -106,34 +110,15 @@ export default function EventCard({ msg }) {
         });
       }));
     },
-    onMutate: async (status) => {
-      const key = status === "attending" ? "going" : "not_going";
-      setOptimisticStatus(key);
-      await queryClient.cancelQueries({ queryKey: rsvpQueryKey });
-      const prev = queryClient.getQueryData(rsvpQueryKey);
-      queryClient.setQueryData(rsvpQueryKey, (old = []) => {
-        return eligiblePlayers.map(player => {
-          const existing = old.find(r => r.player_id === player.id);
-          if (existing) return { ...existing, status };
-          return {
-            id: `opt-${player.id}`,
-            attendance_request_id: reqId,
-            player_id: player.id,
-            player_name: `${player.first_name} ${player.last_name}`,
-            team_id: teamId,
-            responder_email: user.email,
-            status,
-          };
-        });
+    onError: (err) => {
+      setOptimisticRsvp(null);
+      toast({
+        title: "Failed to save RSVP",
+        description: err.message || "Please try again.",
+        variant: "destructive",
       });
-      return { prev };
     },
-    onError: (_e, _v, ctx) => {
-      setOptimisticStatus(null);
-      if (ctx?.prev) queryClient.setQueryData(rsvpQueryKey, ctx.prev);
-    },
-    onSettled: () => {
-      setOptimisticStatus(null);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rsvpQueryKey });
       queryClient.invalidateQueries({ queryKey: ["attendance-responses", reqId] });
     },
@@ -141,11 +126,12 @@ export default function EventCard({ msg }) {
 
   const carpoolMutation = useMutation({
     mutationFn: async () => {
+      if (!eventId) throw new Error("Missing event link for carpool request.");
       return base44.entities.CarpoolRequest.create({
         team_id: teamId || "",
         requester_email: user.email,
         requester_name: user?.full_name || "",
-        event_id: eventId || "",
+        event_id: eventId,
         event_title: meta.title || "",
         event_date: meta.date || "",
         event_time: meta.start_time || "",
@@ -154,28 +140,23 @@ export default function EventCard({ msg }) {
         status: "open",
       });
     },
-    onMutate: async () => {
-      setOptimisticStatus("need_ride");
-      await queryClient.cancelQueries({ queryKey: carpoolQueryKey });
-      const prev = queryClient.getQueryData(carpoolQueryKey);
-      queryClient.setQueryData(carpoolQueryKey, (old = []) => [
-        ...old,
-        { id: "opt-carpool", event_id: eventId, requester_email: user.email, carpool_type: "seeking_ride", status: "open" },
-      ]);
-      return { prev };
+    onError: (err) => {
+      setOptimisticRsvp(null);
+      toast({
+        title: "Failed to save RSVP",
+        description: err.message || "Please try again.",
+        variant: "destructive",
+      });
     },
-    onError: (_e, _v, ctx) => {
-      setOptimisticStatus(null);
-      if (ctx?.prev) queryClient.setQueryData(carpoolQueryKey, ctx.prev);
-    },
-    onSettled: () => {
-      setOptimisticStatus(null);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: carpoolQueryKey });
     },
   });
 
   const handleClick = (action) => {
     if (!user?.email) return;
+    // Instantly hide buttons and show confirmation badge
+    setOptimisticRsvp(action.key);
     if (action.rsvpStatus) {
       rsvpMutation.mutate(action.rsvpStatus);
     } else {
