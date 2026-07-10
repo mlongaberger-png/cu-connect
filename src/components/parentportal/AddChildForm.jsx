@@ -60,45 +60,50 @@ export default function AddChildForm({ parentEmail, parentName, onChildAdded, on
     setError("");
     setSaving(true);
 
-    if (selectedMatch) {
-      // Link parent to existing player via PlayerGuardian
-      const existingLinks = await base44.entities.PlayerGuardian.filter({ player_id: selectedMatch.id, user_email: parentEmail });
-      if (!existingLinks.length) {
-        await base44.entities.PlayerGuardian.create({
-          player_id: selectedMatch.id,
-          player_name: `${selectedMatch.first_name} ${selectedMatch.last_name}`,
-          user_email: parentEmail,
-          relationship: "Guardian",
-          invited_by: parentEmail,
+    try {
+      if (selectedMatch) {
+        // Link parent to existing player via PlayerGuardian
+        const existingLinks = await base44.entities.PlayerGuardian.filter({ player_id: selectedMatch.id, user_email: parentEmail });
+        if (!existingLinks.length) {
+          await base44.entities.PlayerGuardian.create({
+            player_id: selectedMatch.id,
+            player_name: `${selectedMatch.first_name} ${selectedMatch.last_name}`,
+            user_email: parentEmail,
+            relationship: "Guardian",
+            invited_by: parentEmail,
+          });
+        }
+        const child = { ...selectedMatch, _linked: true, _label: `${selectedMatch.first_name} ${selectedMatch.last_name}` };
+        setAddedChildren(prev => [...prev, child]);
+        queryClient.invalidateQueries({ queryKey: ["my-guardian-links"] });
+        if (onChildAdded) onChildAdded(child);
+      } else {
+        // Create PendingChild record
+        const pending = await base44.entities.PendingChild.create({
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          date_of_birth: form.date_of_birth || undefined,
+          grade: form.grade || undefined,
+          sport_interest: form.sport_interest || undefined,
+          parent_email: parentEmail,
+          parent_name: parentName || "",
+          status: "pending",
+          guardian_confirmed: true,
         });
+        const child = { ...pending, _label: `${form.first_name} ${form.last_name}` };
+        setAddedChildren(prev => [...prev, child]);
+        if (onChildAdded) onChildAdded(child);
       }
-      const child = { ...selectedMatch, _linked: true, _label: `${selectedMatch.first_name} ${selectedMatch.last_name}` };
-      setAddedChildren(prev => [...prev, child]);
-      queryClient.invalidateQueries({ queryKey: ["my-guardian-links"] });
-      if (onChildAdded) onChildAdded(child);
-    } else {
-      // Create PendingChild record
-      const pending = await base44.entities.PendingChild.create({
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim(),
-        date_of_birth: form.date_of_birth || undefined,
-        grade: form.grade || undefined,
-        sport_interest: form.sport_interest || undefined,
-        parent_email: parentEmail,
-        parent_name: parentName || "",
-        status: "pending",
-        guardian_confirmed: true,
-      });
-      const child = { ...pending, _label: `${form.first_name} ${form.last_name}` };
-      setAddedChildren(prev => [...prev, child]);
-      if (onChildAdded) onChildAdded(child);
-    }
 
-    setSaving(false);
-    setForm({ first_name: "", last_name: "", date_of_birth: "", grade: "", sport_interest: "" });
-    setConfirmed(false);
-    setSelectedMatch(null);
-    setShowForm(false);
+      setSaving(false);
+      setForm({ first_name: "", last_name: "", date_of_birth: "", grade: "", sport_interest: "" });
+      setConfirmed(false);
+      setSelectedMatch(null);
+      setShowForm(false);
+    } catch (err) {
+      setSaving(false);
+      setError(err?.message || "Failed to save. Please try again.");
+    }
   };
 
   const handleAddAnother = () => {
