@@ -134,42 +134,59 @@ export default function Schedule() {
 
     // Post team message notification if checkbox is checked and team is selected
     if (notifyTeam && form.team_id && team) {
-      const parts = [];
-      const typeLabel = form.type ? form.type.charAt(0).toUpperCase() + form.type.slice(1) : "Event";
-      parts.push(`📅 New ${typeLabel}: ${form.title}`);
-      if (form.opponent) parts.push(`vs ${form.opponent}`);
-      if (form.date) {
-        let timeStr = form.start_time ? ` at ${formatTime12h(form.start_time)}` : "";
-        if (form.arrival_time) timeStr += ` (arrive ${formatTime12h(form.arrival_time)})`;
-        parts.push(form.date + timeStr);
+      try {
+        const channels = await base44.entities.Channel.filter({ team_id: form.team_id, type: "team" });
+        if (!channels || channels.length === 0) {
+          console.warn("No team channel found for team_id:", form.team_id);
+        } else {
+          const channelId = channels[0].id;
+          const parts = [];
+          const typeLabel = form.type ? form.type.charAt(0).toUpperCase() + form.type.slice(1) : "Event";
+          parts.push(`📅 New ${typeLabel}: ${form.title}`);
+          if (form.opponent) parts.push(`vs ${form.opponent}`);
+          if (form.date) {
+            let timeStr = form.start_time ? ` at ${formatTime12h(form.start_time)}` : "";
+            if (form.arrival_time) timeStr += ` (arrive ${formatTime12h(form.arrival_time)})`;
+            parts.push(form.date + timeStr);
+          }
+          if (form.location) parts.push(`📍 ${form.location}`);
+          if (form.notes) parts.push(form.notes);
+          // Create attendance request first so we can link it to the message
+          const rsvpLabel = `${form.title}${form.start_time ? ` – ${formatTime12h(form.start_time)}` : ""}`;
+          const attendanceReq = await base44.entities.AttendanceRequest.create({
+            team_id: form.team_id,
+            team_name: team.name,
+            event_id: created.id,
+            label: rsvpLabel,
+            event_type: ["game", "tournament", "meeting"].includes(form.type) ? form.type : "other",
+            event_date: form.date,
+            event_time: form.start_time || "",
+            created_by_name: user?.full_name || "Staff",
+            created_by_email: user?.email || "",
+            channel_id: channelId,
+          });
+          await base44.entities.Message.create({
+            content_text: parts.join(" · "),
+            channel_id: channelId,
+            sender_name: user?.full_name || "Staff",
+            sender_user_id: user?.id || "",
+            sender_avatar: user?.avatar_url || "",
+            message_type: "event",
+            metadata: JSON.stringify({
+              title: form.title,
+              date: form.date,
+              start_time: form.start_time,
+              location: form.location,
+              event_id: created.id,
+              attendance_request_id: attendanceReq.id,
+            }),
+          });
+          queryClient.invalidateQueries({ queryKey: ["messages", channelId] });
+          queryClient.invalidateQueries({ queryKey: ["attendance-requests", channelId] });
+        }
+      } catch (notifyErr) {
+        console.error("Failed to post team notification:", notifyErr);
       }
-      if (form.location) parts.push(`📍 ${form.location}`);
-      if (form.notes) parts.push(form.notes);
-      // Create attendance request first so we can link it to the message
-      const rsvpLabel = `${form.title}${form.start_time ? ` – ${formatTime12h(form.start_time)}` : ""}`;
-      const attendanceReq = await base44.entities.AttendanceRequest.create({
-        team_id: form.team_id,
-        team_name: team.name,
-        event_id: created.id,
-        label: rsvpLabel,
-        event_type: ["game", "tournament", "meeting"].includes(form.type) ? form.type : "other",
-        event_date: form.date,
-        event_time: form.start_time || "",
-        created_by_name: user?.full_name || "Staff",
-        created_by_email: user?.email || "",
-        channel_id: form.team_id,
-      });
-      await base44.entities.Message.create({
-        content_text: parts.join(" · "),
-        channel_id: form.team_id,
-        sender_name: user?.full_name || "Staff",
-        sender_user_id: user?.id || "",
-        sender_avatar: user?.avatar_url || "",
-        message_type: "event",
-        metadata: JSON.stringify({ event_id: created.id, attendance_request_id: attendanceReq.id }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["messages", form.team_id] });
-      queryClient.invalidateQueries({ queryKey: ["attendance-requests", form.team_id] });
     }
     setNotifyTeam(true);
     setForm({ title: "", type: "practice", team_id: "", date: "", arrival_time: "", start_time: "", end_time: "", location: "", opponent: "", notes: "", tournament_round: "", uniform_info: "" });
