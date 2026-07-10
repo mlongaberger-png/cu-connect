@@ -18,7 +18,12 @@ import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function ChatSidebar({ activeChannelId }) {
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'teams';
+
+  const handleTabChange = (value) => {
+    setSearchParams(prev => { prev.set('tab', value); return prev; });
+  };
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
@@ -83,6 +88,32 @@ export default function ChatSidebar({ activeChannelId }) {
     refetchInterval: () => document.visibilityState === 'hidden' ? false : 30000,
   });
 
+  // Parent role check — parents/grandparents/relatives only see channels for their athletes' teams
+  const isParentRole = !!currentUser && ['parent', 'grandparent', 'relative'].includes(currentUser.role);
+
+  // Fetch guardian links to discover which players (and thus teams) this parent can access
+  const { data: myGuardians = [] } = useQuery({
+    queryKey: ["my-guardians", currentUser?.email],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: currentUser.email }),
+    enabled: isParentRole,
+  });
+
+  const guardianPlayerIds = myGuardians.map(g => g.player_id).filter(Boolean);
+
+  // Fetch the Player records for those guardian links to collect team_ids
+  const { data: myPlayers = [] } = useQuery({
+    queryKey: ["my-players-by-guardian", guardianPlayerIds.join(',')],
+    queryFn: () => base44.entities.Player.list(),
+    enabled: isParentRole && guardianPlayerIds.length > 0,
+  });
+
+  const allowedTeamIds = new Set(
+    myPlayers
+      .filter(p => guardianPlayerIds.includes(p.id))
+      .map(p => p.team_id)
+      .filter(Boolean)
+  );
+
   // Only count unreads for channels that actually exist and are visible
   const visibleChannelIds = new Set(allChannels.map(ch => ch.id));
   const unreadMap = myMemberships.reduce((acc, m) => {
@@ -116,13 +147,17 @@ export default function ChatSidebar({ activeChannelId }) {
   });
 
   const select = (id) => {
-    setSearchParams({ channelId: id });
+    setSearchParams(prev => { prev.set('channelId', id); return prev; });
     resetUnreadMutation.mutate(id);
   };
 
-  // Filter channels by type
+  // Filter channels by type — parents only see team/announcement channels for their athletes' teams
   const userEmail = currentUser?.email;
-  const teamChannels = allChannels.filter(ch => ch.type === "team");
+  const teamChannels = allChannels.filter(ch => {
+    if (ch.type !== "team") return false;
+    if (isParentRole && !allowedTeamIds.has(ch.team_id)) return false;
+    return true;
+  });
   const directChannels = allChannels.filter(ch => {
     if (ch.type !== "direct") return false;
     try {
@@ -131,7 +166,11 @@ export default function ChatSidebar({ activeChannelId }) {
     } catch { return false; }
   });
   const carpoolChannels = allChannels.filter(ch => ch.type === "carpool");
-  const announceChannels = allChannels.filter(ch => ch.type === "announcement");
+  const announceChannels = allChannels.filter(ch => {
+    if (ch.type !== "announcement") return false;
+    if (isParentRole && !allowedTeamIds.has(ch.team_id)) return false;
+    return true;
+  });
 
   const { toast } = useToast();
 
@@ -275,7 +314,7 @@ export default function ChatSidebar({ activeChannelId }) {
   };
 
   return (
-    <Tabs defaultValue="teams" className="h-full flex flex-col bg-card overflow-hidden">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col bg-card overflow-hidden">
 
       <div className="flex-shrink-0 border-b border-border bg-card relative z-[60] shadow-sm">
         <div className="flex items-center justify-between p-4">
@@ -307,7 +346,7 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="flex-1">
           <TabsContent value="teams" className="m-0 space-y-1">
             {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <EmptyChannelState icon={Users} message="No team channels yet" />
+              <EmptyChannelState icon={Users} message={isParentRole ? "No team channels found for your athletes" : "No team channels yet"} />
             ) : (
               teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
@@ -347,7 +386,7 @@ export default function ChatSidebar({ activeChannelId }) {
 
           <TabsContent value="announce" className="m-0 space-y-1">
             {announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <EmptyChannelState icon={Newspaper} message="No news posts yet" />
+              <EmptyChannelState icon={Newspaper} message={isParentRole ? "No news posts for your athletes' teams" : "No news posts yet"} />
             ) : (
               announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
