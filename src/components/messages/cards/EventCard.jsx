@@ -1,19 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
-import { CalendarDays, MapPin, Check, Loader2 } from "lucide-react";
+import { CalendarDays, MapPin, Check, Car, X, Loader2 } from "lucide-react";
+
+const STATUS_BADGES = {
+  going: { Icon: Check, label: "RSVP: Going", cls: "bg-green-500/20 text-green-400 border-green-500/40" },
+  not_going: { Icon: X, label: "RSVP: Can't Go", cls: "bg-red-500/20 text-red-400 border-red-500/40" },
+  need_ride: { Icon: Car, label: "Carpool: Need Ride", cls: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+};
 
 const ACTIONS = [
-  { key: "going", emoji: "👍", label: "Going", rsvpStatus: "attending", activeCls: "bg-green-500/20 text-green-400 border-green-500/40" },
-  { key: "not_going", emoji: "🤒", label: "Can't Go", rsvpStatus: "not_attending", activeCls: "bg-red-500/20 text-red-400 border-red-500/40" },
-  { key: "need_ride", emoji: "🚗", label: "Need Ride", rsvpStatus: null, activeCls: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+  { key: "going", emoji: "👍", label: "Going", rsvpStatus: "attending" },
+  { key: "not_going", emoji: "🤒", label: "Can't Go", rsvpStatus: "not_attending" },
+  { key: "need_ride", emoji: "🚗", label: "Need Ride", rsvpStatus: null },
 ];
 
 export default function EventCard({ msg }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [optimisticStatus, setOptimisticStatus] = useState(null);
 
   const meta = (() => {
     try { return JSON.parse(msg.metadata || "{}"); } catch { return {}; }
@@ -22,7 +29,6 @@ export default function EventCard({ msg }) {
   const reqId = meta.attendance_request_id;
   const eventId = meta.event_id;
 
-  // Reuse the cached channel query from ChatCanvas to get team_id
   const { data: channel } = useQuery({
     queryKey: ["channel", msg.channel_id],
     queryFn: () => base44.entities.Channel.filter({ id: msg.channel_id }).then(r => r[0]),
@@ -31,7 +37,6 @@ export default function EventCard({ msg }) {
   });
   const teamId = channel?.team_id;
 
-  // Fetch the parent's guardian links to discover eligible players
   const { data: myGuardians = [] } = useQuery({
     queryKey: ["my-guardians", user?.email],
     queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user.email }),
@@ -51,9 +56,11 @@ export default function EventCard({ msg }) {
     ? myPlayers.filter(p => guardianPlayerIds.includes(p.id) && p.team_id === teamId)
     : [];
 
-  // Existing RSVP responses for this attendance request
+  const rsvpQueryKey = ["my-rsvp", reqId, user?.email];
+  const carpoolQueryKey = ["my-carpool", eventId, user?.email];
+
   const { data: myResponses = [] } = useQuery({
-    queryKey: ["my-rsvp", reqId, user?.email],
+    queryKey: rsvpQueryKey,
     queryFn: () => base44.entities.AttendanceResponse.filter({
       attendance_request_id: reqId,
       responder_email: user.email,
@@ -62,9 +69,8 @@ export default function EventCard({ msg }) {
     staleTime: 15000,
   });
 
-  // Existing carpool request for this event
   const { data: myCarpool = [] } = useQuery({
-    queryKey: ["my-carpool", eventId, user?.email],
+    queryKey: carpoolQueryKey,
     queryFn: () => base44.entities.CarpoolRequest.filter({
       event_id: eventId,
       requester_email: user.email,
@@ -76,6 +82,11 @@ export default function EventCard({ msg }) {
   const hasGoing = myResponses.some(r => r.status === "attending");
   const hasNotGoing = myResponses.some(r => r.status === "not_attending");
   const hasCarpool = myCarpool.length > 0;
+
+  const currentStatus = optimisticStatus
+    || (hasGoing ? "going" : null)
+    || (hasNotGoing ? "not_going" : null)
+    || (hasCarpool ? "need_ride" : null);
 
   const rsvpMutation = useMutation({
     mutationFn: async (status) => {
@@ -95,8 +106,35 @@ export default function EventCard({ msg }) {
         });
       }));
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-rsvp", reqId] });
+    onMutate: async (status) => {
+      const key = status === "attending" ? "going" : "not_going";
+      setOptimisticStatus(key);
+      await queryClient.cancelQueries({ queryKey: rsvpQueryKey });
+      const prev = queryClient.getQueryData(rsvpQueryKey);
+      queryClient.setQueryData(rsvpQueryKey, (old = []) => {
+        return eligiblePlayers.map(player => {
+          const existing = old.find(r => r.player_id === player.id);
+          if (existing) return { ...existing, status };
+          return {
+            id: `opt-${player.id}`,
+            attendance_request_id: reqId,
+            player_id: player.id,
+            player_name: `${player.first_name} ${player.last_name}`,
+            team_id: teamId,
+            responder_email: user.email,
+            status,
+          };
+        });
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      setOptimisticStatus(null);
+      if (ctx?.prev) queryClient.setQueryData(rsvpQueryKey, ctx.prev);
+    },
+    onSettled: () => {
+      setOptimisticStatus(null);
+      queryClient.invalidateQueries({ queryKey: rsvpQueryKey });
       queryClient.invalidateQueries({ queryKey: ["attendance-responses", reqId] });
     },
   });
@@ -116,8 +154,23 @@ export default function EventCard({ msg }) {
         status: "open",
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-carpool", eventId] });
+    onMutate: async () => {
+      setOptimisticStatus("need_ride");
+      await queryClient.cancelQueries({ queryKey: carpoolQueryKey });
+      const prev = queryClient.getQueryData(carpoolQueryKey);
+      queryClient.setQueryData(carpoolQueryKey, (old = []) => [
+        ...old,
+        { id: "opt-carpool", event_id: eventId, requester_email: user.email, carpool_type: "seeking_ride", status: "open" },
+      ]);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      setOptimisticStatus(null);
+      if (ctx?.prev) queryClient.setQueryData(carpoolQueryKey, ctx.prev);
+    },
+    onSettled: () => {
+      setOptimisticStatus(null);
+      queryClient.invalidateQueries({ queryKey: carpoolQueryKey });
     },
   });
 
@@ -130,19 +183,14 @@ export default function EventCard({ msg }) {
     }
   };
 
-  const isActive = (key) => {
-    if (key === "going") return hasGoing;
-    if (key === "not_going") return hasNotGoing;
-    if (key === "need_ride") return hasCarpool;
-    return false;
-  };
-
   const isPending = (action) => {
     if (action.rsvpStatus) {
       return rsvpMutation.isPending && rsvpMutation.variables === action.rsvpStatus;
     }
     return carpoolMutation.isPending;
   };
+
+  const badge = currentStatus ? STATUS_BADGES[currentStatus] : null;
 
   return (
     <Card className="w-full max-w-sm bg-card border border-border rounded-xl overflow-hidden">
@@ -159,28 +207,33 @@ export default function EventCard({ msg }) {
           </div>
         )}
       </div>
-      <div className="border-t border-border flex justify-between p-2">
-        {ACTIONS.map((action) => {
-          const active = isActive(action.key);
-          const pending = isPending(action);
-          return (
-            <button
-              key={action.key}
-              onClick={() => handleClick(action)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-colors text-xs
-                ${active ? action.activeCls : "border-transparent text-muted-foreground hover:text-foreground hover:bg-surface"}`}
-            >
-              {pending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : active ? (
-                <Check className="w-3.5 h-3.5" />
-              ) : (
-                <span>{action.emoji}</span>
-              )}
-              <span>{action.label}</span>
-            </button>
-          );
-        })}
+      <div className="border-t border-border p-2">
+        {badge ? (
+          <div className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border ${badge.cls}`}>
+            <badge.Icon className="w-4 h-4" />
+            <span className="text-xs font-semibold">{badge.label}</span>
+          </div>
+        ) : (
+          <div className="flex justify-between">
+            {ACTIONS.map((action) => {
+              const pending = isPending(action);
+              return (
+                <button
+                  key={action.key}
+                  onClick={() => handleClick(action)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-transparent text-muted-foreground hover:text-foreground hover:bg-surface transition-colors text-xs"
+                >
+                  {pending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>{action.emoji}</span>
+                  )}
+                  <span>{action.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Card>
   );
