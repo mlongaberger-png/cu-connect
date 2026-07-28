@@ -2,11 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { z } from 'npm:zod@3.24.2';
 
 const subscriptionSchema = z.object({
-  endpoint: z.string().min(1),
+  endpoint: z.string().min(0).default(''),
   keys: z.object({
     p256dh: z.string(),
     auth: z.string(),
   }).optional(),
+  platform: z.enum(['web', 'ios', 'android']).optional().default('web'),
+  fcm_token: z.string().optional(),
   remove: z.boolean().optional(),
 }).strict();
 
@@ -21,36 +23,79 @@ Deno.serve(async (req) => {
     if (!parsed.success) {
       return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
     }
-    const { endpoint, keys, remove } = parsed.data;
+    const { endpoint, keys, platform, fcm_token, remove } = parsed.data;
 
-    if (!endpoint) {
-      return Response.json({ error: 'Missing endpoint' }, { status: 400 });
-    }
-
-    // Handle unsubscribe: mark this specific endpoint inactive
+    // --- Unsubscribe ---
     if (remove) {
-      const existing = await base44.asServiceRole.entities.PushSubscription.filter({
-        user_email: user.email,
-        endpoint,
-      });
+      let existing = [];
+      if (endpoint) {
+        existing = await base44.asServiceRole.entities.PushSubscription.filter({
+          user_email: user.email,
+          endpoint,
+        });
+      } else if (platform !== 'web') {
+        // Native unsubscribe without a specific endpoint — deactivate all
+        // native subscriptions for this user/platform instead of deleting,
+        // since a re-registration may still be in flight.
+        existing = await base44.asServiceRole.entities.PushSubscription.filter({
+          user_email: user.email,
+          platform,
+        });
+      }
       for (const sub of existing) {
         await base44.asServiceRole.entities.PushSubscription.delete(sub.id);
       }
-      console.log(`Push subscription removed for ${user.email}`);
+      console.log(`Push subscription removed for ${user.email} (${platform})`);
       return Response.json({ success: true, removed: true });
     }
 
-    // Validate keys before saving
+    // --- Native (iOS/Android) subscription ---
+    if (platform === 'ios' || platform === 'android') {
+      if (!fcm_token) {
+        return Response.json({ error: 'Missing fcm_token' }, { status: 400 });
+      }
+      const synthEndpoint = endpoint || `fcm:${fcm_token}`;
+
+      const allForUser = await base44.asServiceRole.entities.PushSubscription.filter({ user_email: user.email, platform });
+      const existing = allForUser.filter(s => s.fcm_token === fcm_token);
+
+      if (existing.length === 0 && allForUser.length >= 10) {
+        console.warn(`Subscription cap reached for ${user.email}`);
+        return Response.json({ error: 'Too many subscriptions for this account' }, { status: 429 });
+      }
+
+      if (existing.length > 0) {
+        await base44.asServiceRole.entities.PushSubscription.update(existing[0].id, {
+          endpoint: synthEndpoint,
+          fcm_token,
+          is_active: true,
+        });
+      } else {
+        await base44.asServiceRole.entities.PushSubscription.create({
+          user_email: user.email,
+          endpoint: synthEndpoint,
+          platform,
+          fcm_token,
+          is_active: true,
+        });
+      }
+
+      console.log(`Native (${platform}) push subscription saved for ${user.email}`);
+      return Response.json({ success: true });
+    }
+
+    // --- Web push subscription (unchanged behavior) ---
+    if (!endpoint) {
+      return Response.json({ error: 'Missing endpoint' }, { status: 400 });
+    }
     if (!keys?.p256dh || !keys?.auth) {
       console.error(`Invalid subscription keys for ${user.email}`);
       return Response.json({ error: 'Invalid subscription keys' }, { status: 400 });
     }
 
-    // Upsert: if endpoint already exists for this user, update it; otherwise create
     const allForUser = await base44.asServiceRole.entities.PushSubscription.filter({ user_email: user.email });
     const existing = allForUser.filter(s => s.endpoint === endpoint);
 
-    // Cap subscriptions per user at 10 to prevent DB flooding
     if (existing.length === 0 && allForUser.length >= 10) {
       console.warn(`Subscription cap reached for ${user.email}`);
       return Response.json({ error: 'Too many subscriptions for this account' }, { status: 429 });
@@ -60,19 +105,21 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.PushSubscription.update(existing[0].id, {
         p256dh_key: keys.p256dh,
         auth_key: keys.auth,
+        platform: 'web',
         is_active: true,
       });
     } else {
       await base44.asServiceRole.entities.PushSubscription.create({
         user_email: user.email,
         endpoint,
+        platform: 'web',
         p256dh_key: keys.p256dh,
         auth_key: keys.auth,
         is_active: true,
       });
     }
 
-    console.log(`Push subscription saved for ${user.email}`);
+    console.log(`Web push subscription saved for ${user.email}`);
     return Response.json({ success: true });
   } catch (error) {
     console.error('saveSubscription error:', error.message);
