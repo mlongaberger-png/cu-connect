@@ -39,21 +39,22 @@ export default function Welcome() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center w-full max-w-sm">
           <button
-            onClick={() => base44.auth.redirectToLogin(window.location.origin + "/Portal")}
+            onClick={() => base44.auth.redirectToLogin(window.location.origin + "/Register")}
             className="flex-1 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+          >
+            Create Account
+          </button>
+          <button
+            onClick={() => base44.auth.redirectToLogin(window.location.origin + "/Portal")}
+            className="flex-1 px-6 py-3 rounded-xl border border-border text-foreground font-semibold text-sm hover:bg-surface transition-colors"
           >
             Log In
           </button>
-          <Link
-            to="/ParentSignup"
-            className="flex-1 px-6 py-3 rounded-xl border border-border text-foreground font-semibold text-sm hover:bg-surface transition-colors text-center"
-          >
-            Request Parent Access
-          </Link>
         </div>
 
         <p className="text-xs text-muted-foreground mt-6">
-          Already have an account? Log in above. New parent? Request access to get started.
+          New parent? Create an account to apply for your athlete's team.{" "}
+          <Link to="/ParentSignup" className="underline hover:text-foreground">Need help another way?</Link>
         </p>
 
         {/* Feature highlights */}
