@@ -110,6 +110,18 @@ export default function AppShell() {
     );
   }
 
+  // Brand-new self-signed-up accounts with no application submitted yet and no
+  // athlete linked to them → send straight into the team application form
+  // instead of an empty portal.
+  if (user?.needsApplication && currentPath !== "/Register") {
+    return (
+      <Routes>
+        <Route path="/Register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/Register" replace />} />
+      </Routes>
+    );
+  }
+
   // All authenticated users land on Portal; unknown/pending/user role → PendingAccess
   // "ad" is accepted as an alias for "athletic_director"
   const KNOWN_ROLES = new Set(["admin", "coach", "athletic_director", "ad", "parent", "grandparent", "user"]);
