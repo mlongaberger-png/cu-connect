@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">CU Connect</string>
     <string name="title_activity_main">CU Connect</string>
-    <string name="package_name">com.cornerstoneathletics.cuconnect</string>
-    <string name="custom_url_scheme">com.cornerstoneathletics.cuconnect</string>
+    <string name="package_name">com.base69bae2515552e76ca1fbd6a0.app</string>
+    <string name="custom_url_scheme">com.base69bae2515552e76ca1fbd6a0.app</string>
 </resources>
