@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { base44 } from '@/api/base44Client';
 
 function urlBase64ToUint8Array(base64String) {
@@ -10,6 +12,8 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+const isNative = Capacitor.isNativePlatform();
+
 export function usePushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -17,9 +21,17 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState('default');
 
   useEffect(() => {
-    // Check for Web Push API support.
-    // Works on: Android Chrome, Desktop, iOS Safari 16.4+ PWA, and App Store wrappers with Push entitlement.
-    // We detect API presence and let the subscribe() attempt handle any platform-specific failures.
+    if (isNative) {
+      // Native path: iOS/Android via Capacitor Push Notifications (APNs/FCM)
+      setIsSupported(true);
+      checkNativePermission();
+      registerNativeListeners();
+      return () => {
+        PushNotifications.removeAllListeners();
+      };
+    }
+
+    // Web path: browser Web Push API (desktop / Android Chrome PWA)
     const supported =
       'serviceWorker' in navigator &&
       'PushManager' in window &&
@@ -27,11 +39,55 @@ export function usePushNotifications() {
     setIsSupported(supported);
     if (supported) {
       setPermission(Notification.permission);
-      checkSubscription();
+      checkWebSubscription();
     }
   }, []);
 
-  const checkSubscription = async () => {
+  const checkNativePermission = async () => {
+    try {
+      const status = await PushNotifications.checkPermissions();
+      setPermission(status.receive === 'granted' ? 'granted' : 'default');
+      setIsSubscribed(status.receive === 'granted');
+    } catch (e) {
+      console.error('Native permission check error:', e);
+    }
+  };
+
+  const registerNativeListeners = () => {
+    // Fires once the OS hands us a real device token
+    PushNotifications.addListener('registration', async (token) => {
+      try {
+        await base44.functions.invoke('saveSubscription', {
+          endpoint: `fcm:${token.value}`,
+          platform: Capacitor.getPlatform(), // 'ios' | 'android'
+          fcm_token: token.value,
+        });
+        setIsSubscribed(true);
+        setPermission('granted');
+      } catch (e) {
+        console.error('Failed to save native push token:', e);
+      }
+    });
+
+    PushNotifications.addListener('registrationError', (err) => {
+      console.error('Native push registration error:', err);
+      setPermission('denied');
+    });
+
+    // Foreground notification received while app is open
+    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      console.log('Push received in foreground:', notification);
+    });
+
+    // User tapped a notification — deep-link using the same `url` field
+    // your backend already sends in the payload
+    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+      const url = action.notification?.data?.url;
+      if (url) window.location.href = url;
+    });
+  };
+
+  const checkWebSubscription = async () => {
     try {
       const reg = await navigator.serviceWorker.getRegistration('/sw.js');
       if (reg) {
@@ -49,12 +105,23 @@ export function usePushNotifications() {
   const subscribe = async () => {
     setIsLoading(true);
     try {
+      if (isNative) {
+        const status = await PushNotifications.requestPermissions();
+        if (status.receive !== 'granted') {
+          setPermission('denied');
+          return;
+        }
+        // Triggers the 'registration' listener above with the real token
+        await PushNotifications.register();
+        return;
+      }
+
+      // Web path (unchanged)
       const res = await base44.functions.invoke('getPushConfig', {});
       const publicKey = res.data?.publicKey;
       if (!publicKey) throw new Error('Could not get push config');
 
       await navigator.serviceWorker.register('/sw.js');
-      // Wait for THIS registration specifically — avoids race with stale active SW
       const activeReg = await navigator.serviceWorker.ready;
 
       const sub = await activeReg.pushManager.subscribe({
@@ -66,11 +133,10 @@ export function usePushNotifications() {
       await base44.functions.invoke('saveSubscription', {
         endpoint: subJson.endpoint,
         keys: subJson.keys,
+        platform: 'web',
       });
 
-      // Re-check subscription state from the active registration to sync UI accurately
-      await checkSubscription();
-
+      await checkWebSubscription();
       setIsSubscribed(true);
       setPermission('granted');
     } catch (e) {
@@ -84,11 +150,18 @@ export function usePushNotifications() {
   const unsubscribe = async () => {
     setIsLoading(true);
     try {
+      if (isNative) {
+        // Best-effort: mark inactive server-side; the OS-level token itself
+        // stays valid until the app is uninstalled or re-registers.
+        await base44.functions.invoke('saveSubscription', { endpoint: '', remove: true, platform: Capacitor.getPlatform() }).catch(() => {});
+        setIsSubscribed(false);
+        return;
+      }
+
       const reg = await navigator.serviceWorker.getRegistration('/sw.js');
       if (reg) {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
-          // Remove from DB so server stops sending
           await base44.functions.invoke('saveSubscription', { endpoint: sub.endpoint, keys: {}, remove: true }).catch(() => {});
           await sub.unsubscribe();
         }
