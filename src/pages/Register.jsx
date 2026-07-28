@@ -5,8 +5,22 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, CheckCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Shield, CheckCircle, Loader2, ArrowLeft, Plus, Trash2 } from "lucide-react";
+
+const REFERRAL_OPTIONS = [
+  { value: "coach_or_staff_invite", label: "A coach or staff member invited us" },
+  { value: "returning_family", label: "We're a returning family" },
+  { value: "word_of_mouth", label: "Word of mouth / friend" },
+  { value: "school_or_flyer", label: "School or flyer" },
+  { value: "social_media", label: "Social media" },
+  { value: "other", label: "Other" },
+];
+
+function emptyAthlete() {
+  return { sport_id: "", team_id: "", athlete_first_name: "", athlete_last_name: "", athlete_dob: "" };
+}
 
 export default function Register() {
   const { user, isAuthenticated, isLoadingAuth, refreshUser } = useAuth();
@@ -19,15 +33,10 @@ export default function Register() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(null);
 
-  const [form, setForm] = useState({
-    sport_id: "",
-    team_id: "",
-    athlete_first_name: "",
-    athlete_last_name: "",
-    athlete_dob: "",
-    parent_name: "",
-    parent_email: "",
-  });
+  const [parent, setParent] = useState({ parent_name: "", parent_email: "" });
+  const [athletes, setAthletes] = useState([emptyAthlete()]);
+  const [referralSource, setReferralSource] = useState("");
+  const [referralNote, setReferralNote] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -43,46 +52,72 @@ export default function Register() {
   // Pre-fill parent fields from auth
   useEffect(() => {
     if (user) {
-      setForm(f => ({
-        ...f,
-        parent_name: f.parent_name || user.full_name || "",
-        parent_email: f.parent_email || user.email || "",
+      setParent(p => ({
+        parent_name: p.parent_name || user.full_name || "",
+        parent_email: p.parent_email || user.email || "",
       }));
     }
   }, [user]);
 
-  const filteredTeams = form.sport_id
-    ? teams.filter(t => t.sport_id === form.sport_id)
-    : teams;
+  const teamsForSport = (sportId) => sportId ? teams.filter(t => t.sport_id === sportId) : teams;
+
+  const updateAthlete = (idx, updates) => {
+    setAthletes(list => list.map((a, i) => (i === idx ? { ...a, ...updates } : a)));
+  };
+
+  const addAthlete = () => setAthletes(list => [...list, emptyAthlete()]);
+  const removeAthlete = (idx) => setAthletes(list => list.filter((_, i) => i !== idx));
+
+  const isValid = () =>
+    parent.parent_name && parent.parent_email &&
+    athletes.length > 0 &&
+    athletes.every(a => a.team_id && a.athlete_first_name && a.athlete_last_name);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.team_id || !form.athlete_first_name || !form.athlete_last_name || !form.parent_email) return;
+    if (!isValid()) return;
     setSubmitting(true);
     setError(null);
 
-    const selectedTeam = teams.find(t => t.id === form.team_id);
-    const selectedSport = sports.find(s => s.id === form.sport_id);
+    // Links multiple athletes submitted together so a reviewer can see they're
+    // one family's submission, without forcing them all onto the same team.
+    const siblingGroupId = athletes.length > 1
+      ? `sib_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      : undefined;
 
     try {
-      await base44.entities.RegistrationApplication.create({
-        parent_user_id: user?.id || "",
-        parent_name: form.parent_name,
-        parent_email: form.parent_email,
-        athlete_first_name: form.athlete_first_name,
-        athlete_last_name: form.athlete_last_name,
-        athlete_dob: form.athlete_dob,
-        target_team_id: form.team_id,
-        target_team_name: selectedTeam?.name || "",
-        sport_name: selectedTeam?.name || selectedTeam?.sport_name || "",
-        status: "pending",
-        applied_at: new Date().toISOString(),
-      });
+      await Promise.all(athletes.map(a => {
+        const selectedTeam = teams.find(t => t.id === a.team_id);
+        return base44.entities.RegistrationApplication.create({
+          parent_user_id: user?.id || "",
+          parent_name: parent.parent_name,
+          parent_email: parent.parent_email,
+          athlete_first_name: a.athlete_first_name,
+          athlete_last_name: a.athlete_last_name,
+          athlete_dob: a.athlete_dob,
+          target_team_id: a.team_id,
+          target_team_name: selectedTeam?.name || "",
+          sport_name: selectedTeam?.name || selectedTeam?.sport_name || "",
+          status: "pending",
+          applied_at: new Date().toISOString(),
+          referral_source: referralSource || undefined,
+          referral_note: referralNote.trim() || undefined,
+          sibling_group_id: siblingGroupId,
+        });
+      }));
       setSubmitted(true);
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     }
     setSubmitting(false);
+  };
+
+  const resetForm = () => {
+    setSubmitted(false);
+    setAthletes([emptyAthlete()]);
+    setReferralSource("");
+    setReferralNote("");
+    setParent({ parent_name: user?.full_name || "", parent_email: user?.email || "" });
   };
 
   if (loading || isLoadingAuth) return (
@@ -117,13 +152,19 @@ export default function Register() {
         <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-5">
           <CheckCircle className="w-12 h-12 text-green-400" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Application Submitted!</h2>
-        <p className="text-muted-foreground">A coach will review it shortly. You'll receive a notification once it's been approved.</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          {athletes.length > 1 ? "Applications Submitted!" : "Application Submitted!"}
+        </h2>
+        <p className="text-muted-foreground">
+          {athletes.length > 1
+            ? "A coach will review each application shortly. You'll receive a notification once they've been approved."
+            : "A coach will review it shortly. You'll receive a notification once it's been approved."}
+        </p>
         <div className="mt-6 flex flex-col gap-2">
           <Button onClick={async () => { await refreshUser(); window.location.href = "/ParentPortal"; }} className="bg-primary text-primary-foreground">
             Go to Portal
           </Button>
-          <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ sport_id: "", team_id: "", athlete_first_name: "", athlete_last_name: "", athlete_dob: "", parent_name: user?.full_name || "", parent_email: user?.email || "" }); }} className="border-border">
+          <Button variant="outline" onClick={resetForm} className="border-border">
             Submit Another Application
           </Button>
         </div>
@@ -146,85 +187,127 @@ export default function Register() {
             <Shield className="w-7 h-7 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Athlete Application</h1>
-          <p className="text-muted-foreground text-sm mt-2">Apply for a team. A coach will review your application before your athlete is added to the roster.</p>
+          <p className="text-muted-foreground text-sm mt-2">Apply for a team. A coach will review your application before your athlete is added to the roster. Have more than one child? Add them all below.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border p-6 space-y-5">
-          {/* Sport & Team */}
-          <div className="space-y-4">
-            <div>
-              <Label className="mb-2 block">Sport *</Label>
-              <Select
-                value={form.sport_id}
-                onValueChange={(v) => setForm({ ...form, sport_id: v, team_id: "" })}
-              >
-                <SelectTrigger className="bg-surface border-border">
-                  <SelectValue placeholder="Select a sport" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border max-h-60">
-                  {sports.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.icon} {s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="mb-2 block">Team *</Label>
-              <Select
-                value={form.team_id}
-                onValueChange={(v) => setForm({ ...form, team_id: v })}
-                disabled={!form.sport_id}
-              >
-                <SelectTrigger className="bg-surface border-border">
-                  <SelectValue placeholder={form.sport_id ? "Select a team" : "Select a sport first"} />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border max-h-60">
-                  {filteredTeams.map(t => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}{t.age_group ? ` (${t.age_group})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {athletes.map((a, idx) => (
+            <div key={idx} className="bg-card rounded-2xl border border-border p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">
+                  {athletes.length > 1 ? `Athlete ${idx + 1}` : "Athlete Information"}
+                </p>
+                {athletes.length > 1 && (
+                  <button type="button" onClick={() => removeAthlete(idx)} className="text-muted-foreground hover:text-red-400 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
 
-          {/* Athlete fields */}
-          <div className="pt-4 border-t border-border space-y-4">
-            <p className="text-sm font-semibold text-foreground">Athlete Information</p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>First Name *</Label>
-                <Input value={form.athlete_first_name} onChange={e => setForm({ ...form, athlete_first_name: e.target.value })} className="bg-surface border-border" required />
+              <div className="space-y-4">
+                <div>
+                  <Label className="mb-2 block">Sport *</Label>
+                  <Select
+                    value={a.sport_id}
+                    onValueChange={(v) => updateAthlete(idx, { sport_id: v, team_id: "" })}
+                  >
+                    <SelectTrigger className="bg-surface border-border">
+                      <SelectValue placeholder="Select a sport" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border max-h-60">
+                      {sports.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.icon} {s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="mb-2 block">Team *</Label>
+                  <Select
+                    value={a.team_id}
+                    onValueChange={(v) => updateAthlete(idx, { team_id: v })}
+                    disabled={!a.sport_id}
+                  >
+                    <SelectTrigger className="bg-surface border-border">
+                      <SelectValue placeholder={a.sport_id ? "Select a team" : "Select a sport first"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border max-h-60">
+                      {teamsForSport(a.sport_id).map(t => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}{t.age_group ? ` (${t.age_group})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>First Name *</Label>
+                  <Input value={a.athlete_first_name} onChange={e => updateAthlete(idx, { athlete_first_name: e.target.value })} className="bg-surface border-border" required />
+                </div>
+                <div>
+                  <Label>Last Name *</Label>
+                  <Input value={a.athlete_last_name} onChange={e => updateAthlete(idx, { athlete_last_name: e.target.value })} className="bg-surface border-border" required />
+                </div>
               </div>
               <div>
-                <Label>Last Name *</Label>
-                <Input value={form.athlete_last_name} onChange={e => setForm({ ...form, athlete_last_name: e.target.value })} className="bg-surface border-border" required />
+                <Label>Date of Birth</Label>
+                <Input type="date" value={a.athlete_dob} onChange={e => updateAthlete(idx, { athlete_dob: e.target.value })} className="bg-surface border-border" />
               </div>
             </div>
-            <div>
-              <Label>Date of Birth</Label>
-              <Input type="date" value={form.athlete_dob} onChange={e => setForm({ ...form, athlete_dob: e.target.value })} className="bg-surface border-border" />
-            </div>
-          </div>
+          ))}
 
-          {/* Parent fields */}
-          <div className="pt-4 border-t border-border space-y-4">
+          <Button type="button" variant="outline" onClick={addAthlete} className="w-full border-border border-dashed">
+            <Plus className="w-4 h-4 mr-2" /> Add Another Athlete
+          </Button>
+
+          {/* Parent fields — shared across all athletes in this submission */}
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
             <p className="text-sm font-semibold text-foreground">Parent / Guardian</p>
             <div>
               <Label>Full Name *</Label>
-              <Input value={form.parent_name} onChange={e => setForm({ ...form, parent_name: e.target.value })} className="bg-surface border-border" required />
+              <Input value={parent.parent_name} onChange={e => setParent(p => ({ ...p, parent_name: e.target.value }))} className="bg-surface border-border" required />
             </div>
             <div>
               <Label>Email *</Label>
-              <Input type="email" value={form.parent_email} onChange={e => setForm({ ...form, parent_email: e.target.value })} className="bg-surface border-border" required />
+              <Input type="email" value={parent.parent_email} onChange={e => setParent(p => ({ ...p, parent_email: e.target.value }))} className="bg-surface border-border" required />
+            </div>
+          </div>
+
+          {/* Optional context for the reviewer */}
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+            <p className="text-sm font-semibold text-foreground">A Bit More Context <span className="text-muted-foreground font-normal">(optional)</span></p>
+            <div>
+              <Label className="mb-2 block">How did you hear about us?</Label>
+              <Select value={referralSource} onValueChange={setReferralSource}>
+                <SelectTrigger className="bg-surface border-border">
+                  <SelectValue placeholder="Select an option" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {REFERRAL_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Anything else the coach/admin should know?</Label>
+              <Textarea
+                value={referralNote}
+                onChange={e => setReferralNote(e.target.value)}
+                placeholder="e.g. Coach Smith told us to sign up, or we played last season"
+                className="bg-surface border-border resize-none"
+                rows={3}
+              />
             </div>
           </div>
 
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
-          <Button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground h-11 text-base">
-            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting…</> : "Submit Application"}
+          <Button type="submit" disabled={submitting || !isValid()} className="w-full bg-primary text-primary-foreground h-11 text-base">
+            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting…</> : athletes.length > 1 ? `Submit ${athletes.length} Applications` : "Submit Application"}
           </Button>
         </form>
       </div>
