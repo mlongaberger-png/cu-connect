@@ -1,19 +1,69 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import webpush from 'npm:web-push@3.6.7';
+import { GoogleAuth } from 'npm:google-auth-library@9';
+
+// --- FCM (native iOS/Android) helpers ---
+let cachedFcmAuth = null;
+
+async function getFcmAccessToken(base44) {
+  const now = Date.now();
+  if (cachedFcmAuth && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
+
+  const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'fcm_service_account' });
+  if (!configs.length) return null;
+
+  const serviceAccount = JSON.parse(configs[0].value);
+  const auth = new GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
+  const client = await auth.getClient();
+  const tokenResp = await client.getAccessToken();
+
+  cachedFcmAuth = {
+    projectId: serviceAccount.project_id,
+    accessToken: tokenResp.token,
+    expiresAt: now + 50 * 60 * 1000,
+  };
+  return cachedFcmAuth;
+}
+
+async function sendFcm({ base44, fcmToken, title, body, url }) {
+  const auth = await getFcmAccessToken(base44);
+  if (!auth) return { ok: false, skipped: true };
+  const res = await fetch(`https://fcm.googleapis.com/v1/projects/${auth.projectId}/messages:send`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        token: fcmToken,
+        notification: { title, body },
+        data: { url: url || '' },
+      },
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    return { ok: false, status: res.status, errText };
+  }
+  return { ok: true };
+}
 
 /**
  * Scheduled cron function (runs every 5 minutes).
  * Reads all pending NotificationQueue tasks, deduplicates per user,
  * consolidates into one push notification per user per cycle, then marks tasks as sent/failed.
+ * Delivers via native FCM for iOS/Android subscriptions, and web push (VAPID) for web subscriptions.
  */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Only POST accepted (scheduler always POST)
     if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
 
-    // If a token is present, enforce admin role
     const authHeader = req.headers.get('authorization');
     if (authHeader) {
       const caller = await base44.auth.me().catch(() => null);
@@ -25,18 +75,14 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
-    // No auth header = scheduled automation; proceed as system
 
-    // Fetch VAPID keys
     const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'vapid_keys' });
-    if (!configs.length) {
-      console.warn('processNotifications: no VAPID keys configured, skipping');
-      return Response.json({ skipped: true, reason: 'no_vapid' });
+    const vapidConfigured = configs.length > 0;
+    if (vapidConfigured) {
+      const { publicKey, privateKey } = JSON.parse(configs[0].value);
+      webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
     }
-    const { publicKey, privateKey } = JSON.parse(configs[0].value);
-    webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
 
-    // Fetch all pending tasks
     const pending = await base44.asServiceRole.entities.NotificationQueue.filter({ status: 'pending' });
     if (pending.length === 0) {
       console.log('processNotifications: no pending tasks');
@@ -45,7 +91,6 @@ Deno.serve(async (req) => {
 
     console.log(`processNotifications: processing ${pending.length} pending task(s)`);
 
-    // Group tasks by user_email — consolidate into one notification per user
     const byUser = {};
     for (const task of pending) {
       const key = task.user_email.toLowerCase();
@@ -53,7 +98,6 @@ Deno.serve(async (req) => {
       byUser[key].push(task);
     }
 
-    // Fetch all active push subscriptions in one query, build map
     const allSubs = await base44.asServiceRole.entities.PushSubscription.filter({ is_active: true });
     const subsMap = {};
     allSubs.forEach(s => {
@@ -70,7 +114,6 @@ Deno.serve(async (req) => {
     for (const [emailKey, tasks] of Object.entries(byUser)) {
       const subs = subsMap[emailKey] || [];
 
-      // Consolidate: if multiple tasks for same user, combine into one notification
       let title, body;
       if (tasks.length === 1) {
         title = tasks[0].title;
@@ -86,10 +129,14 @@ Deno.serve(async (req) => {
       let success = false;
 
       if (subs.length > 0) {
-        // Send push to all this user's devices
         const pushResults = await Promise.allSettled(
-          subs.map(sub =>
-            webpush.sendNotification(
+          subs.map(sub => {
+            if (sub.platform === 'ios' || sub.platform === 'android') {
+              return sendFcm({ base44, fcmToken: sub.fcm_token, title, body, url }).then((result) => {
+                if (!result.ok) throw new Error(`FCM failed: ${result.status || result.skipped}`);
+              });
+            }
+            return webpush.sendNotification(
               { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
               payload
             ).catch(async err => {
@@ -98,18 +145,16 @@ Deno.serve(async (req) => {
                 await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
               }
               throw err;
-            })
-          )
+            });
+          })
         );
         success = pushResults.some(r => r.status === 'fulfilled');
         if (success) totalSent++;
         else totalFailed++;
       } else {
-        // No push subscription — mark as failed so the caller can fall back to email
         totalFailed++;
       }
 
-      // Mark all tasks for this user as sent or failed
       await Promise.all(
         tasks.map(task =>
           base44.asServiceRole.entities.NotificationQueue.update(task.id, {
