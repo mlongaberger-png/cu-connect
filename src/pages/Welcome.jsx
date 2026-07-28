@@ -7,7 +7,7 @@ const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0
 
 export default function Welcome() {
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden w-full">
+    <div className="h-dvh bg-background flex flex-col overflow-y-auto overflow-x-hidden overscroll-contain w-full" style={{ WebkitOverflowScrolling: "touch" }}>
       {/* Header */}
       <header className="px-6 py-4 flex items-center justify-between border-b border-border">
         <div className="flex items-center gap-3">
