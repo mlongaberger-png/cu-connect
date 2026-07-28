@@ -107,8 +107,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const authUser = await base44.auth.me();
       const enriched = await enrichUser(authUser);
-      setUser(enriched);
-      return enriched;
+      const needsApplication = await checkNeedsApplication(enriched);
+      const withFlag = { ...enriched, needsApplication };
+      setUser(withFlag);
+      return withFlag;
     } catch (e) {
       console.warn('refreshUser failed:', e.message);
     }
