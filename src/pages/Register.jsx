@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield, CheckCircle, Loader2, ArrowLeft } from "lucide-react";
 
 export default function Register() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoadingAuth, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [sports, setSports] = useState([]);
@@ -85,9 +85,29 @@ export default function Register() {
     setSubmitting(false);
   };
 
-  if (loading) return (
+  if (loading || isLoadingAuth) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  // Logged-out visitor — don't let them fill out the whole form only to have
+  // the submit fail; send them to create an account first, then bounce back here.
+  if (!isAuthenticated) return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="text-center max-w-sm">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
+          <Shield className="w-8 h-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground mb-2">Create an account to apply</h2>
+        <p className="text-muted-foreground text-sm mb-6">You'll need an account before submitting an athlete application. It only takes a minute.</p>
+        <Button
+          onClick={() => base44.auth.redirectToLogin(window.location.origin + "/Register")}
+          className="w-full bg-primary text-primary-foreground h-11 text-base"
+        >
+          Sign Up / Log In
+        </Button>
+      </div>
     </div>
   );
 
@@ -100,7 +120,7 @@ export default function Register() {
         <h2 className="text-2xl font-bold text-foreground mb-2">Application Submitted!</h2>
         <p className="text-muted-foreground">A coach will review it shortly. You'll receive a notification once it's been approved.</p>
         <div className="mt-6 flex flex-col gap-2">
-          <Button onClick={() => window.location.href = "/ParentPortal"} className="bg-primary text-primary-foreground">
+          <Button onClick={async () => { await refreshUser(); window.location.href = "/ParentPortal"; }} className="bg-primary text-primary-foreground">
             Go to Portal
           </Button>
           <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ sport_id: "", team_id: "", athlete_first_name: "", athlete_last_name: "", athlete_dob: "", parent_name: user?.full_name || "", parent_email: user?.email || "" }); }} className="border-border">
