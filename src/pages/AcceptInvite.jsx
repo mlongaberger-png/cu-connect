@@ -30,7 +30,7 @@ export default function AcceptInvite() {
 
   if (step === "children") {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="h-dvh bg-background flex flex-col overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
         <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
           <div className="w-9 h-9 rounded-lg overflow-hidden">
             <img src={CU_LOGO} alt="CU Logo" className="w-full h-full object-cover" />
@@ -69,7 +69,7 @@ export default function AcceptInvite() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-dvh bg-background flex flex-col overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
       {/* Header */}
       <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
         <div className="w-9 h-9 rounded-lg overflow-hidden">
