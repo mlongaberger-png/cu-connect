@@ -14,7 +14,7 @@ export default function PendingAccess() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-dvh bg-background flex flex-col overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
       <header className="px-6 py-4 flex items-center justify-between border-b border-border">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary/20 flex items-center justify-center">
