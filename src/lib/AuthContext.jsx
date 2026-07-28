@@ -114,6 +114,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // A brand-new self-signed-up 'user' role account, with no application submitted
+  // yet and no athlete already linked to them, should land on /Register instead
+  // of the portal. Fails open (false) on error so we never trap someone in a loop.
+  const checkNeedsApplication = async (currentUser) => {
+    if (!currentUser || currentUser.role !== 'user') return false;
+    try {
+      const [apps, guardianLinks] = await Promise.all([
+        base44.entities.RegistrationApplication.filter({ parent_email: currentUser.email }),
+        base44.entities.PlayerGuardian.filter({ user_email: currentUser.email }),
+      ]);
+      return apps.length === 0 && guardianLinks.length === 0;
+    } catch (e) {
+      console.warn('needsApplication check failed:', e.message);
+      return false;
+    }
+  };
+
   const checkUserAuth = async () => {
     try {
       // Now check if the user is authenticated
@@ -134,7 +151,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       const enriched = await enrichUser(currentUser);
-      setUser(enriched);
+      const needsApplication = await checkNeedsApplication(enriched);
+      setUser({ ...enriched, needsApplication });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
 
