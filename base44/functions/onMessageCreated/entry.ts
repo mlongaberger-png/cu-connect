@@ -1,10 +1,64 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import webpush from 'npm:web-push@3.6.7';
+import { GoogleAuth } from 'npm:google-auth-library@9';
+
+// --- FCM (native iOS/Android) helpers ---
+let cachedFcmAuth = null; // { projectId, accessToken, expiresAt }
+
+async function getFcmAccessToken(base44) {
+  const now = Date.now();
+  if (cachedFcmAuth && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
+
+  const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'fcm_service_account' });
+  if (!configs.length) return null;
+
+  const serviceAccount = JSON.parse(configs[0].value);
+  const auth = new GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
+  const client = await auth.getClient();
+  const tokenResp = await client.getAccessToken();
+
+  cachedFcmAuth = {
+    projectId: serviceAccount.project_id,
+    accessToken: tokenResp.token,
+    expiresAt: now + 50 * 60 * 1000, // refresh a bit before the usual 1hr expiry
+  };
+  return cachedFcmAuth;
+}
+
+async function sendFcm({ base44, fcmToken, title, body, url }) {
+  const auth = await getFcmAccessToken(base44);
+  if (!auth) {
+    console.log('No fcm_service_account configured in AppConfig, skipping native push');
+    return { ok: false, skipped: true };
+  }
+  const res = await fetch(`https://fcm.googleapis.com/v1/projects/${auth.projectId}/messages:send`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        token: fcmToken,
+        notification: { title, body },
+        data: { url: url || '' },
+      },
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    return { ok: false, status: res.status, errText };
+  }
+  return { ok: true };
+}
 
 // Triggered by entity automation on Message.create
 // For team/announcement channels: resolves recipients from PlayerGuardian + Player records linked to the team
 // For direct channels: uses ChannelMember records
-// Sends push notifications and increments unread_count for all recipients (except sender)
+// Sends push notifications (web push + native FCM) and increments unread_count for all recipients (except sender)
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,7 +73,6 @@ Deno.serve(async (req) => {
 
     console.log(`onMessageCreated: channel=${channel_id} sender=${sender_user_id}`);
 
-    // Fetch channel
     const channels = await base44.asServiceRole.entities.Channel.filter({ id: channel_id });
     const channel = channels[0];
     if (!channel) {
@@ -29,11 +82,9 @@ Deno.serve(async (req) => {
 
     console.log(`Channel type: ${channel.type}, team_id: ${channel.team_id}, name: ${channel.name}`);
 
-    // Build recipient email list depending on channel type
     let recipientEmails = [];
 
     if (channel.type === 'team' || channel.type === 'announcement') {
-      // For team channels — find all guardians/parents linked to this team's players
       if (channel.team_id) {
         const players = await base44.asServiceRole.entities.Player.filter({ team_id: channel.team_id, is_active: true });
         console.log(`Found ${players.length} active players for team ${channel.team_id}`);
@@ -41,10 +92,8 @@ Deno.serve(async (req) => {
         const playerIds = players.map(p => p.id);
         const emailSet = new Set();
 
-        // Add parent_email directly from Player records
         players.forEach(p => { if (p.parent_email) emailSet.add(p.parent_email.toLowerCase()); });
 
-        // Add guardian emails via PlayerGuardian links
         if (playerIds.length > 0) {
           const allGuardians = await base44.asServiceRole.entities.PlayerGuardian.filter({});
           allGuardians
@@ -52,14 +101,12 @@ Deno.serve(async (req) => {
             .forEach(g => emailSet.add(g.user_email.toLowerCase()));
         }
 
-        // Also include staff/coaches who are channel members
         const memberRecords = await base44.asServiceRole.entities.ChannelMember.filter({ channel_id });
         memberRecords.forEach(m => { if (m.user_email) emailSet.add(m.user_email.toLowerCase()); });
 
         recipientEmails = Array.from(emailSet);
         console.log(`Team channel recipients: ${recipientEmails.length} emails`);
       } else {
-        // No team linked — fall back to ChannelMember records
         const memberRecords = await base44.asServiceRole.entities.ChannelMember.filter({ channel_id });
         recipientEmails = memberRecords.map(m => m.user_email).filter(Boolean);
         console.log(`Team channel (no team_id) recipients from ChannelMember: ${recipientEmails.length}`);
@@ -78,7 +125,6 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'no recipients' });
     }
 
-    // Exclude sender — sender_user_id may be an ID or email, look up their email to exclude properly
     let senderEmail = '';
     try {
       const senderUsers = await base44.asServiceRole.entities.User.filter({ id: sender_user_id });
@@ -86,7 +132,6 @@ Deno.serve(async (req) => {
         senderEmail = (senderUsers[0].email || '').toLowerCase();
       }
     } catch (_) {}
-    // Also fall back: if sender_user_id looks like an email itself
     if (!senderEmail && sender_user_id && sender_user_id.includes('@')) {
       senderEmail = sender_user_id.toLowerCase();
     }
@@ -95,7 +140,6 @@ Deno.serve(async (req) => {
     const finalRecipients = recipientEmails.filter(email => email.toLowerCase() !== senderEmail);
     console.log(`Final recipients after excluding sender: ${finalRecipients.length}`);
 
-    // Update unread_count for ChannelMember records (for those that have them)
     const existingMembers = await base44.asServiceRole.entities.ChannelMember.filter({ channel_id });
     const memberMap = {};
     existingMembers.forEach(m => { if (m.user_email) memberMap[m.user_email.toLowerCase()] = m; });
@@ -110,7 +154,6 @@ Deno.serve(async (req) => {
           }).catch(err => console.error(`unread update failed for ${email}:`, err.message))
         );
       } else {
-        // Create ChannelMember record so future unread tracking works
         unreadUpdates.push(
           base44.asServiceRole.entities.ChannelMember.create({
             channel_id,
@@ -123,23 +166,21 @@ Deno.serve(async (req) => {
     await Promise.all(unreadUpdates);
     console.log(`Unread counts updated for ${finalRecipients.length} recipients`);
 
-    // Get VAPID keys for push
+    // Web push (VAPID) setup — still used for desktop/Android-Chrome subscribers
     const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'vapid_keys' });
-    if (!configs.length) {
-      console.log('No VAPID keys configured, skipping push');
-      return Response.json({ success: true, push_skipped: true, unread_updated: finalRecipients.length });
+    const vapidConfigured = configs.length > 0;
+    if (vapidConfigured) {
+      const { publicKey, privateKey } = JSON.parse(configs[0].value);
+      webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
+    } else {
+      console.log('No VAPID keys configured, web push will be skipped');
     }
 
-    const { publicKey, privateKey } = JSON.parse(configs[0].value);
-    webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
-
-    // Store last message preview on the channel for sidebar display
     await base44.asServiceRole.entities.Channel.update(channel_id, {
       last_message_at: new Date().toISOString(),
       last_message_preview: sender_name ? `${sender_name}: ${(content_text || '').slice(0, 80)}` : (content_text || '').slice(0, 80),
     }).catch(() => {});
 
-    // HTML-escape user content before embedding in email bodies
     const escapeHtml = (str) => String(str || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -148,14 +189,12 @@ Deno.serve(async (req) => {
       .replace(/'/g, '&#x27;');
 
     const channelLabel = escapeHtml(channel.name || 'Team Chat');
-    const notifBody = sender_name ? `${sender_name}: ${content_text || ''}` : (content_text || 'New message');
-    const notifPayload = JSON.stringify({
-      title: channelLabel,
-      body: notifBody.length > 120 ? notifBody.slice(0, 117) + '…' : notifBody,
-      url: `/messages?channelId=${channel_id}`
-    });
+    const notifTitle = channelLabel;
+    const rawNotifBody = sender_name ? `${sender_name}: ${content_text || ''}` : (content_text || 'New message');
+    const notifBody = rawNotifBody.length > 120 ? rawNotifBody.slice(0, 117) + '…' : rawNotifBody;
+    const notifUrl = `/messages?channelId=${channel_id}`;
+    const notifPayload = JSON.stringify({ title: notifTitle, body: notifBody, url: notifUrl });
 
-    // Load all notification preferences and push subscriptions in bulk
     const [allPrefs, allActiveSubs] = await Promise.all([
       base44.asServiceRole.entities.NotificationPreference.filter({}),
       base44.asServiceRole.entities.PushSubscription.filter({ is_active: true }),
@@ -176,7 +215,6 @@ Deno.serve(async (req) => {
     let emailSent = 0;
     let skipped = 0;
 
-    // Collect all push and email work as parallel promises
     const pushPromises = [];
     const emailPromises = [];
 
@@ -195,17 +233,30 @@ Deno.serve(async (req) => {
 
       if (shouldPush) {
         for (const sub of userSubs) {
-          pushPromises.push(
-            webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
-              notifPayload
-            ).then(() => { pushSent++; }).catch(async (err) => {
-              console.error(`Push failed for ${email}:`, err.message);
-              if (err.statusCode === 410 || err.statusCode === 404) {
-                await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
-              }
-            })
-          );
+          if (sub.platform === 'ios' || sub.platform === 'android') {
+            // Native delivery via FCM
+            pushPromises.push(
+              sendFcm({ base44, fcmToken: sub.fcm_token, title: notifTitle, body: notifBody, url: notifUrl })
+                .then((result) => {
+                  if (result.ok) { pushSent++; }
+                  else console.error(`FCM push failed for ${email}:`, result.status, result.errText);
+                })
+            );
+          } else {
+            // Web push (VAPID) delivery
+            if (!vapidConfigured) continue;
+            pushPromises.push(
+              webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
+                notifPayload
+              ).then(() => { pushSent++; }).catch(async (err) => {
+                console.error(`Web push failed for ${email}:`, err.message);
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                  await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
+                }
+              })
+            );
+          }
         }
       }
 
@@ -222,7 +273,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fire all push and email notifications concurrently — prevents timeout on large teams
     await Promise.all([...pushPromises, ...emailPromises]);
 
     console.log(`Done. Push sent: ${pushSent}, email sent: ${emailSent}, skipped (disabled): ${skipped}, unread updated: ${finalRecipients.length}`);
