@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { base44 } from '@/api/base44Client';
 
 function urlBase64ToUint8Array(base64String) {
@@ -22,12 +22,14 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (isNative) {
-      // Native path: iOS/Android via Capacitor Push Notifications (APNs/FCM)
+      // Native path: iOS/Android via @capacitor-firebase/messaging.
+      // This plugin handles the APNs<->FCM token bridging on iOS internally,
+      // so getToken() below always returns a real FCM token on both platforms.
       setIsSupported(true);
       checkNativePermission();
       registerNativeListeners();
       return () => {
-        PushNotifications.removeAllListeners();
+        FirebaseMessaging.removeAllListeners();
       };
     }
 
@@ -45,22 +47,24 @@ export function usePushNotifications() {
 
   const checkNativePermission = async () => {
     try {
-      const status = await PushNotifications.checkPermissions();
-      setPermission(status.receive === 'granted' ? 'granted' : 'default');
-      setIsSubscribed(status.receive === 'granted');
+      const status = await FirebaseMessaging.checkPermissions();
+      const granted = status.receive === 'granted';
+      setPermission(granted ? 'granted' : 'default');
+      setIsSubscribed(granted);
     } catch (e) {
       console.error('Native permission check error:', e);
     }
   };
 
   const registerNativeListeners = () => {
-    // Fires once the OS hands us a real device token
-    PushNotifications.addListener('registration', async (token) => {
+    // Fires with a real FCM token — on iOS this is already the bridged token,
+    // on Android it's the native FCM token. Same shape either way.
+    FirebaseMessaging.addListener('tokenReceived', async ({ token }) => {
       try {
         await base44.functions.invoke('saveSubscription', {
-          endpoint: `fcm:${token.value}`,
+          endpoint: `fcm:${token}`,
           platform: Capacitor.getPlatform(), // 'ios' | 'android'
-          fcm_token: token.value,
+          fcm_token: token,
         });
         setIsSubscribed(true);
         setPermission('granted');
@@ -69,20 +73,15 @@ export function usePushNotifications() {
       }
     });
 
-    PushNotifications.addListener('registrationError', (err) => {
-      console.error('Native push registration error:', err);
-      setPermission('denied');
-    });
-
     // Foreground notification received while app is open
-    PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      console.log('Push received in foreground:', notification);
+    FirebaseMessaging.addListener('notificationReceived', (event) => {
+      console.log('Push received in foreground:', event);
     });
 
     // User tapped a notification — deep-link using the same `url` field
     // your backend already sends in the payload
-    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      const url = action.notification?.data?.url;
+    FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+      const url = event.notification?.data?.url;
       if (url) window.location.href = url;
     });
   };
@@ -106,13 +105,14 @@ export function usePushNotifications() {
     setIsLoading(true);
     try {
       if (isNative) {
-        const status = await PushNotifications.requestPermissions();
+        const status = await FirebaseMessaging.requestPermissions();
         if (status.receive !== 'granted') {
           setPermission('denied');
           return;
         }
-        // Triggers the 'registration' listener above with the real token
-        await PushNotifications.register();
+        // On iOS this also registers for remote notifications and bridges
+        // the APNs token to FCM internally before firing 'tokenReceived' above.
+        await FirebaseMessaging.getToken();
         return;
       }
 
@@ -151,9 +151,8 @@ export function usePushNotifications() {
     setIsLoading(true);
     try {
       if (isNative) {
-        // Best-effort: mark inactive server-side; the OS-level token itself
-        // stays valid until the app is uninstalled or re-registers.
         await base44.functions.invoke('saveSubscription', { endpoint: '', remove: true, platform: Capacitor.getPlatform() }).catch(() => {});
+        await FirebaseMessaging.deleteToken().catch(() => {});
         setIsSubscribed(false);
         return;
       }
