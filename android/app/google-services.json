@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "736046857555",
+    "project_id": "cu-connect-888f1",
+    "storage_bucket": "cu-connect-888f1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:736046857555:android:8f107abb8e2415d06175a6",
+        "android_client_info": {
+          "package_name": "com.base69bae2515552e76ca1fbd6a0.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBttPokWiCAkuy9PdOzCfTEVwV_S7_Ow68"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
