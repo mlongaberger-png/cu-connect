@@ -15,6 +15,15 @@ const STATUS_CONFIG = {
 
 const STATUS_FILTERS = ["pending", "waitlisted", "approved", "archived"];
 
+const REFERRAL_LABELS = {
+  coach_or_staff_invite: "Coach/staff invite",
+  returning_family: "Returning family",
+  word_of_mouth: "Word of mouth",
+  school_or_flyer: "School/flyer",
+  social_media: "Social media",
+  other: "Other",
+};
+
 function formatDate(iso) {
   if (!iso) return "—";
   try {
@@ -47,6 +56,17 @@ export default function Applications() {
     queryKey: ["registration-applications"],
     queryFn: () => base44.entities.RegistrationApplication.list("-applied_at", 200),
   });
+
+  // Count how many applications share each sibling_group_id, so reviewers can
+  // see at a glance that several rows came from one family's submission.
+  const siblingCounts = useMemo(() => {
+    const counts = {};
+    allApplications.forEach(a => {
+      if (!a.sibling_group_id) return;
+      counts[a.sibling_group_id] = (counts[a.sibling_group_id] || 0) + 1;
+    });
+    return counts;
+  }, [allApplications]);
 
   // Filter: admins see all; coaches see only their teams
   const applications = useMemo(() => {
@@ -134,6 +154,7 @@ export default function Applications() {
                   <th className="text-left font-semibold px-4 py-3 hidden md:table-cell">DOB</th>
                   <th className="text-left font-semibold px-4 py-3">Target Team</th>
                   <th className="text-left font-semibold px-4 py-3 hidden lg:table-cell">Parent Email</th>
+                  <th className="text-left font-semibold px-4 py-3 hidden xl:table-cell">Context</th>
                   <th className="text-left font-semibold px-4 py-3">Status</th>
                   <th className="text-left font-semibold px-4 py-3 hidden sm:table-cell">Applied</th>
                   <th className="text-right font-semibold px-4 py-3">Actions</th>
@@ -147,6 +168,11 @@ export default function Applications() {
                     <tr key={app.id} className="border-b border-border last:border-0 hover:bg-surface/50 transition-colors">
                       <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
                         {app.athlete_first_name} {app.athlete_last_name}
+                        {app.sibling_group_id && siblingCounts[app.sibling_group_id] > 1 && (
+                          <span className="block text-[11px] font-normal text-blue-400">
+                            Family of {siblingCounts[app.sibling_group_id]}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell whitespace-nowrap">
                         {app.athlete_dob ? formatDate(app.athlete_dob) : "—"}
@@ -156,6 +182,15 @@ export default function Applications() {
                         {app.sport_name && <span className="block text-xs text-muted-foreground">{app.sport_name}</span>}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{app.parent_email}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell max-w-[220px]">
+                        {app.referral_source && (
+                          <span className="block text-xs text-foreground">{REFERRAL_LABELS[app.referral_source] || app.referral_source}</span>
+                        )}
+                        {app.referral_note && (
+                          <span className="block text-xs text-muted-foreground truncate" title={app.referral_note}>{app.referral_note}</span>
+                        )}
+                        {!app.referral_source && !app.referral_note && "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${sc.className}`}>
                           {sc.label}
