@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, ArrowRightLeft, Loader2, ClipboardList } from "lucide-react";
+import { CheckCircle, Clock, ArrowRightLeft, Loader2, ClipboardList, UserPlus, Archive } from "lucide-react";
 import TransferModal from "@/components/applications/TransferModal";
+import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
+import PendingChildrenPanel from "@/components/admin/PendingChildrenPanel";
 
 const STATUS_CONFIG = {
   pending:     { label: "Pending",     className: "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" },
@@ -35,15 +37,11 @@ function formatDate(iso) {
   }
 }
 
-export default function Applications() {
-  const { user } = useAuth();
+function TeamApplicationsTab({ user, isAdmin }) {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("pending");
   const [transferApp, setTransferApp] = useState(null);
 
-  const isAdmin = user?.role === "admin" || user?.role === "athletic_director" || user?.role === "ad";
-
-  // Fetch coach profiles for current user (to know which teams they own)
   const { data: coachProfiles = [] } = useQuery({
     queryKey: ["my-coach-profiles", user?.email],
     queryFn: () => base44.entities.CoachProfile.filter({ user_email: user.email }),
@@ -57,8 +55,6 @@ export default function Applications() {
     queryFn: () => base44.entities.RegistrationApplication.list("-applied_at", 200),
   });
 
-  // Count how many applications share each sibling_group_id, so reviewers can
-  // see at a glance that several rows came from one family's submission.
   const siblingCounts = useMemo(() => {
     const counts = {};
     allApplications.forEach(a => {
@@ -68,7 +64,6 @@ export default function Applications() {
     return counts;
   }, [allApplications]);
 
-  // Filter: admins see all; coaches see only their teams
   const applications = useMemo(() => {
     let list = allApplications;
     if (!isAdmin && myTeamIds.length > 0) {
@@ -76,9 +71,7 @@ export default function Applications() {
     } else if (!isAdmin) {
       list = [];
     }
-    return statusFilter === "all"
-      ? list
-      : list.filter(a => a.status === statusFilter);
+    return statusFilter === "all" ? list : list.filter(a => a.status === statusFilter);
   }, [allApplications, isAdmin, myTeamIds, statusFilter]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["registration-applications"] });
@@ -99,19 +92,7 @@ export default function Applications() {
   const isApproved = (app) => app.status === "approved";
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <ClipboardList className="w-6 h-6 text-primary" />
-          Applications
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isAdmin ? "Review and manage all athlete applications across all teams." : "Review and manage athlete applications for your teams."}
-        </p>
-      </div>
-
-      {/* Status filter pills */}
+    <div className="space-y-5">
       <div className="flex gap-2 overflow-x-auto pb-1">
         {STATUS_FILTERS.map(status => {
           const count = isAdmin
@@ -134,7 +115,6 @@ export default function Applications() {
         })}
       </div>
 
-      {/* Table */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center py-16">
@@ -246,6 +226,81 @@ export default function Applications() {
           onTransferred={invalidate}
         />
       )}
+    </div>
+  );
+}
+
+export default function Applications() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "athletic_director" || user?.role === "ad";
+  const isFullAdminOrAD = user?.role === "admin" || user?.role === "athletic_director";
+  const [tab, setTab] = useState("applications");
+
+  const { data: pendingApps = [] } = useQuery({
+    queryKey: ["registration-applications", "pending-count"],
+    queryFn: () => base44.entities.RegistrationApplication.filter({ status: "pending" }),
+    staleTime: 30_000,
+  });
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ["access-requests", "pending-count"],
+    queryFn: () => base44.entities.AccessRequest.filter({ status: "pending" }),
+    enabled: isFullAdminOrAD,
+    staleTime: 30_000,
+  });
+  const { data: pendingLegacyChildren = [] } = useQuery({
+    queryKey: ["pending-children", "pending-count"],
+    queryFn: () => base44.entities.PendingChild.filter({ status: "pending" }),
+    enabled: isFullAdminOrAD,
+    staleTime: 30_000,
+  });
+
+  const TABS = [
+    { id: "applications", label: "Team Applications", icon: ClipboardList, count: pendingApps.length, show: true },
+    { id: "requests", label: "Access Requests", icon: UserPlus, count: pendingRequests.length, show: isFullAdminOrAD },
+    { id: "legacy", label: "Legacy Child Submissions", icon: Archive, count: pendingLegacyChildren.length, show: isFullAdminOrAD },
+  ].filter(t => t.show);
+
+  return (
+    <div className="p-4 lg:p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <ClipboardList className="w-6 h-6 text-primary" />
+          Applications & Requests
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isFullAdminOrAD ? "Review athlete applications, access requests, and legacy submissions in one place." : "Review and manage athlete applications for your teams."}
+        </p>
+      </div>
+
+      {TABS.length > 1 && (
+        <div className="flex flex-wrap gap-1 bg-surface rounded-xl p-1 w-fit">
+          {TABS.map(t => {
+            const Icon = t.icon;
+            const isActive = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  isActive ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {t.label}
+                {t.count > 0 && (
+                  <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isActive ? "bg-primary text-primary-foreground" : "bg-yellow-500/20 text-yellow-400"}`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === "applications" && <TeamApplicationsTab user={user} isAdmin={isAdmin} />}
+      {tab === "requests" && isFullAdminOrAD && <AccessRequestsPanel />}
+      {tab === "legacy" && isFullAdminOrAD && <PendingChildrenPanel />}
     </div>
   );
 }
