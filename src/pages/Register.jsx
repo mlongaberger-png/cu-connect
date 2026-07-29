@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,7 @@ function emptyAthlete() {
 export default function Register() {
   const { user, isAuthenticated, isLoadingAuth, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [sports, setSports] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -34,7 +35,16 @@ export default function Register() {
   const [error, setError] = useState(null);
 
   const [parent, setParent] = useState({ parent_name: "", parent_email: "" });
-  const [athletes, setAthletes] = useState([emptyAthlete()]);
+  const [athletes, setAthletes] = useState(() => {
+    // Prefilled when arriving from AddChildForm's "couldn't find this athlete" handoff
+    const first_name = searchParams.get("first_name") || "";
+    const last_name = searchParams.get("last_name") || "";
+    const dob = searchParams.get("dob") || "";
+    if (first_name || last_name) {
+      return [{ ...emptyAthlete(), athlete_first_name: first_name, athlete_last_name: last_name, athlete_dob: dob }];
+    }
+    return [emptyAthlete()];
+  });
   const [referralSource, setReferralSource] = useState("");
   const [referralNote, setReferralNote] = useState("");
 
