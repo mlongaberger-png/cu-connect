@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, Check, User, Search, AlertCircle, UserCheck } from "lucide-react";
+import { Plus, Check, User, Search, AlertCircle, UserCheck, ClipboardList } from "lucide-react";
 
 const GRADES = ["Pre-K", "K", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
 
@@ -14,6 +15,7 @@ function normalizeStr(s) {
 
 export default function AddChildForm({ parentEmail, parentName, onChildAdded, onSkip, showSkip = true }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ first_name: "", last_name: "", date_of_birth: "", grade: "", sport_interest: "" });
   const [confirmed, setConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,42 +60,38 @@ export default function AddChildForm({ parentEmail, parentName, onChildAdded, on
     e.preventDefault();
     if (!confirmed) { setError("Please confirm the guardian acknowledgment."); return; }
     setError("");
-    setSaving(true);
 
+    if (!selectedMatch) {
+      // No existing athlete found — hand off to the team application flow
+      // (RegistrationApplication) instead of creating a separate, un-teamed
+      // pending record. Keeps athlete creation to one reviewable system.
+      const params = new URLSearchParams({
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        ...(form.date_of_birth ? { dob: form.date_of_birth } : {}),
+        ...(form.sport_interest ? { sport: form.sport_interest } : {}),
+      });
+      navigate(`/Register?${params.toString()}`);
+      return;
+    }
+
+    setSaving(true);
     try {
-      if (selectedMatch) {
-        // Link parent to existing player via PlayerGuardian
-        const existingLinks = await base44.entities.PlayerGuardian.filter({ player_id: selectedMatch.id, user_email: parentEmail });
-        if (!existingLinks.length) {
-          await base44.entities.PlayerGuardian.create({
-            player_id: selectedMatch.id,
-            player_name: `${selectedMatch.first_name} ${selectedMatch.last_name}`,
-            user_email: parentEmail,
-            relationship: "Guardian",
-            invited_by: parentEmail,
-          });
-        }
-        const child = { ...selectedMatch, _linked: true, _label: `${selectedMatch.first_name} ${selectedMatch.last_name}` };
-        setAddedChildren(prev => [...prev, child]);
-        queryClient.invalidateQueries({ queryKey: ["my-guardian-links"] });
-        if (onChildAdded) onChildAdded(child);
-      } else {
-        // Create PendingChild record
-        const pending = await base44.entities.PendingChild.create({
-          first_name: form.first_name.trim(),
-          last_name: form.last_name.trim(),
-          date_of_birth: form.date_of_birth || undefined,
-          grade: form.grade || undefined,
-          sport_interest: form.sport_interest || undefined,
-          parent_email: parentEmail,
-          parent_name: parentName || "",
-          status: "pending",
-          guardian_confirmed: true,
+      // Link parent to existing player via PlayerGuardian
+      const existingLinks = await base44.entities.PlayerGuardian.filter({ player_id: selectedMatch.id, user_email: parentEmail });
+      if (!existingLinks.length) {
+        await base44.entities.PlayerGuardian.create({
+          player_id: selectedMatch.id,
+          player_name: `${selectedMatch.first_name} ${selectedMatch.last_name}`,
+          user_email: parentEmail,
+          relationship: "Guardian",
+          invited_by: parentEmail,
         });
-        const child = { ...pending, _label: `${form.first_name} ${form.last_name}` };
-        setAddedChildren(prev => [...prev, child]);
-        if (onChildAdded) onChildAdded(child);
       }
+      const child = { ...selectedMatch, _linked: true, _label: `${selectedMatch.first_name} ${selectedMatch.last_name}` };
+      setAddedChildren(prev => [...prev, child]);
+      queryClient.invalidateQueries({ queryKey: ["my-guardian-links"] });
+      if (onChildAdded) onChildAdded(child);
 
       setSaving(false);
       setForm({ first_name: "", last_name: "", date_of_birth: "", grade: "", sport_interest: "" });
@@ -259,7 +257,7 @@ export default function AddChildForm({ parentEmail, parentName, onChildAdded, on
 
           <div className="flex gap-2">
             <Button type="submit" disabled={saving} className="flex-1">
-              {saving ? "Saving…" : selectedMatch ? "Link Child" : "Add Child"}
+              {saving ? "Saving…" : selectedMatch ? "Link Child" : (<span className="flex items-center gap-1.5"><ClipboardList className="w-4 h-4" /> Apply for a Team →</span>)}
             </Button>
             {addedChildren.length === 0 && showSkip && onSkip && (
               <Button type="button" variant="outline" onClick={onSkip} className="border-border">
