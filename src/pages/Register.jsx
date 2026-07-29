@@ -53,9 +53,18 @@ export default function Register() {
       base44.entities.Sport.list(),
       base44.entities.Team.list(),
     ]).then(([s, t]) => {
-      setSports(s.filter(sp => sp.is_active !== false));
+      const activeSports = s.filter(sp => sp.is_active !== false);
+      setSports(activeSports);
       setTeams(t.filter(tm => tm.is_active !== false));
       setLoading(false);
+
+      const sportParam = searchParams.get("sport");
+      if (sportParam) {
+        const match = activeSports.find(sp => sp.name.toLowerCase() === sportParam.toLowerCase());
+        if (match) {
+          setAthletes(list => list.map((a, i) => (i === 0 ? { ...a, sport_id: match.id } : a)));
+        }
+      }
     });
   }, []);
 
