@@ -333,11 +333,11 @@ export default function ChatSidebar({ activeChannelId }) {
           )}
         </div>
         <div className="px-4 pb-3">
-          <TabsList className="grid w-full grid-cols-4 bg-muted">
-            <TabsTrigger value="teams">🛡️ Teams</TabsTrigger>
-            <TabsTrigger value="direct">💬 DMs</TabsTrigger>
-            <TabsTrigger value="carpool">🚗 Carpool</TabsTrigger>
-            <TabsTrigger value="announce">📢 News</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-muted h-auto p-1 gap-0.5">
+            <TabsTrigger value="teams" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">🛡️ Teams</TabsTrigger>
+            <TabsTrigger value="direct" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">💬 DMs</TabsTrigger>
+            <TabsTrigger value="carpool" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">🚗 Carpool</TabsTrigger>
+            <TabsTrigger value="announce" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">📢 News</TabsTrigger>
           </TabsList>
         </div>
       </div>
