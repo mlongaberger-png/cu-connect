@@ -88,6 +88,28 @@ export default function AddChildForm({ parentEmail, parentName, onChildAdded, on
           invited_by: parentEmail,
         });
       }
+
+      // Join the team's chat channel(s), if any exist
+      if (selectedMatch.team_id) {
+        try {
+          const teamChannels = await base44.entities.Channel.filter({ team_id: selectedMatch.team_id });
+          const joinable = teamChannels.filter(c => c.type === "team" || c.type === "announcement");
+          for (const channel of joinable) {
+            const existingMembership = await base44.entities.ChannelMember.filter({ channel_id: channel.id, user_email: parentEmail });
+            if (existingMembership.length === 0) {
+              await base44.entities.ChannelMember.create({
+                channel_id: channel.id,
+                user_email: parentEmail,
+                user_name: parentName || "",
+                unread_count: 0,
+              });
+            }
+          }
+        } catch (channelErr) {
+          console.error("Channel membership setup failed (non-fatal):", channelErr.message);
+        }
+      }
+
       const child = { ...selectedMatch, _linked: true, _label: `${selectedMatch.first_name} ${selectedMatch.last_name}` };
       setAddedChildren(prev => [...prev, child]);
       queryClient.invalidateQueries({ queryKey: ["my-guardian-links"] });
