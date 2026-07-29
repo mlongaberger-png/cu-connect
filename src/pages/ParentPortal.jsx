@@ -354,6 +354,21 @@ export default function ParentPortal() {
                 </button>
               </div>
             </>
+          ) : pendingApplications.length > 0 ? (
+            <div className="space-y-4 max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
+                <span className="text-2xl">⏳</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">
+                  {pendingApplications.length > 1 ? "Your applications are under review" : "Your application is under review"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {pendingApplications.map(a => `${a.athlete_first_name} ${a.athlete_last_name}`).join(", ")}
+                  {" — "}a coach or admin needs to approve {pendingApplications.length > 1 ? "these" : "this"} before it shows up here. You'll get a notification once approved.
+                </p>
+              </div>
+            </div>
           ) : pendingRequest ? (
             <div className="space-y-4 max-w-sm mx-auto">
               <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
