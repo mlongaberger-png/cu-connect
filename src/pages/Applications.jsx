@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, ArrowRightLeft, Loader2, ClipboardList, UserPlus, Archive } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { CheckCircle, Clock, ArrowRightLeft, Loader2, ClipboardList, UserPlus, Archive, XCircle } from "lucide-react";
 import TransferModal from "@/components/applications/TransferModal";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
 import PendingChildrenPanel from "@/components/admin/PendingChildrenPanel";
@@ -12,10 +14,11 @@ const STATUS_CONFIG = {
   pending:     { label: "Pending",     className: "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" },
   approved:    { label: "Approved",    className: "bg-green-500/20 border-green-500/50 text-green-400" },
   waitlisted:  { label: "Waitlisted",  className: "bg-orange-500/20 border-orange-500/50 text-orange-400" },
+  rejected:    { label: "Rejected",    className: "bg-red-500/20 border-red-500/50 text-red-400" },
   archived:    { label: "Archived",    className: "bg-muted text-muted-foreground border-border" },
 };
 
-const STATUS_FILTERS = ["pending", "waitlisted", "approved", "archived"];
+const STATUS_FILTERS = ["pending", "waitlisted", "approved", "rejected"];
 
 const REFERRAL_LABELS = {
   coach_or_staff_invite: "Coach/staff invite",
@@ -41,6 +44,8 @@ function TeamApplicationsTab({ user, isAdmin }) {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("pending");
   const [transferApp, setTransferApp] = useState(null);
+  const [rejectApp, setRejectApp] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data: coachProfiles = [] } = useQuery({
     queryKey: ["my-coach-profiles", user?.email],
@@ -87,6 +92,15 @@ function TeamApplicationsTab({ user, isAdmin }) {
       waitlisted_at: new Date().toISOString(),
     }),
     onSuccess: () => invalidate(),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }) => base44.entities.RegistrationApplication.update(id, {
+      status: "rejected",
+      rejected_at: new Date().toISOString(),
+      rejection_reason: reason || undefined,
+    }),
+    onSuccess: () => { invalidate(); setRejectApp(null); setRejectReason(""); },
   });
 
   const isApproved = (app) => app.status === "approved";
@@ -202,6 +216,15 @@ function TeamApplicationsTab({ user, isAdmin }) {
                           <Button
                             size="sm"
                             variant="outline"
+                            disabled={disabled || rejectMutation.isPending}
+                            onClick={() => setRejectApp(app)}
+                            className="border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-400 h-8 px-3"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => setTransferApp(app)}
                             className="border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:text-blue-400 h-8 px-3"
                           >
@@ -226,6 +249,37 @@ function TeamApplicationsTab({ user, isAdmin }) {
           onTransferred={invalidate}
         />
       )}
+
+      <Dialog open={!!rejectApp} onOpenChange={(v) => { if (!v) { setRejectApp(null); setRejectReason(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Application?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {rejectApp && `${rejectApp.athlete_first_name} ${rejectApp.athlete_last_name}`}'s application for {rejectApp?.target_team_name} will be marked rejected. The parent won't be automatically notified of the reason — this note is for other reviewers only.
+          </p>
+          <div className="space-y-1.5">
+            <Textarea
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="Optional: reason for rejecting (visible to other reviewers only)"
+              className="bg-surface border-border resize-none"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => { setRejectApp(null); setRejectReason(""); }}>Cancel</Button>
+            <Button
+              type="button"
+              disabled={rejectMutation.isPending}
+              onClick={() => rejectMutation.mutate({ id: rejectApp.id, reason: rejectReason.trim() })}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {rejectMutation.isPending ? "Rejecting…" : "Reject Application"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
