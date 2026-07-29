@@ -70,6 +70,36 @@ export default function Sidebar({ isOpen, onClose }) {
   const navItems = allNavItems.filter(item => item.roles.includes(role));
   const currentPath = location.pathname + location.search;
 
+  // Combined pending count for the "Applications & Requests" nav badge —
+  // admins/ADs see everything pending across all three legacy+current systems;
+  // coaches only see pending applications for their own teams.
+  const isAdminOrAD = role === "admin" || role === "athletic_director";
+
+  const { data: coachProfiles = [] } = useQuery({
+    queryKey: ["sidebar-coach-profiles", user?.email],
+    queryFn: () => base44.entities.CoachProfile.filter({ user_email: user.email }),
+    enabled: isStaff && role === "coach",
+    staleTime: 60_000,
+  });
+  const myTeamIds = coachProfiles.map(p => p.team_id);
+
+  const { data: pendingApps = [] } = useQuery({
+    queryKey: ["sidebar-pending-applications"],
+    queryFn: () => base44.entities.RegistrationApplication.filter({ status: "pending" }),
+    enabled: isStaff,
+    staleTime: 60_000,
+  });
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ["sidebar-pending-requests"],
+    queryFn: () => base44.entities.AccessRequest.filter({ status: "pending" }),
+    enabled: isAdminOrAD,
+    staleTime: 60_000,
+  });
+
+  const applicationsBadgeCount = isAdminOrAD
+    ? pendingApps.length + pendingRequests.length
+    : pendingApps.filter(a => myTeamIds.includes(a.target_team_id)).length;
+
   return (
     <>
       {/* Mobile overlay */}
@@ -133,7 +163,12 @@ export default function Sidebar({ isOpen, onClose }) {
                         )}
                         <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : ''}`} />
                         {item.label}
-                        {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+                        {item.path === "/Applications" && applicationsBadgeCount > 0 && (
+                          <span className="ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/20 text-yellow-400">
+                            {applicationsBadgeCount}
+                          </span>
+                        )}
+                        {isActive && item.path !== "/Applications" && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
                       </Link>
                     );
                   })}
