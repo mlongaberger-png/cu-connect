@@ -67,6 +67,30 @@ Deno.serve(async (req) => {
       status: 'approved',
     });
 
+    // 3b. Join the parent to the team's chat channel(s), if any exist, so unread
+    // tracking works immediately instead of waiting for their first message.
+    try {
+      const teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: application.target_team_id });
+      const joinable = teamChannels.filter(c => c.type === 'team' || c.type === 'announcement');
+      for (const channel of joinable) {
+        const existing = await base44.asServiceRole.entities.ChannelMember.filter({
+          channel_id: channel.id,
+          user_email: application.parent_email,
+        });
+        if (existing.length === 0) {
+          await base44.asServiceRole.entities.ChannelMember.create({
+            channel_id: channel.id,
+            user_email: application.parent_email,
+            user_id: application.parent_user_id || '',
+            user_name: application.parent_name || '',
+            unread_count: 0,
+          });
+        }
+      }
+    } catch (channelErr) {
+      console.error('Channel membership setup failed (non-fatal):', channelErr.message);
+    }
+
     // 4. Post in-app notification to parent
     if (application.parent_email) {
       await base44.asServiceRole.entities.NotificationQueue.create({
