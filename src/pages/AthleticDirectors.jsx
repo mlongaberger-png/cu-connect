@@ -13,9 +13,7 @@ import {
 import { useAdminGuard } from "@/hooks/useRoleGuard";
 import StaffInvitePanel from "@/components/admin/StaffInvitePanel";
 import StaffAccountsPanel from "@/components/admin/StaffAccountsPanel";
-import PendingChildrenPanel from "@/components/admin/PendingChildrenPanel";
 import ParentAccountsTab from "@/components/admin/ParentAccountsTab";
-import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
 import RegistrationsTab from "@/components/admin/RegistrationsTab";
 import LeadershipApplicationsTab from "@/components/admin/LeadershipApplicationsTab";
 import SeasonManager from "@/pages/SeasonManager";
@@ -133,8 +131,6 @@ export default function AthleticDirectors() {
               { id: "staff", label: "Staff & Admins" },
               { id: "staff-accounts", label: "Staff Accounts" },
               { id: "parents", label: "Parent Accounts" },
-              { id: "access", label: "Access Requests" },
-              { id: "children", label: "Child Submissions" },
             ].map(sub => (
               <button key={sub.id} onClick={() => setPeopleSubTab(sub.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${peopleSubTab === sub.id ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground hover:text-foreground"}`}>
@@ -181,8 +177,14 @@ export default function AthleticDirectors() {
 
           {peopleSubTab === "staff-accounts" && <StaffAccountsPanel />}
           {peopleSubTab === "parents" && <ParentAccountsTab />}
-          {peopleSubTab === "access" && <AccessRequestsPanel />}
-          {peopleSubTab === "children" && <PendingChildrenPanel />}
+          {(peopleSubTab === "access" || peopleSubTab === "children") && (
+            <div className="bg-card rounded-2xl border border-border p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Access requests and legacy child submissions have moved to{" "}
+                <a href="/Applications" className="text-primary underline">Applications & Requests</a> in the sidebar.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
