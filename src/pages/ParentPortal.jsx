@@ -226,6 +226,17 @@ export default function ParentPortal() {
   const pendingRequest = myAccessRequests.find(r => r.status === "pending");
   const approvedRequest = myAccessRequests.find(r => r.status === "approved");
 
+  // Team applications (the canonical "add my athlete" flow) — checked separately
+  // from the older AccessRequest system above, so a parent who already applied
+  // via /Register isn't shown the raw "add a child" form again.
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ["my-registration-applications", userEmail],
+    queryFn: () => base44.entities.RegistrationApplication.filter({ parent_email: userEmail }),
+    enabled: !!userEmail && myKids.length === 0,
+    staleTime: 60_000,
+  });
+  const pendingApplications = myApplications.filter(a => a.status === "pending" || a.status === "waitlisted");
+
   const handlePayPlayer = async (player, unpaidInvoices) => {
     const isIframe = window.self !== window.top;
     if (isIframe) { alert("Payments can only be processed from the published app."); return; }
