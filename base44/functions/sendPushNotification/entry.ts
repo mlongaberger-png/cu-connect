@@ -1,10 +1,62 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import webpush from 'npm:web-push@3.6.7';
+import { GoogleAuth } from 'npm:google-auth-library@9';
+
+// --- FCM (native iOS/Android) helpers ---
+let cachedFcmAuth = null;
+
+async function getFcmAccessToken(base44) {
+  const now = Date.now();
+  if (cachedFcmAuth && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
+
+  const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'fcm_service_account' });
+  if (!configs.length) return null;
+
+  const serviceAccount = JSON.parse(configs[0].value);
+  const auth = new GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
+  const client = await auth.getClient();
+  const tokenResp = await client.getAccessToken();
+
+  cachedFcmAuth = {
+    projectId: serviceAccount.project_id,
+    accessToken: tokenResp.token,
+    expiresAt: now + 50 * 60 * 1000,
+  };
+  return cachedFcmAuth;
+}
+
+async function sendFcm({ base44, fcmToken, title, body, url }) {
+  const auth = await getFcmAccessToken(base44);
+  if (!auth) return { ok: false, skipped: true };
+  const res = await fetch(`https://fcm.googleapis.com/v1/projects/${auth.projectId}/messages:send`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${auth.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        token: fcmToken,
+        notification: { title, body },
+        data: { url: url || '' },
+      },
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    return { ok: false, status: res.status, errText };
+  }
+  return { ok: true };
+}
 
 // Sends a push notification to one or more users by email.
 // Payload: { user_emails: string[], title: string, body: string, url?: string, team_id?: string, room_id?: string }
 // If team_id provided, only sends to guardians of players on that team.
 // If room_id provided, resolves room access (allowed_team_ids, allowed_emails, allowed_roles) and only sends to those users.
+// Delivers via native FCM for iOS/Android subscriptions, and web push (VAPID) for web subscriptions.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -36,14 +88,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'user_emails and title are required' }, { status: 400 });
     }
 
-    // Get VAPID keys
+    // Get VAPID keys (for web push subscribers)
     const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'vapid_keys' });
-    if (!configs.length) {
-      return Response.json({ error: 'Push not configured yet (no VAPID keys)' }, { status: 500 });
+    const vapidConfigured = configs.length > 0;
+    if (vapidConfigured) {
+      const { publicKey, privateKey } = JSON.parse(configs[0].value);
+      webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
     }
-
-    const { publicKey, privateKey } = JSON.parse(configs[0].value);
-    webpush.setVapidDetails('mailto:noreply@cornerstoneathletics.com', publicKey, privateKey);
 
     // If team_id is provided, build the set of emails that are actually guardians of players on that team
     let allowedEmails = null;
@@ -112,17 +163,30 @@ Deno.serve(async (req) => {
       }
       const subs = subsMap[email.toLowerCase()] || [];
       for (const sub of subs) {
-        pushPromises.push(
-          webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
-            payload
-          ).then(() => { sent++; }).catch(async (sendError) => {
-            console.error(`Push send error for ${email}:`, sendError.message);
-            if (sendError.statusCode === 410 || sendError.statusCode === 404) {
-              await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
-            }
-          })
-        );
+        if (sub.platform === 'ios' || sub.platform === 'android') {
+          // Native delivery via FCM
+          pushPromises.push(
+            sendFcm({ base44, fcmToken: sub.fcm_token, title, body: body || '', url: url || '' })
+              .then((result) => {
+                if (result.ok) { sent++; }
+                else console.error(`FCM push failed for ${email}:`, result.status, result.errText);
+              })
+          );
+        } else {
+          // Web push (VAPID) delivery
+          if (!vapidConfigured) continue;
+          pushPromises.push(
+            webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh_key, auth: sub.auth_key } },
+              payload
+            ).then(() => { sent++; }).catch(async (sendError) => {
+              console.error(`Push send error for ${email}:`, sendError.message);
+              if (sendError.statusCode === 410 || sendError.statusCode === 404) {
+                await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false });
+              }
+            })
+          );
+        }
       }
     }
     await Promise.all(pushPromises);
