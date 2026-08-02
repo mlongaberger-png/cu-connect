@@ -41,6 +41,7 @@ import SecurityReport from "@/pages/SecurityReport";
 import UIUXAuditReport from "@/pages/UIUXAuditReport";
 import IssuesFixedReport from "@/pages/IssuesFixedReport";
 import Applications from "@/pages/Applications";
+import AppDocumentation from "@/pages/AppDocumentation";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -188,6 +189,7 @@ export default function AppShell() {
       <Route path="/SecurityReport" element={<SecurityReport />} />
       <Route path="/UIUXAuditReport" element={<UIUXAuditReport />} />
       <Route path="/IssuesFixedReport" element={<IssuesFixedReport />} />
+      <Route path="/AppDocumentation" element={<AppDocumentation />} />
 
       <Route path="/ParentSignup" element={<ParentSignup />} />
 
