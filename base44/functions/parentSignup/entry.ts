@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     if (!parsed.success) {
       return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
     }
-    const { parent_name, parent_email, parent_phone, child_names, sport_interest, notes } = parsed.data;
+    const { parent_name, parent_email, parent_phone, child_names, sport_interest, notes, recaptcha_token } = parsed.data;
 
     if (!parent_name || !parent_email || !child_names) {
       return Response.json({ error: 'Name, email, and child name(s) are required.' }, { status: 400 });
@@ -148,6 +148,16 @@ Deno.serve(async (req) => {
       await recordAttempt(base44, { ip: clientIP, email: normalizedEmail, formType: 'parent_signup', blocked: true });
       return Response.json({ error: 'Too many attempts, please try again later.' }, { status: 429 });
     }
+
+    const recaptcha = await verifyRecaptcha(base44, { token: recaptcha_token, ip: clientIP });
+    if (!recaptcha.ok) {
+      await recordAttempt(base44, { ip: clientIP, email: normalizedEmail, formType: 'parent_signup', blocked: true });
+      return Response.json({
+        error: "We couldn't verify you're human. Please refresh the page and try again.",
+        code: 'recaptcha_failed',
+      }, { status: 400 });
+    }
+
     await recordAttempt(base44, { ip: clientIP, email: normalizedEmail, formType: 'parent_signup', blocked: false });
 
     // Check for duplicate pending/approved request
