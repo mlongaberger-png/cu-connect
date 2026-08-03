@@ -8,6 +8,7 @@ const parentSignupSchema = z.object({
   child_names: z.string().min(1),
   sport_interest: z.string().optional(),
   notes: z.string().optional(),
+  recaptcha_token: z.string().optional(),
 }).strict();
 
 // ── Rate limiting ──────────────────────────────────────────────────
