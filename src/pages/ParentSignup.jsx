@@ -60,14 +60,30 @@ export default function ParentSignup() {
     queryFn: () => base44.entities.Sport.list(),
   });
 
+  useEffect(() => {
+    loadRecaptchaScript();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-    const res = await base44.functions.invoke("parentSignup", form);
+
+    let recaptchaToken;
+    try {
+      recaptchaToken = await getRecaptchaToken();
+    } catch {
+      setSubmitting(false);
+      setError("We couldn't verify you're human. Please refresh the page and try again.");
+      return;
+    }
+
+    const res = await base44.functions.invoke("parentSignup", { ...form, recaptcha_token: recaptchaToken });
     setSubmitting(false);
     if (res.data?.success) {
       setSubmitted(true);
+    } else if (res.data?.code === "recaptcha_failed") {
+      setError("We couldn't verify you're human. Please refresh the page and try again.");
     } else {
       setError(res.data?.error || "Something went wrong. Please try again.");
     }
