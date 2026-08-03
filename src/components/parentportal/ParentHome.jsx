@@ -34,12 +34,17 @@ export default function ParentHome() {
   const [showDocuments, setShowDocuments] = useState(false);
   const userEmail = user?.email;
 
-  const { data: guardianLinks = [] } = useQuery({
-    queryKey: ["my-guardian-links", userEmail],
-    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
+  // getMyPlayers unions Player.parent_email matches with PlayerGuardian links
+  // server-side (asServiceRole), since RLS can't join Player -> PlayerGuardian.
+  const { data: myKids = [] } = useQuery({
+    queryKey: ["my-players-home", userEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      const list = res.data?.players || [];
+      return [...list].sort((a, b) => (a.last_name || "").localeCompare(b.last_name || ""));
+    },
     enabled: !!userEmail,
   });
-  const { data: players = [] } = useQuery({ queryKey: ["players"], queryFn: () => base44.entities.Player.list() });
   const { data: teams = [] } = useQuery({ queryKey: ["teams"], queryFn: () => base44.entities.Team.list() });
   const { data: events = [] } = useQuery({ queryKey: ["events"], queryFn: () => base44.entities.Event.list("-date") });
   const { data: announcements = [] } = useQuery({ queryKey: ["announcements"], queryFn: () => base44.entities.Announcement.list("-created_date") });
@@ -50,10 +55,6 @@ export default function ParentHome() {
     enabled: !!userEmail,
   });
 
-  const myLinkedIds = new Set(guardianLinks.map(g => g.player_id));
-  const myKids = players
-    .filter(p => myLinkedIds.has(p.id) || p.parent_email === userEmail)
-    .sort((a, b) => a.last_name.localeCompare(b.last_name));
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
   const myEvents = events
