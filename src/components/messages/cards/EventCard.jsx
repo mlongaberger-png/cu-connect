@@ -39,23 +39,22 @@ export default function EventCard({ msg }) {
   });
   const teamId = channel?.team_id;
 
-  const { data: myGuardians = [] } = useQuery({
-    queryKey: ["my-guardians", user?.email],
-    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user.email }),
-    enabled: !!user?.email,
-    staleTime: 30000,
-  });
-  const guardianPlayerIds = myGuardians.map(g => g.player_id).filter(Boolean);
-
+  // getMyPlayers unions Player.parent_email matches with PlayerGuardian links
+  // server-side (asServiceRole), since RLS can't join Player -> PlayerGuardian.
+  // Returned players are already scoped to the caller, so no client-side
+  // guardian-id filter is needed here.
   const { data: myPlayers = [] } = useQuery({
-    queryKey: ["my-players", guardianPlayerIds.join(",")],
-    queryFn: () => base44.entities.Player.list(),
-    enabled: guardianPlayerIds.length > 0,
+    queryKey: ["my-players", user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
+    enabled: !!user?.email,
     staleTime: 30000,
   });
 
   const eligiblePlayers = teamId
-    ? myPlayers.filter(p => guardianPlayerIds.includes(p.id) && p.team_id === teamId)
+    ? myPlayers.filter(p => p.team_id === teamId)
     : [];
 
   const rsvpQueryKey = ["my-rsvp", reqId, user?.email];
