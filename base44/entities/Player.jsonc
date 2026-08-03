@@ -113,7 +113,28 @@
         }
       ]
     },
-    "read": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "coach"
+          }
+        },
+        {
+          "data.parent_email": "{{user.email}}"
+        }
+      ]
+    },
     "update": {
       "$or": [
         {
