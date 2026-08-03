@@ -12,6 +12,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  */
 Deno.serve(async (req) => {
   try {
+    // Regression-test endpoint — disabled in production unless explicitly enabled.
+    // Set ENABLE_TEST_ENDPOINTS=true in this app's environment variables to run it.
+    if (Deno.env.get('ENABLE_TEST_ENDPOINTS') !== 'true') {
+      return Response.json({ error: 'Not found' }, { status: 404 });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
