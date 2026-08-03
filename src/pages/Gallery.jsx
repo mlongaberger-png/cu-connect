@@ -29,25 +29,22 @@ export default function Gallery() {
     queryFn: () => base44.entities.Team.list(),
   });
 
-  const { data: guardianLinks = [] } = useQuery({
-    queryKey: ["guardian-links-gallery"],
-    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
-    enabled: isParent && !!user?.email,
-  });
-
+  // getMyPlayers unions Player.parent_email matches with PlayerGuardian links
+  // server-side (asServiceRole), since RLS can't join Player -> PlayerGuardian.
   const { data: myPlayers = [] } = useQuery({
-    queryKey: ["my-players-gallery"],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ["my-players-gallery", user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
     enabled: isParent,
   });
 
   // Teams parent can post to (via athlete links)
   const myTeamIds = React.useMemo(() => {
     if (isStaff) return teams.map(t => t.id);
-    const linkedPlayerIds = new Set(guardianLinks.map(g => g.player_id));
-    const kids = myPlayers.filter(p => linkedPlayerIds.has(p.id) || p.parent_email === user?.email);
-    return [...new Set(kids.map(p => p.team_id))];
-  }, [isStaff, guardianLinks, myPlayers, user?.email, teams]);
+    return [...new Set(myPlayers.map(p => p.team_id))];
+  }, [isStaff, myPlayers, teams]);
 
   const allowedTeams = teams.filter(t => myTeamIds.includes(t.id));
 
