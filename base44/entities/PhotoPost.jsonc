@@ -41,14 +41,99 @@
   ],
   "rls": {
     "create": {
-      "uploader_email": "{{user.email}}"
+      "$and": [
+        {
+          "uploader_email": "{{user.email}}"
+        },
+        {
+          "$or": [
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "athletic_director"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "coach"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "parent"
+              }
+            },
+            {
+              "user_condition": {
+                "role": "grandparent"
+              }
+            }
+          ]
+        }
+      ]
     },
-    "read": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "coach"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "parent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "grandparent"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "relative"
+          }
+        }
+      ]
+    },
     "update": {
       "uploader_email": "{{user.email}}"
     },
     "delete": {
-      "uploader_email": "{{user.email}}"
+      "$or": [
+        {
+          "uploader_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "coach"
+          }
+        }
+      ]
     }
   }
 }
