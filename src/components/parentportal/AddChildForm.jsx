@@ -25,35 +25,45 @@ export default function AddChildForm({ parentEmail, parentName, onChildAdded, on
   const [addedChildren, setAddedChildren] = useState([]);
   const [showForm, setShowForm] = useState(true);
 
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ["players-all"],
-    queryFn: () => base44.entities.Player.list(),
-  });
-
   const { data: sports = [] } = useQuery({
     queryKey: ["sports"],
     queryFn: () => base44.entities.Sport.list(),
   });
 
-  // Auto-suggest matching players
+  // Auto-suggest matching players. This is a cross-roster name search (not
+  // "my players"), so Player RLS — which only exposes the caller's own
+  // linked players — can't do it client-side. It runs server-side via the
+  // findPlayerMatches function, which returns only minimal, non-sensitive
+  // fields (no medical_notes/DOB/contacts), debounced to avoid firing a
+  // request per keystroke.
   useEffect(() => {
     const fn = normalizeStr(form.first_name);
     const ln = normalizeStr(form.last_name);
     if (!fn && !ln) { setSuggestions([]); return; }
-    const matches = allPlayers.filter(p => {
-      const pfn = normalizeStr(p.first_name);
-      const pln = normalizeStr(p.last_name);
-      const nameMatch = (fn && pfn.startsWith(fn)) || (ln && pln.startsWith(ln));
-      const dobMatch = !form.date_of_birth || !p.date_of_birth || p.date_of_birth === form.date_of_birth;
-      return nameMatch && dobMatch;
-    });
-    setSuggestions(matches);
-    if (selectedMatch && !matches.find(m => m.id === selectedMatch.id)) setSelectedMatch(null);
-  }, [form.first_name, form.last_name, form.date_of_birth, allPlayers]);
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await base44.functions.invoke("findPlayerMatches", {
+          first_name: form.first_name,
+          last_name: form.last_name,
+          date_of_birth: form.date_of_birth,
+        });
+        if (cancelled) return;
+        const matches = res.data?.players || [];
+        setSuggestions(matches);
+        setSelectedMatch(prev => (prev && !matches.find(m => m.id === prev.id)) ? null : prev);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      }
+    }, 300);
+
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [form.first_name, form.last_name, form.date_of_birth]);
 
   const handleSelectSuggestion = (player) => {
     setSelectedMatch(player);
-    setForm(f => ({ ...f, first_name: player.first_name, last_name: player.last_name, date_of_birth: player.date_of_birth || "" }));
+    setForm(f => ({ ...f, first_name: player.first_name, last_name: player.last_name }));
   };
 
   const handleSubmit = async (e) => {
