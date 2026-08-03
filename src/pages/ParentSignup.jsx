@@ -226,6 +226,18 @@ export default function ParentSignup() {
             <Button type="submit" disabled={submitting} className="w-full">
               {submitting ? "Submitting…" : "Submit Access Request"}
             </Button>
+
+            <p className="text-[11px] text-center text-muted-foreground/70">
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                Terms of Service
+              </a>{" "}
+              apply.
+            </p>
           </form>
 
           <p className="text-xs text-center text-muted-foreground">
