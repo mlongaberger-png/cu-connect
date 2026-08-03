@@ -55,6 +55,17 @@ Deno.serve(async (req) => {
           message_type: 'text',
           sender_name: 'Score Bot',
           sender_user_id: 'system',
+          metadata: JSON.stringify({
+            opponent: event.opponent || null,
+            date: event.date || null,
+            sport_name: sportName || null,
+            team_name: teamName,
+            result: event.result || null,
+            our_score: event.our_score || null,
+            opponent_score: event.opponent_score || null,
+            is_championship_win: !!isChamp,
+            tournament_round: event.tournament_round || null,
+          }),
         });
       }
     } catch (e) {
