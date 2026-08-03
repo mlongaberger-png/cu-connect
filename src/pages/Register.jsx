@@ -98,33 +98,24 @@ export default function Register() {
     setSubmitting(true);
     setError(null);
 
-    // Links multiple athletes submitted together so a reviewer can see they're
-    // one family's submission, without forcing them all onto the same team.
-    const siblingGroupId = athletes.length > 1
-      ? `sib_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-      : undefined;
-
     try {
-      await Promise.all(athletes.map(a => {
-        const selectedTeam = teams.find(t => t.id === a.team_id);
-        return base44.entities.RegistrationApplication.create({
-          parent_user_id: user?.id || "",
-          parent_name: parent.parent_name,
-          parent_email: parent.parent_email,
+      const res = await base44.functions.invoke("submitRegistrationApplication", {
+        parent_name: parent.parent_name,
+        parent_email: parent.parent_email,
+        athletes: athletes.map(a => ({
+          team_id: a.team_id,
           athlete_first_name: a.athlete_first_name,
           athlete_last_name: a.athlete_last_name,
           athlete_dob: a.athlete_dob,
-          target_team_id: a.team_id,
-          target_team_name: selectedTeam?.name || "",
-          sport_name: selectedTeam?.name || selectedTeam?.sport_name || "",
-          status: "pending",
-          applied_at: new Date().toISOString(),
-          referral_source: referralSource || undefined,
-          referral_note: referralNote.trim() || undefined,
-          sibling_group_id: siblingGroupId,
-        });
-      }));
-      setSubmitted(true);
+        })),
+        referral_source: referralSource || undefined,
+        referral_note: referralNote.trim() || undefined,
+      });
+      if (res.data?.success) {
+        setSubmitted(true);
+      } else {
+        setError(res.data?.error || "Something went wrong. Please try again.");
+      }
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     }
