@@ -72,16 +72,13 @@ export default function NotificationBell() {
   const loadActivityNotifications = async () => {
     if (!user) return;
     try {
-      const guardians = await base44.entities.PlayerGuardian.filter({ user_email: user.email });
-      const playerIds = guardians.map(g => g.player_id).filter(Boolean);
+      // getMyPlayers unions Player.parent_email matches with PlayerGuardian
+      // links server-side (asServiceRole), since RLS can't join
+      // Player -> PlayerGuardian.
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      const myPlayers = res.data?.players || [];
       const allowedTeamIds = new Set();
-
-      if (playerIds.length > 0) {
-        const playerFetches = await Promise.all(
-          playerIds.map(pid => base44.entities.Player.filter({ id: pid }))
-        );
-        playerFetches.flat().forEach(p => { if (p.team_id) allowedTeamIds.add(p.team_id); });
-      }
+      myPlayers.forEach(p => { if (p.team_id) allowedTeamIds.add(p.team_id); });
 
       const isStaff = user.role === "admin" || user.role === "coach" || user.role === "athletic_director";
 
