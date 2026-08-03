@@ -123,6 +123,20 @@ export default function ParentPortal() {
     queryFn: () => base44.entities.Player.list(),
     staleTime: 60_000,
   });
+
+  // getMyPlayers unions Player.parent_email matches with PlayerGuardian links
+  // server-side (asServiceRole), since RLS can't join Player -> PlayerGuardian.
+  // (Kept separate from `players` above, which is still used for team-roster
+  // display elsewhere on this page.)
+  const { data: myLinkedPlayers = [] } = useQuery({
+    queryKey: ["my-players-portal", userEmail, playerLinked],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
+    enabled: !!userEmail,
+    staleTime: 60_000,
+  });
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: () => base44.entities.Team.list(),
@@ -161,11 +175,9 @@ export default function ParentPortal() {
     staleTime: 60_000,
   });
 
-  // Players linked via PlayerGuardian records (supports multiple guardians per player)
-  const myLinkedPlayerIds = new Set(myGuardianLinks.map(g => g.player_id));
-  const myKids = userEmail
-    ? players.filter(p => myLinkedPlayerIds.has(p.id) || p.parent_email === userEmail)
-    : [];
+  // My linked players — resolved server-side via getMyPlayers (see above)
+  // since RLS can't join Player -> PlayerGuardian to support co-parents.
+  const myKids = userEmail ? myLinkedPlayers : [];
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
   const myEvents = events.filter(e => myTeamIds.includes(e.team_id) && e.date).sort((a, b) => new Date(a.date) - new Date(b.date));
