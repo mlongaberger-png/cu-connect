@@ -1,0 +1,58 @@
+{
+  "name": "SubmissionAttempt",
+  "type": "object",
+  "properties": {
+    "ip_address": {
+      "type": "string",
+      "description": "Client IP address of the submission attempt (best-effort, from x-forwarded-for/x-real-ip)"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address supplied in the submission, lowercased"
+    },
+    "form_type": {
+      "type": "string",
+      "enum": [
+        "parent_signup",
+        "registration_application"
+      ],
+      "description": "Which public form this attempt came from"
+    },
+    "blocked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this attempt was rejected for exceeding the rate limit"
+    }
+  },
+  "required": [
+    "ip_address",
+    "form_type"
+  ],
+  "rls": {
+    "create": true,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
