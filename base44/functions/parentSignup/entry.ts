@@ -61,6 +61,71 @@ async function recordAttempt(base44, { ip, email, formType, blocked }) {
   }
 }
 
+// -- reCAPTCHA v3 verification ---------------------------------------
+// Second layer of bot protection, layered on top of (not replacing) the
+// rate limiting above. The client obtains a token via
+// grecaptcha.execute() and we verify it server-side with Google,
+// checking both `success` and the 0.0 (bot) - 1.0 (human) `score`.
+// The secret key is stored in the AppConfig entity (key:
+// 'recaptcha_secret_key'), following the same pattern already used for
+// fcm_service_account -- server-only secrets live in AppConfig, never
+// hardcoded in source.
+const RECAPTCHA_SCORE_THRESHOLD = 0.5; // 0.0 (bot) - 1.0 (human); adjust here if false-positive/negative rate changes
+const RECAPTCHA_EXPECTED_ACTION = 'parent_signup';
+
+let cachedRecaptchaSecret = null;
+
+async function getRecaptchaSecret(base44) {
+  if (cachedRecaptchaSecret) return cachedRecaptchaSecret;
+  const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'recaptcha_secret_key' });
+  if (!configs.length) return null;
+  cachedRecaptchaSecret = configs[0].value;
+  return cachedRecaptchaSecret;
+}
+
+async function verifyRecaptcha(base44, { token, ip }) {
+  if (!token) {
+    return { ok: false, reason: 'missing_token' };
+  }
+
+  const secret = await getRecaptchaSecret(base44);
+  if (!secret) {
+    // Not configured -- fail open on this layer so a missing/rotated
+    // secret doesn't take down the form; rate limiting (already checked)
+    // remains the operative protection in that case.
+    console.error('recaptcha_secret_key not configured in AppConfig, skipping reCAPTCHA check');
+    return { ok: true, skipped: true };
+  }
+
+  try {
+    const params = new URLSearchParams({ secret, response: token });
+    if (ip && ip !== 'unknown') params.set('remoteip', ip);
+
+    const verifyRes = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+    });
+    const result = await verifyRes.json();
+
+    if (!result.success) {
+      return { ok: false, reason: 'verification_failed' };
+    }
+    if (result.action && result.action !== RECAPTCHA_EXPECTED_ACTION) {
+      return { ok: false, reason: 'action_mismatch' };
+    }
+    if (typeof result.score === 'number' && result.score < RECAPTCHA_SCORE_THRESHOLD) {
+      return { ok: false, reason: 'low_score' };
+    }
+    return { ok: true };
+  } catch (e) {
+    // Network/Google-side failure -- fail open so a Google outage doesn't
+    // take the signup form down; rate limiting still applies.
+    console.error('reCAPTCHA verification request failed:', e.message);
+    return { ok: true, skipped: true };
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
