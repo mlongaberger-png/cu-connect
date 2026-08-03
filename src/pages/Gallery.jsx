@@ -51,14 +51,26 @@ export default function Gallery() {
 
   const allowedTeams = teams.filter(t => myTeamIds.includes(t.id));
 
+  // Staff can query PhotoPost directly (RLS allows all staff roles to read).
+  // Non-staff go through getPhotosFiltered, which enforces real team-level scoping
+  // server-side (RLS itself can't do the CoachProfile/PlayerGuardian join), same
+  // pattern as getEventsFiltered for Schedule.
   const { data: photos = [], isLoading } = useQuery({
-    queryKey: ["photos", filterTeam],
-    queryFn: () => filterTeam === "all"
-      ? base44.entities.PhotoPost.list("-created_date", 100)
-      : base44.entities.PhotoPost.filter({ team_id: filterTeam }, "-created_date", 100),
+    queryKey: ["photos", isStaff ? "staff" : "scoped", filterTeam],
+    queryFn: async () => {
+      let all;
+      if (isStaff) {
+        all = await base44.entities.PhotoPost.list("-created_date", 100);
+      } else {
+        const res = await base44.functions.invoke("getPhotosFiltered", {});
+        all = res.data?.photos || [];
+      }
+      return filterTeam === "all" ? all : all.filter(p => p.team_id === filterTeam);
+    },
   });
 
-  // Parents only see photos from their teams
+  // Server already scopes non-staff results to their teams; this is a
+  // defense-in-depth client-side re-check, not the primary control.
   const visiblePhotos = isStaff
     ? photos
     : photos.filter(p => myTeamIds.includes(p.team_id));
