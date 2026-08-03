@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,41 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+
+// Public reCAPTCHA v3 site key (safe to embed in frontend code). The
+// matching secret key is verified server-side in the parentSignup
+// backend function.
+const RECAPTCHA_SITE_KEY = "6LcfGXQtAAAAAPx7ioRfaBbEA5ez3TKu5SNgOB_h";
+const RECAPTCHA_SCRIPT_SRC = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+
+// Loads the reCAPTCHA v3 script once (idempotent).
+function loadRecaptchaScript() {
+  if (document.querySelector(`script[src="${RECAPTCHA_SCRIPT_SRC}"]`)) return;
+  const script = document.createElement("script");
+  script.src = RECAPTCHA_SCRIPT_SRC;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
+}
+
+// Resolves a fresh reCAPTCHA v3 action token. Rejects if the script
+// failed to load/execute (blocked by an extension, network error,
+// etc.) so the caller can surface a friendly message instead of a raw
+// error.
+function getRecaptchaToken() {
+  return new Promise((resolve, reject) => {
+    if (!window.grecaptcha || !window.grecaptcha.ready) {
+      reject(new Error("reCAPTCHA not loaded"));
+      return;
+    }
+    window.grecaptcha.ready(() => {
+      window.grecaptcha
+        .execute(RECAPTCHA_SITE_KEY, { action: "parent_signup" })
+        .then(resolve)
+        .catch(reject);
+    });
+  });
+}
 
 export default function ParentSignup() {
   const [form, setForm] = useState({
