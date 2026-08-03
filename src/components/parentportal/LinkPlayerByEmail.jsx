@@ -20,8 +20,15 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked, parentNa
     setNotFound(false);
     setFound(null);
 
-    // Find players registered with that email
-    const players = await base44.entities.Player.filter({ parent_email: searchEmail.trim().toLowerCase() });
+    // Find players registered with that email. This is a lookup by an
+    // ARBITRARY email (not the caller's own), so RLS on Player (which only
+    // exposes rows where parent_email == the caller's own email) can never
+    // return anything here — the lookup has to run server-side via
+    // findPlayerByEmail, which returns only minimal, non-sensitive fields.
+    const res = await base44.functions.invoke("findPlayerByEmail", {
+      email: searchEmail.trim().toLowerCase(),
+    });
+    const players = res.data?.players || [];
     setSearching(false);
 
     if (players.length === 0) {
