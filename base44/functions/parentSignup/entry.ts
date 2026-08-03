@@ -10,6 +10,56 @@ const parentSignupSchema = z.object({
   notes: z.string().optional(),
 }).strict();
 
+// ── Rate limiting ──────────────────────────────────────────────────
+// Baseline bot protection for this public, unauthenticated form. Not a
+// hard security boundary (x-forwarded-for is attacker-controllable and
+// email is self-reported), but it raises the cost of naive spam/bot
+// submissions. Backed by the SubmissionAttempt entity.
+const IP_LIMIT = 5;          // max attempts per IP per hour
+const IP_WINDOW_MS = 60 * 60 * 1000;
+const EMAIL_LIMIT = 3;       // max attempts per email per day
+const EMAIL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function getClientIP(req) {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+}
+
+async function checkRateLimit(base44, { ip, email, formType }) {
+  const now = Date.now();
+
+  const ipAttempts = await base44.asServiceRole.entities.SubmissionAttempt.filter({ ip_address: ip, form_type: formType });
+  const ipRecent = ipAttempts.filter(a => now - new Date(a.created_date).getTime() < IP_WINDOW_MS);
+  if (ipRecent.length >= IP_LIMIT) {
+    return { limited: true, reason: 'ip' };
+  }
+
+  if (email) {
+    const emailAttempts = await base44.asServiceRole.entities.SubmissionAttempt.filter({ email, form_type: formType });
+    const emailRecent = emailAttempts.filter(a => now - new Date(a.created_date).getTime() < EMAIL_WINDOW_MS);
+    if (emailRecent.length >= EMAIL_LIMIT) {
+      return { limited: true, reason: 'email' };
+    }
+  }
+
+  return { limited: false };
+}
+
+async function recordAttempt(base44, { ip, email, formType, blocked }) {
+  try {
+    await base44.asServiceRole.entities.SubmissionAttempt.create({
+      ip_address: ip,
+      email: email || undefined,
+      form_type: formType,
+      blocked: !!blocked,
+    });
+  } catch (e) {
+    // Never let tracking failures block/break the real submission flow.
+    console.error('SubmissionAttempt logging failed:', e.message);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -23,6 +73,16 @@ Deno.serve(async (req) => {
     if (!parent_name || !parent_email || !child_names) {
       return Response.json({ error: 'Name, email, and child name(s) are required.' }, { status: 400 });
     }
+
+    const clientIP = getClientIP(req);
+    const normalizedEmail = parent_email.trim().toLowerCase();
+
+    const rate = await checkRateLimit(base44, { ip: clientIP, email: normalizedEmail, formType: 'parent_signup' });
+    if (rate.limited) {
+      await recordAttempt(base44, { ip: clientIP, email: normalizedEmail, formType: 'parent_signup', blocked: true });
+      return Response.json({ error: 'Too many attempts, please try again later.' }, { status: 429 });
+    }
+    await recordAttempt(base44, { ip: clientIP, email: normalizedEmail, formType: 'parent_signup', blocked: false });
 
     // Check for duplicate pending/approved request
     const existing = await base44.asServiceRole.entities.AccessRequest.filter({ parent_email });
