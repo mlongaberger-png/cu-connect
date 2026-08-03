@@ -38,20 +38,16 @@ export default function AccountSettings() {
   const isParent = ["parent", "grandparent"].includes(user?.role);
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
-  const { data: myGuardianLinks = [] } = useQuery({
-    queryKey: ["my-guardian-links-settings", user?.email],
-    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: user?.email }),
+  // getMyPlayers unions Player.parent_email matches with PlayerGuardian links
+  // server-side (asServiceRole), since RLS can't join Player -> PlayerGuardian.
+  const { data: linkedPlayers = [] } = useQuery({
+    queryKey: ["my-players-settings", user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
     enabled: isParent && !!user?.email,
   });
-
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ["players-all-settings"],
-    queryFn: () => base44.entities.Player.list(),
-    enabled: isParent,
-  });
-
-  const linkedPlayerIds = new Set(myGuardianLinks.map(g => g.player_id));
-  const linkedPlayers = allPlayers.filter(p => linkedPlayerIds.has(p.id) || p.parent_email === user?.email);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
