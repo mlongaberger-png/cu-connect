@@ -45,6 +45,7 @@ export default function AppLayout() {
     "/AccountSettings": "Account Settings",
     "/Gallery": "Gallery",
     "/PracticePlans": "Practice Plans",
+    "/UniformInventory": "Uniform Inventory",
   };
 
   const title = pageTitles[location.pathname] || "Cornerstone United Athletics";
