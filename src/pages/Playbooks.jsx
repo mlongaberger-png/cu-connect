@@ -70,7 +70,7 @@ export default function Playbooks() {
 
   const visiblePlaybooks = isStaff
     ? playbooks
-    : playbooks.filter(pb => pb.status === "published" && (isAthlete || pb.parent_visible) && myTeamIds.has(pb.team_id));
+    : playbooks.filter(pb => pb.status === "published" && pb.parent_visible && myTeamIds.has(pb.team_id));
 
   const handleDeletePlaybook = async (id) => {
     if (!confirm("Delete this playbook?")) return;
