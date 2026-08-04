@@ -288,14 +288,32 @@ export default function ParentPortal() {
     else alert("Unable to start checkout. Please try again or contact support.");
   };
 
-  // Eligibility: age >= 13 OR team name contains Junior High / JV / Varsity
-  const isEligibleForPromotion = (kid, team) => {
-    if (kid.date_of_birth) {
-      const age = Math.floor((new Date() - new Date(kid.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000));
-      if (age >= 13) return true;
-    }
-    const teamName = (team?.name || "").toLowerCase();
-    return ["junior high", "jv", "varsity"].some(kw => teamName.includes(kw));
+  // Eligibility: 13+ by date_of_birth ONLY. No team-name bypass — this app has
+  // real teams as young as 8u, so a misnamed team (e.g. containing "varsity")
+  // must never grant promotion eligibility to a younger athlete.
+  //
+  // This is purely a client-side "should I show the button" hint — the real
+  // enforcement happens server-side in the promoteAthlete function, which
+  // hard-rejects under-13 with no exceptions. calcAge() below must stay in
+  // exact sync with the server's age calculation so this hint is never more
+  // lenient (or stricter) than what the server will actually allow.
+  //
+  // If date_of_birth is missing entirely, do NOT show the button — there is
+  // nothing to fall back on.
+  const calcAge = (dobStr) => {
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const monthDiff = now.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age--;
+    return age;
+  };
+
+  const isEligibleForPromotion = (kid) => {
+    if (!kid.date_of_birth) return false;
+    const age = calcAge(kid.date_of_birth);
+    return age !== null && age >= 13;
   };
 
   const typeColors = {
@@ -568,7 +586,7 @@ export default function ParentPortal() {
                     </div>
                   )}
                   {!kid.is_promoted ? (
-                    isEligibleForPromotion(kid, teams.find(t => t.id === kid.team_id)) ? (
+                    isEligibleForPromotion(kid) ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); setPromotingPlayer(kid); }}
                         className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
@@ -577,7 +595,7 @@ export default function ParentPortal() {
                       </button>
                     ) : (
                       <p className="mt-3 text-xs text-muted-foreground text-center">
-                        Athlete accounts available at age 13 or for JV/Varsity athletes.
+                        Athlete accounts available at age 13 and up.
                       </p>
                     )
                   ) : (
