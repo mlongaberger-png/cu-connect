@@ -136,6 +136,7 @@ export default function InvoiceForm({ players, teamName, teamSportId, teamSportN
             player_name: player ? `${player.first_name} ${player.last_name}` : "",
             team_name: teamName,
             parent_email: player?.parent_email || "",
+            athlete_email: player?.athlete_email || "",
             paid_amount: 0,
           });
         })
