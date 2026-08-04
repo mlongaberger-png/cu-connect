@@ -142,9 +142,16 @@ export default function ParentPortal() {
     queryFn: () => base44.entities.Team.list(),
     staleTime: 60_000,
   });
+  // getEventsFiltered scopes events server-side (asServiceRole) to this
+  // parent's children's teams, same pattern as getMyPlayers/getPhotosFiltered,
+  // since RLS on Event can only role-gate (no relational join to team).
   const { data: events = [] } = useQuery({
-    queryKey: ["events"],
-    queryFn: () => base44.entities.Event.list("-date"),
+    queryKey: ["events-parent-portal", userEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getEventsFiltered", {});
+      return res.data?.events || [];
+    },
+    enabled: !!userEmail,
     staleTime: 60_000,
   });
 
