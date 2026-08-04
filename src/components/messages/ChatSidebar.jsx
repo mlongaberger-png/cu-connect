@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Hash, MessageSquare, Car, Crown, MessageSquarePlus, EyeOff, Eye, Trash2, Users, Newspaper } from "lucide-react";
-import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
+import { isToday, isYesterday, format } from "date-fns";
 import { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import MultiTeamSelect from "@/components/messages/MultiTeamSelect";
 import EmptyChannelState from "@/components/messages/EmptyChannelState";
