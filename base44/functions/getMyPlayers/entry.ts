@@ -54,7 +54,32 @@ Deno.serve(async (req) => {
 
     const merged = new Map();
     [...byParentEmail, ...byGuardianLink].forEach(p => merged.set(p.id, p));
-    const players = [...merged.values()];
+    let players = [...merged.values()];
+
+    // Attach each promoted athlete's current athlete_paused state from their
+    // own User record, so the parent-facing pause/unpause UI (AccountSettings)
+    // can show real current status rather than assuming "active". Parents
+    // cannot read another user's User record directly under normal RLS, so
+    // this uses asServiceRole here, gated by the guardian-ownership union
+    // already computed above (same trust boundary as the rest of this
+    // function).
+    const promotedEmails = [...new Set(
+      players.filter(p => p.is_promoted && p.athlete_email).map(p => p.athlete_email)
+    )];
+    if (promotedEmails.length > 0) {
+      const athleteUserLookups = await Promise.all(
+        promotedEmails.map(email => base44.asServiceRole.entities.User.filter({ email }))
+      );
+      const pausedByEmail = new Map();
+      athleteUserLookups.forEach((found) => {
+        if (found.length > 0) pausedByEmail.set(found[0].email, !!found[0].athlete_paused);
+      });
+      players = players.map(p => (
+        p.is_promoted && p.athlete_email
+          ? { ...p, athlete_paused: pausedByEmail.get(p.athlete_email) ?? false }
+          : p
+      ));
+    }
 
     console.log(`[getMyPlayers] user=${user.email} role=${role} players=${players.length}`);
     return Response.json({ players });
