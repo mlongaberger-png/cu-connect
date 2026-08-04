@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function PromoteAthleteModal({ player, currentUserEmail, onClose, onPromoted }) {
+// currentUserEmail is intentionally not used to attribute the promotion/consent
+// anymore — the server (promoteAthlete function) derives promoted_by /
+// consent_confirmed_by from the authenticated caller's own session, not a
+// client-supplied value. The prop is still accepted so existing callers don't
+// need to change, but it is unused here on purpose.
+export default function PromoteAthleteModal({ player, onClose, onPromoted }) {
   const [step, setStep] = useState("confirm"); // "confirm" | "email" | "done"
   const [athleteEmail, setAthleteEmail] = useState("");
   const [loading, setLoading] = useState(false);
