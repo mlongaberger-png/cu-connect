@@ -14,6 +14,10 @@
     "parent_email": {
       "type": "string"
     },
+    "athlete_email": {
+      "type": "string",
+      "description": "Email of the promoted athlete user account linked to this invoice's player (denormalized from Player.athlete_email, set when the player has been promoted)"
+    },
     "amount": {
       "type": "number",
       "description": "Total invoice amount in cents (after discounts/credits)"
@@ -172,6 +176,18 @@
         },
         {
           "data.parent_email": "{{user.email}}"
+        },
+        {
+          "$and": [
+            {
+              "data.athlete_email": "{{user.email}}"
+            },
+            {
+              "user_condition": {
+                "athlete_paused": false
+              }
+            }
+          ]
         }
       ]
     },
