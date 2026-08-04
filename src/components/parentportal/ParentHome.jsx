@@ -46,7 +46,17 @@ export default function ParentHome() {
     enabled: !!userEmail,
   });
   const { data: teams = [] } = useQuery({ queryKey: ["teams"], queryFn: () => base44.entities.Team.list() });
-  const { data: events = [] } = useQuery({ queryKey: ["events"], queryFn: () => base44.entities.Event.list("-date") });
+  // getEventsFiltered scopes events server-side (asServiceRole) to this
+  // parent's children's teams, same pattern as getMyPlayers above, since
+  // RLS on Event can only role-gate (no relational join to team).
+  const { data: events = [] } = useQuery({
+    queryKey: ["events-parent-home", userEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getEventsFiltered", {});
+      return res.data?.events || [];
+    },
+    enabled: !!userEmail,
+  });
   const { data: announcements = [] } = useQuery({ queryKey: ["announcements"], queryFn: () => base44.entities.Announcement.list("-created_date") });
   const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list() });
   const { data: allPayments = [] } = useQuery({
