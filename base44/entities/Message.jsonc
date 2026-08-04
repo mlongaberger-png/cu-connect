@@ -73,6 +73,11 @@
           "user_condition": {
             "role": "relative"
           }
+        },
+        {
+          "user_condition": {
+            "role": "athlete"
+          }
         }
       ]
     },
