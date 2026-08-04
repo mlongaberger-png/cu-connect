@@ -150,6 +150,7 @@ export default function InvoiceDrawer({ open, onClose, onSaved, defaultTeamId = 
           player_id: pid,
           player_name: player ? `${player.first_name} ${player.last_name}` : "",
           parent_email: player?.parent_email || "",
+          athlete_email: player?.athlete_email || "",
         });
       }));
     },
