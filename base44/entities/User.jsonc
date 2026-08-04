@@ -50,6 +50,11 @@
     "last_viewed_schedule": {
       "type": "string",
       "description": "ISO timestamp of when the user last viewed the schedule \u2014 used to calculate unread schedule alerts"
+    },
+    "athlete_paused": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, blocks a promoted athlete's login from accessing app data (parent-controlled kill switch). Only meaningful for role=athlete."
     }
   },
   "required": []
