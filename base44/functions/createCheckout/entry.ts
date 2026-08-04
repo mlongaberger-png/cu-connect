@@ -196,12 +196,23 @@ Deno.serve(async (req) => {
         )
       );
     } else {
-      // Legacy: create payment record
+      // Legacy: create payment record. Denormalize athlete_email from the linked Player,
+      // same as parent_email, so future invoices don't need backfilling.
+      let legacyAthleteEmail = '';
+      if (player_id) {
+        try {
+          const p = await base44.asServiceRole.entities.Player.get(player_id);
+          legacyAthleteEmail = p?.athlete_email || '';
+        } catch (e) {
+          console.error(`[createCheckout] Failed to fetch player ${player_id} for athlete_email denormalization:`, e.message);
+        }
+      }
       await base44.asServiceRole.entities.Payment.create({
         player_id,
         player_name,
         team_name,
         parent_email: user.email,
+        athlete_email: legacyAthleteEmail,
         amount,
         description,
         stripe_session_id: session.id,
