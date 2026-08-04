@@ -126,7 +126,11 @@ export default function AppShell() {
 
   // All authenticated users land on Portal; unknown/pending/user role → PendingAccess
   // "ad" is accepted as an alias for "athletic_director"
-  const KNOWN_ROLES = new Set(["admin", "coach", "athletic_director", "ad", "parent", "grandparent", "user"]);
+  // "athlete" = a promoted athlete's own login (see Player.athlete_email / PromoteAthleteModal).
+  // Athletes intentionally skip the AcceptInvite onboarding gate above — there is no
+  // profile-setup step defined for them — and land straight on /Portal. Nothing
+  // downstream reads user.setup_complete outside that gate, so skipping it is safe.
+  const KNOWN_ROLES = new Set(["admin", "coach", "athletic_director", "ad", "parent", "grandparent", "user", "athlete"]);
   const homeRoute = role && role !== "pending" && KNOWN_ROLES.has(role) ? "/Portal" : null;
 
   // Unknown / missing role → PendingAccess
