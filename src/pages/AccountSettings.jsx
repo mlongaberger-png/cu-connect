@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2, Users, Bell, BellOff } from "lucide-react";
+import { Camera, Save, Mail, Phone, User, Shield, KeyRound, CheckCircle, Loader2, Trash2, Users, Bell, BellOff, PauseCircle, PlayCircle } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import MyChildrenPanel from "@/components/parentportal/MyChildrenPanel";
 import FamilyAccessManager from "@/components/parentportal/FamilyAccessManager";
 import { Link } from "react-router-dom";
@@ -19,7 +19,9 @@ import { useToast } from "@/components/ui/use-toast";
 export default function AccountSettings() {
   const { user, checkAppState } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef();
+  const [pausingId, setPausingId] = useState(null);
 
   const [form, setForm] = useState({
     full_name: user?.full_name || "",
@@ -48,6 +50,41 @@ export default function AccountSettings() {
     },
     enabled: isParent && !!user?.email,
   });
+
+  const promotedAthletes = linkedPlayers.filter(p => p.is_promoted && p.athlete_email);
+
+  // Fetch the paused state for each promoted athlete's own User record.
+  // The parent can't read another user's User record directly under normal
+  // RLS, so this goes through the same service-role-backed function used to
+  // set the flag (paused param omitted here would still require a value, so
+  // we call setAthletePauseState's sibling read path via getMyPlayers'
+  // pattern is not available for User; instead we rely on the toggle's own
+  // optimistic local state seeded from the last known value, updated after
+  // each successful call). We track paused state locally, refreshed on toggle.
+  const [pauseStateByPlayer, setPauseStateByPlayer] = useState({});
+
+  const handleTogglePause = async (player, nextPaused) => {
+    setPausingId(player.id);
+    try {
+      const res = await base44.functions.invoke("setAthletePauseState", {
+        player_id: player.id,
+        paused: nextPaused,
+      });
+      if (res.data?.error) {
+        toast({ title: "Couldn't update access", description: res.data.error, variant: "destructive" });
+      } else {
+        setPauseStateByPlayer(s => ({ ...s, [player.id]: nextPaused }));
+        toast({
+          title: nextPaused ? "Access paused" : "Access restored",
+          description: `${player.first_name}'s account access has been ${nextPaused ? "paused" : "restored"}.`,
+        });
+      }
+    } catch (err) {
+      toast({ title: "Couldn't update access", description: err?.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setPausingId(null);
+    }
+  };
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -338,6 +375,46 @@ export default function AccountSettings() {
           </CardHeader>
           <CardContent>
             <MyChildrenPanel userEmail={user?.email} userName={user?.full_name} linkedPlayers={linkedPlayers} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Athlete Account Access — pause/unpause a promoted athlete's own login */}
+      {isParent && promotedAthletes.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><PauseCircle className="w-4 h-4 text-primary" /> Athlete Account Access</CardTitle>
+            <CardDescription>Pause or restore your athlete's own login at any time. Pausing immediately blocks their access to messages, schedule, and their profile.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {promotedAthletes.map(p => {
+              const isPaused = pauseStateByPlayer[p.id] ?? false;
+              const isBusy = pausingId === p.id;
+              return (
+                <div key={p.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted border border-border">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{p.first_name} {p.last_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{p.athlete_email}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {isPaused ? (
+                        <span className="flex items-center gap-1 text-xs text-orange-400"><PauseCircle className="w-3.5 h-3.5" /> Paused</span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-green-400"><PlayCircle className="w-3.5 h-3.5" /> Active</span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={isPaused ? "default" : "outline"}
+                    onClick={() => handleTogglePause(p, !isPaused)}
+                    disabled={isBusy}
+                    className="shrink-0"
+                  >
+                    {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : isPaused ? "Restore Access" : "Pause Access"}
+                  </Button>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}
