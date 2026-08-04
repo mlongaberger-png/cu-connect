@@ -11,6 +11,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  *   - Player.id in PlayerGuardian.player_id where PlayerGuardian.user_email == caller email
  *
  * - admin / athletic_director → all players
+ * - athlete → Player.athlete_email == caller email only (an athlete is not their
+ *   own guardian, so PlayerGuardian/parent_email must NOT be consulted here —
+ *   doing so would either return nothing or, worse, leak another player's record)
  * - everyone else → union of the two paths above (their own linked players)
  */
 Deno.serve(async (req) => {
@@ -24,6 +27,17 @@ Deno.serve(async (req) => {
     // Admins and ADs get everything
     if (role === 'admin' || role === 'athletic_director') {
       const players = await base44.asServiceRole.entities.Player.list('-created_date', 1000);
+      return Response.json({ players });
+    }
+
+    // Athletes: only the player record(s) linked to their own login via athlete_email.
+    // Intentionally does NOT fall through to the guardian branch below — an athlete
+    // is not a guardian of themselves, so that branch would return an empty result
+    // (or, if the athlete's email happened to also be a guardian link for a
+    // different player, would leak that other family's data).
+    if (role === 'athlete') {
+      const players = await base44.asServiceRole.entities.Player.filter({ athlete_email: user.email });
+      console.log(`[getMyPlayers] user=${user.email} role=${role} players=${players.length}`);
       return Response.json({ players });
     }
 
