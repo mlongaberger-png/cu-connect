@@ -18,6 +18,7 @@ export default function AthleteHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const userEmail = user?.email;
+  const [loadingPayFor, setLoadingPayFor] = useState(null);
 
   // Player RLS includes data.athlete_email == {{user.email}}, so this client-side
   // filter is already scoped server-side to this athlete's own record only —
@@ -60,6 +61,25 @@ export default function AthleteHome() {
   const myAnnouncements = announcements.filter(a =>
     a.target === "org" || a.target_id === player?.team_id || a.target_id === team?.sport_id
   );
+
+  // Athletes can view and pay their own invoices, scoped strictly to their own player
+  // record. Payment RLS (data.athlete_email == {{user.email}} AND athlete_paused == false)
+  // already scopes PlayerPaymentCard's internal Payment.filter query server-side, and
+  // createCheckout re-verifies ownership + pause state fresh on the server before charging.
+  const handlePay = async (p, unpaidInvoices) => {
+    const isIframe = window.self !== window.top;
+    if (isIframe) { alert("Payments can only be processed from the published app."); return; }
+    setLoadingPayFor(p.id);
+    const res = await base44.functions.invoke("createCheckout", {
+      invoice_ids: unpaidInvoices.map(i => i.id),
+      player_id: p.id,
+      player_name: `${p.first_name} ${p.last_name}`,
+      team_name: p.team_name,
+    });
+    setLoadingPayFor(null);
+    if (res.data?.url) window.location.href = res.data.url;
+    else alert("Unable to start checkout. Please try again or contact support.");
+  };
 
   const { data: attendanceRequests = [] } = useQuery({
     queryKey: ["attendance-requests-athlete-home", player?.team_id],
@@ -125,15 +145,18 @@ export default function AthleteHome() {
         <AthleteCard player={player} team={team} sport={sport} canEdit={true} />
       </section>
 
-      {/* 4. Upcoming Events */}
+      {/* 4. Payments */}
+      <PlayerPaymentCard player={player} onPay={handlePay} loadingFor={loadingPayFor} />
+
+      {/* 5. Upcoming Events */}
       <UpcomingEvents events={myUpcoming} />
 
-      {/* 5. Announcements */}
+      {/* 6. Announcements */}
       {myAnnouncements.length > 0 && (
         <RecentAnnouncements announcements={myAnnouncements} />
       )}
 
-      {/* 6. Messages CTA */}
+      {/* 7. Messages CTA */}
       <section
         className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
         onClick={() => navigate("/Messages")}
