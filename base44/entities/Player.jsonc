@@ -86,6 +86,14 @@
     "promoted_by": {
       "type": "string",
       "description": "Email of parent or admin who initiated promotion"
+    },
+    "consent_confirmed_at": {
+      "type": "string",
+      "description": "ISO timestamp of when the guardian confirmed consent for athlete account promotion"
+    },
+    "consent_confirmed_by": {
+      "type": "string",
+      "description": "Email of the guardian who confirmed consent for athlete account promotion"
     }
   },
   "required": [
@@ -134,7 +142,16 @@
           "data.parent_email": "{{user.email}}"
         },
         {
-          "data.athlete_email": "{{user.email}}"
+          "$and": [
+            {
+              "data.athlete_email": "{{user.email}}"
+            },
+            {
+              "user_condition": {
+                "athlete_paused": false
+              }
+            }
+          ]
         }
       ]
     },
