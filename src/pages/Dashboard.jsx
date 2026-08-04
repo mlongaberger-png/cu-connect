@@ -2,6 +2,7 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import ParentHome from "@/components/parentportal/ParentHome";
+import AthleteHome from "@/components/parentportal/AthleteHome";
 import { Trophy, Users, Calendar, UserCircle, ClipboardList, DollarSign } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const role = user?.role;
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const isParent = role === "parent" || role === "user" || role === "grandparent";
+  const isAthlete = role === "athlete";
 
   // All hooks must be called unconditionally
   const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list(), staleTime: DASHBOARD_STALE_MS });
@@ -28,6 +30,9 @@ export default function Dashboard() {
 
   // Parents get the dedicated home dashboard
   if (isParent) return <ParentHome />;
+
+  // Athletes get their own single-player home dashboard (never other families' data)
+  if (isAthlete) return <AthleteHome />;
 
   // Staff dashboard
   const upcomingEvents = events
