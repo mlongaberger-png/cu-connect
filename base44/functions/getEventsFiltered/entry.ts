@@ -5,6 +5,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  *
  * - admin / athletic_director → all events
  * - coach → events where team_id matches their CoachProfile team_id
+ * - athlete → events where team_id is in their own team(s), via Player.athlete_email
  * - parent / user → events where team_id is in their children's teams (via PlayerGuardian)
  */
 Deno.serve(async (req) => {
@@ -29,6 +30,23 @@ Deno.serve(async (req) => {
 
       const allEvents = await base44.asServiceRole.entities.Event.list('-date', 500);
       const events = allEvents.filter(e => teamIds.includes(e.team_id));
+      return Response.json({ events });
+    }
+
+    // Athletes: scope to their own team(s) via Player.athlete_email. Intentionally
+    // does NOT fall through to the guardian branch below — an athlete is not a
+    // guardian of themselves, so that branch would return zero events instead of
+    // their own team's schedule.
+    if (role === 'athlete') {
+      const myPlayers = await base44.asServiceRole.entities.Player.filter({ athlete_email: user.email });
+      const teamIds = [...new Set(myPlayers.map(p => p.team_id).filter(Boolean))];
+      if (teamIds.length === 0) return Response.json({ events: [] });
+
+      const allEvents = await base44.asServiceRole.entities.Event.list('-date', 500);
+      // Athletes see their own team's events plus org-wide events (null/empty team_id)
+      const events = allEvents.filter(e => !e.team_id || teamIds.includes(e.team_id));
+
+      console.log(`[getEventsFiltered] user=${user.email} role=${role} teams=${teamIds.length} events=${events.length}`);
       return Response.json({ events });
     }
 
