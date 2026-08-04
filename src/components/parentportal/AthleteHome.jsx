@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { UserCircle, MessageSquare, ChevronRight, Megaphone } from "lucide-react";
+import { UserCircle, MessageSquare, ChevronRight, BookOpen } from "lucide-react";
 import AthleteCard from "@/components/parentportal/AthleteCard";
 import PushNotificationBanner from "@/components/notifications/PushNotificationBanner";
 import FieldStatusBanner from "@/components/parentportal/FieldStatusBanner";
@@ -156,7 +156,7 @@ export default function AthleteHome() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center">
-              <Megaphone className="w-4 h-4 text-muted-foreground" />
+              <BookOpen className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-sm font-semibold text-foreground">Playbooks &amp; Film</p>
           </div>
