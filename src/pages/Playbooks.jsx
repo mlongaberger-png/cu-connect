@@ -19,6 +19,7 @@ export default function Playbooks() {
   const role = user?.role;
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const isParent = role === "parent" || role === "user";
+  const isAthlete = role === "athlete";
 
   const [editingPlaybook, setEditingPlaybook] = useState(null);
   const [uploadingPlaybook, setUploadingPlaybook] = useState(false);
@@ -48,17 +49,28 @@ export default function Playbooks() {
     enabled: isParent && !!user?.email,
   });
 
+  // For athletes: resolve their own player via athlete_email (NOT PlayerGuardian,
+  // which only links parents/guardians — an athlete is not their own guardian).
+  // Player RLS scopes this to the athlete's own record only.
+  const { data: myAthletePlayers = [] } = useQuery({
+    queryKey: ["my-player-playbooks", user?.email],
+    queryFn: () => base44.entities.Player.filter({ athlete_email: user?.email }),
+    enabled: isAthlete && !!user?.email,
+  });
+
   const myKids = isParent
     ? allPlayers.filter(p => {
         const linkedIds = new Set(guardianLinks.map(g => g.player_id));
         return linkedIds.has(p.id) || p.parent_email === user?.email;
       })
+    : isAthlete
+    ? myAthletePlayers
     : [];
   const myTeamIds = new Set(myKids.map(k => k.team_id));
 
   const visiblePlaybooks = isStaff
     ? playbooks
-    : playbooks.filter(pb => pb.status === "published" && pb.parent_visible && myTeamIds.has(pb.team_id));
+    : playbooks.filter(pb => pb.status === "published" && (isAthlete || pb.parent_visible) && myTeamIds.has(pb.team_id));
 
   const handleDeletePlaybook = async (id) => {
     if (!confirm("Delete this playbook?")) return;
