@@ -82,9 +82,15 @@ export default function NotificationBell() {
 
       const isStaff = user.role === "admin" || user.role === "coach" || user.role === "athletic_director";
 
+      // getEventsFiltered scopes events server-side (asServiceRole) to the
+      // caller's teams (or all events for staff), same pattern as
+      // getMyPlayers above, since RLS on Event can only role-gate (no
+      // relational join to team).
       const [announcements, events] = await Promise.all([
         base44.entities.Announcement.list("-created_date", 30),
-        base44.entities.Event.list("-date", 20),
+        isStaff
+          ? base44.entities.Event.list("-date", 20)
+          : base44.functions.invoke("getEventsFiltered", {}).then(res => (res.data?.events || []).slice(0, 20)),
       ]);
 
       const now = new Date();
