@@ -90,6 +90,12 @@ export default function ChatSidebar({ activeChannelId }) {
 
   // Parent role check — parents/grandparents/relatives only see channels for their athletes' teams
   const isParentRole = !!currentUser && ['parent', 'grandparent', 'relative'].includes(currentUser.role);
+  // Athlete role check — an athlete only sees channels for their own team(s), scoped
+  // via Player.athlete_email. Never mixed into the guardian path above: an athlete
+  // is not their own guardian, and PlayerGuardian would return no links for them,
+  // which (if relied on alone) would silently leak nothing OR — if this branch were
+  // skipped entirely — fall through to showing every team's channels org-wide.
+  const isAthleteRole = !!currentUser && currentUser.role === 'athlete';
 
   // Fetch guardian links to discover which players (and thus teams) this parent can access
   const { data: myGuardians = [] } = useQuery({
@@ -107,12 +113,25 @@ export default function ChatSidebar({ activeChannelId }) {
     enabled: isParentRole && guardianPlayerIds.length > 0,
   });
 
-  const allowedTeamIds = new Set(
-    myPlayers
+  // Fetch the athlete's own player record(s) directly via athlete_email. Player RLS
+  // (data.athlete_email == {{user.email}}) scopes this so it can only ever return
+  // this athlete's own record(s), never another family's.
+  const { data: myAthletePlayers = [] } = useQuery({
+    queryKey: ["my-players-by-athlete-email", currentUser?.email],
+    queryFn: () => base44.entities.Player.filter({ athlete_email: currentUser.email }),
+    enabled: isAthleteRole,
+  });
+
+  // Non-staff, non-admin roles whose channel visibility is scoped to their own team(s)
+  const isScopedRole = isParentRole || isAthleteRole;
+
+  const allowedTeamIds = new Set([
+    ...myPlayers
       .filter(p => guardianPlayerIds.includes(p.id))
       .map(p => p.team_id)
-      .filter(Boolean)
-  );
+      .filter(Boolean),
+    ...myAthletePlayers.map(p => p.team_id).filter(Boolean),
+  ]);
 
   // Only count unreads for channels that actually exist and are visible
   const visibleChannelIds = new Set(allChannels.map(ch => ch.id));
@@ -155,7 +174,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const userEmail = currentUser?.email;
   const teamChannels = allChannels.filter(ch => {
     if (ch.type !== "team") return false;
-    if (isParentRole && !allowedTeamIds.has(ch.team_id)) return false;
+    if (isScopedRole && !allowedTeamIds.has(ch.team_id)) return false;
     return true;
   });
   const directChannels = allChannels.filter(ch => {
@@ -168,7 +187,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const carpoolChannels = allChannels.filter(ch => ch.type === "carpool");
   const announceChannels = allChannels.filter(ch => {
     if (ch.type !== "announcement") return false;
-    if (isParentRole && !allowedTeamIds.has(ch.team_id)) return false;
+    if (isScopedRole && !allowedTeamIds.has(ch.team_id)) return false;
     return true;
   });
 
@@ -346,7 +365,7 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="flex-1">
           <TabsContent value="teams" className="m-0 space-y-1">
             {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <EmptyChannelState icon={Users} message={isParentRole ? "No team channels found for your athletes" : "No team channels yet"} />
+              <EmptyChannelState icon={Users} message={isScopedRole ? "No team channels found for your athletes" : "No team channels yet"} />
             ) : (
               teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
@@ -386,7 +405,7 @@ export default function ChatSidebar({ activeChannelId }) {
 
           <TabsContent value="announce" className="m-0 space-y-1">
             {announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
-              <EmptyChannelState icon={Newspaper} message={isParentRole ? "No news posts for your athletes' teams" : "No news posts yet"} />
+              <EmptyChannelState icon={Newspaper} message={isScopedRole ? "No news posts for your athletes' teams" : "No news posts yet"} />
             ) : (
               announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
