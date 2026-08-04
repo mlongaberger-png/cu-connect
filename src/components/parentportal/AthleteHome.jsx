@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -10,6 +10,7 @@ import FieldStatusBanner from "@/components/parentportal/FieldStatusBanner";
 import UpcomingEvents from "@/components/dashboard/UpcomingEvents";
 import RecentAnnouncements from "@/components/dashboard/RecentAnnouncements";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
+import { PlayerPaymentCard } from "@/components/parentportal/PlayerPayments";
 
 // Athlete-facing equivalent of ParentHome, scoped to the athlete's own single
 // player record rather than a parent's (possibly multiple) linked children.
