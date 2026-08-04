@@ -90,7 +90,7 @@ export default function NotificationBell() {
         base44.entities.Announcement.list("-created_date", 30),
         isStaff
           ? base44.entities.Event.list("-date", 20)
-          : base44.functions.invoke("getEventsFiltered", {}).then(res => (res.data?.events || []).slice(0, 20)),
+          : base44.functions.invoke("getEventsFiltered", {}).then(evRes => (evRes.data?.events || []).slice(0, 20)),
       ]);
 
       const now = new Date();
