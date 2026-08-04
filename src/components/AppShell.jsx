@@ -25,6 +25,7 @@ import LegalPages from "@/pages/LegalPages";
 import ParentSignup from "@/pages/ParentSignup";
 import Welcome from "@/pages/Welcome";
 import PendingAccess from "@/pages/PendingAccess";
+import AthletePaused from "@/pages/AthletePaused";
 import AcceptInvite from "@/pages/AcceptInvite";
 import AccountSettings from "@/pages/AccountSettings";
 import Gallery from "@/pages/Gallery";
@@ -138,6 +139,19 @@ export default function AppShell() {
     return (
       <Routes>
         <Route path="*" element={<PendingAccess />} />
+      </Routes>
+    );
+  }
+
+  // Paused athlete login (parent-controlled kill switch, User.athlete_paused) →
+  // block all routes and show a clear "Access Paused" state instead of /Portal.
+  // This is a client-side convenience only — the real enforcement is server-side
+  // RLS on Player/Message (athlete_paused: false AND-condition), so a paused
+  // athlete's data access is cut off even if this check is bypassed.
+  if (role === "athlete" && user?.athlete_paused) {
+    return (
+      <Routes>
+        <Route path="*" element={<AthletePaused />} />
       </Routes>
     );
   }
