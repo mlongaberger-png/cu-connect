@@ -132,6 +132,9 @@
         },
         {
           "data.parent_email": "{{user.email}}"
+        },
+        {
+          "data.athlete_email": "{{user.email}}"
         }
       ]
     },
