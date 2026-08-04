@@ -10,31 +10,57 @@ export default function PromoteAthleteModal({ player, currentUserEmail, onClose,
   const [athleteEmail, setAthleteEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Captured the moment "I Agree – Continue" is clicked. This is what actually
+  // gets sent to the server as consent_agreed: true — the server refuses to
+  // promote without it and stamps consent_confirmed_at/by itself when it
+  // processes the request. Agreeing is a real action wired to the server call,
+  // not just a UI step transition.
+  const [consentAgreed, setConsentAgreed] = useState(false);
 
   const playerName = `${player.first_name} ${player.last_name}`;
+
+  const handleAgree = () => {
+    setConsentAgreed(true);
+    setStep("email");
+  };
 
   const handlePromote = async () => {
     if (!athleteEmail.trim() || !athleteEmail.includes("@")) {
       setError("Please enter a valid email address.");
       return;
     }
+    if (!consentAgreed) {
+      // Shouldn't be reachable via the UI flow, but guard anyway since this
+      // flag is what the server requires to record consent.
+      setStep("confirm");
+      return;
+    }
     setError("");
     setLoading(true);
 
-    // Invite the athlete as a user with role "athlete"
-    await base44.users.inviteUser(athleteEmail.trim(), "athlete");
+    try {
+      const res = await base44.functions.invoke("promoteAthlete", {
+        player_id: player.id,
+        athlete_email: athleteEmail.trim(),
+        consent_agreed: true,
+      });
 
-    // Update the player record to reflect promotion
-    await base44.entities.Player.update(player.id, {
-      athlete_email: athleteEmail.trim(),
-      is_promoted: true,
-      promoted_at: new Date().toISOString(),
-      promoted_by: currentUserEmail,
-    });
+      if (res.data?.error) {
+        setError(res.data.error);
+        setLoading(false);
+        return;
+      }
 
-    setLoading(false);
-    setStep("done");
-    onPromoted?.();
+      setLoading(false);
+      setStep("done");
+      onPromoted?.();
+    } catch (err) {
+      setLoading(false);
+      // Surface the server's rejection reason (age, duplicate email, not a
+      // guardian, etc.) rather than a generic failure.
+      const serverMessage = err?.response?.data?.error || err?.message || "Something went wrong. Please try again.";
+      setError(serverMessage);
+    }
   };
 
   return (
@@ -68,16 +94,18 @@ export default function PromoteAthleteModal({ player, currentUserEmail, onClose,
                   <li>The athlete will receive a login invitation via email</li>
                   <li>They will gain access to film, schedule, messages, and playbooks</li>
                   <li>You will retain full access to documents and payments</li>
+                  <li>You can pause their access at any time from Account Settings</li>
                   <li>This action can be reversed by an admin if needed</li>
                 </ul>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              By proceeding, you confirm that <span className="font-semibold text-foreground">{playerName}</span> is ready for their own account and you have their consent to create one.
+              By proceeding, you confirm that <span className="font-semibold text-foreground">{playerName}</span> is ready for their own account and you have their consent to create one. This confirmation is recorded.
             </p>
+            {error && <p className="text-xs text-red-400">{error}</p>}
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose} className="flex-1 border-border">Cancel</Button>
-              <Button onClick={() => setStep("email")} className="flex-1 bg-primary text-primary-foreground">
+              <Button onClick={handleAgree} className="flex-1 bg-primary text-primary-foreground">
                 I Agree – Continue
               </Button>
             </div>
@@ -132,7 +160,7 @@ export default function PromoteAthleteModal({ player, currentUserEmail, onClose,
               </p>
             </div>
             <p className="text-xs text-muted-foreground bg-surface rounded-xl p-3">
-              You still have full access to {player.first_name}'s documents, payments, and team information.
+              You still have full access to {player.first_name}'s documents, payments, and team information. You can pause {player.first_name}'s access anytime from Account Settings.
             </p>
             <Button onClick={onClose} className="w-full bg-primary text-primary-foreground">Done</Button>
           </div>
