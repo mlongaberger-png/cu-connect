@@ -27,6 +27,7 @@ import Welcome from "@/pages/Welcome";
 import PendingAccess from "@/pages/PendingAccess";
 import AthletePaused from "@/pages/AthletePaused";
 import AcceptInvite from "@/pages/AcceptInvite";
+import AthleteRulesNotice from "@/pages/AthleteRulesNotice";
 import AccountSettings from "@/pages/AccountSettings";
 import Gallery from "@/pages/Gallery";
 import PracticePlans from "@/pages/PracticePlans";
@@ -129,8 +130,18 @@ export default function AppShell() {
   // "ad" is accepted as an alias for "athletic_director"
   // "athlete" = a promoted athlete's own login (see Player.athlete_email / PromoteAthleteModal).
   // Athletes intentionally skip the AcceptInvite onboarding gate above — there is no
-  // profile-setup step defined for them — and land straight on /Portal. Nothing
-  // downstream reads user.setup_complete outside that gate, so skipping it is safe.
+  // profile-setup step defined for them. Instead, a first-time promoted athlete sees
+  // a one-time Player Guidelines/monitoring notice (not a form) before landing on
+  // /Portal. Nothing downstream reads user.setup_complete outside the AcceptInvite
+  // gate, so skipping that gate for athletes is safe.
+  if (currentPath !== "/AthleteRules" && role === "athlete" && !user?.athlete_rules_ack_at) {
+    return (
+      <Routes>
+        <Route path="*" element={<AthleteRulesNotice />} />
+      </Routes>
+    );
+  }
+
   const KNOWN_ROLES = new Set(["admin", "coach", "athletic_director", "ad", "parent", "grandparent", "user", "athlete"]);
   const homeRoute = role && role !== "pending" && KNOWN_ROLES.has(role) ? "/Portal" : null;
 
@@ -179,6 +190,7 @@ export default function AppShell() {
         <Route path="/Messages" element={<MessagesLayout />} />
         <Route path="/sports-directory" element={<ParentSportsRegister />} />
         <Route path="/Register" element={<Register />} />
+        <Route path="/AthleteRules" element={<AthleteRulesNotice />} />
 
         {/* ── Staff-only routes — redirects non-staff to /Portal ── */}
         <Route element={<StaffRoute />}>
