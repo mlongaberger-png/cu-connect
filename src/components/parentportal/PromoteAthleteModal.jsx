@@ -24,6 +24,25 @@ export default function PromoteAthleteModal({ player, onClose, onPromoted }) {
 
   const playerName = `${player.first_name} ${player.last_name}`;
 
+  // Mirrors the server's calcAge() (promoteAthlete function) exactly, so this
+  // display is never more lenient than what the server will actually allow.
+  // The parent-portal card that opens this modal already gates on the same
+  // 13+ check before showing the "Promote" button, but we restate it here
+  // since this modal is the actual point of formal consent (and is also
+  // reachable by staff promoting on a guardian's behalf, who may not have
+  // seen the card-level messaging).
+  const calcAge = (dobStr) => {
+    if (!dobStr) return null;
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const monthDiff = now.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age--;
+    return age;
+  };
+  const athleteAge = calcAge(player.date_of_birth);
+
   const handleAgree = () => {
     setConsentAgreed(true);
     setStep("email");
@@ -96,10 +115,18 @@ export default function PromoteAthleteModal({ player, onClose, onPromoted }) {
               <div className="text-sm text-foreground space-y-1">
                 <p className="font-semibold">Before you continue</p>
                 <ul className="text-xs text-muted-foreground list-disc pl-3 space-y-1">
+                  <li>
+                    {athleteAge != null ? (
+                      <>Verified age: <span className="font-medium text-foreground">{athleteAge}</span> — athlete accounts require 13+, with no exceptions for team or age group</>
+                    ) : (
+                      <>Athlete accounts require the athlete to be 13 or older — no exceptions for team or age group</>
+                    )}
+                  </li>
                   <li>The athlete will receive a login invitation via email</li>
                   <li>They will gain access to film, schedule, messages, and playbooks</li>
                   <li>You will retain full access to documents and payments</li>
                   <li>You can pause their access at any time from Account Settings</li>
+                  <li>This is a one-time action — the email you use can't already belong to another account</li>
                   <li>This action can be reversed by an admin if needed</li>
                 </ul>
               </div>
