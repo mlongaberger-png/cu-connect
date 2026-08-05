@@ -1,7 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
-// Called when a user with "user" role logs in.
-// If they have PlayerGuardian links, upgrade them to "parent" automatically.
+// Called when a user with "user" or "pending" role logs in — the safety net
+// for the entity-created automations (onUserCreated), which can occasionally
+// run before the signal they key off of (a PlayerGuardian link, or a
+// Player.athlete_email stamp) exists yet. This re-checks on every login until
+// the account lands on a real role, so a missed automation self-heals the
+// next time the person signs in instead of staying stuck.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,6 +15,16 @@ Deno.serve(async (req) => {
     // Only act on 'user' or 'pending' roles — these are the pre-approval states
     if (user.role !== 'user' && user.role !== 'pending') {
       return Response.json({ upgraded: false, role: user.role });
+    }
+
+    // Check for a Player this email was promoted as the athlete login for.
+    // Checked first — it's the more specific signal, and an athlete is never
+    // also their own guardian, so there's no ambiguity to resolve here.
+    const athletePlayers = await base44.asServiceRole.entities.Player.filter({ athlete_email: user.email });
+    if (athletePlayers.length > 0) {
+      await base44.asServiceRole.entities.User.update(user.id, { role: 'athlete' });
+      console.log(`Auto-upgraded ${user.email} from "${user.role}" → "athlete" (matched Player.athlete_email)`);
+      return Response.json({ upgraded: true, role: 'athlete' });
     }
 
     // Check for guardian links
