@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ShieldCheck, MessageSquareWarning, Eye, Ban, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -38,7 +38,6 @@ const RULES = [
 export default function AthleteRulesNotice() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [saving, setSaving] = useState(false);
 
   // Reached either as the forced first-time gate (AppShell redirects here
