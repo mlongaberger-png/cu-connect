@@ -57,11 +57,24 @@ const grandparentNavItems = [
   { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["grandparent"] },
 ];
 
+// A promoted athlete's own login. Deliberately narrower than parentNavItems —
+// /ParentPortal and /ParentCalendar are keyed off PlayerGuardian links, which
+// an athlete (not their own guardian) will never have, and /sports-directory
+// is for registering additional children. "Player Guidelines" re-opens the
+// one-time rules/monitoring notice (see AthleteRulesNotice.jsx) at any time.
+const athleteNavItems = [
+  { path: "/Portal", label: "Dashboard", icon: LayoutDashboard, roles: ["athlete"] },
+  { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["athlete"] },
+  { path: "/Gallery", label: "Gallery", icon: Image, roles: ["athlete"] },
+  { path: "/AthleteRules", label: "Player Guidelines", icon: ShieldCheck, roles: ["athlete"] },
+];
+
 // flat list for backward compat
 const allNavItems = [
   ...staffNavGroups.flatMap(g => g.items),
   ...parentNavItems,
   ...grandparentNavItems,
+  ...athleteNavItems,
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
