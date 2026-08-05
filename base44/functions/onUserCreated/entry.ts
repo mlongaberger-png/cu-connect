@@ -12,10 +12,19 @@ Deno.serve(async (req) => {
     const userId = data?.id;
     if (!userEmail || !userId) return Response.json({ ok: true });
 
+    // Check for a Player this email was promoted as the athlete login for
+    // (promoteAthlete stamps Player.athlete_email at invite time, before the
+    // athlete ever signs up) — checked first since it's the most specific
+    // signal and should win over any coincidental guardian link.
+    const athletePlayers = await base44.asServiceRole.entities.Player.filter({ athlete_email: userEmail });
+
     // Check for PlayerGuardian records matching this email
     const guardianLinks = await base44.asServiceRole.entities.PlayerGuardian.filter({ user_email: userEmail });
 
-    if (guardianLinks.length > 0) {
+    if (athletePlayers.length > 0) {
+      await base44.asServiceRole.entities.User.update(userId, { role: 'athlete' });
+      console.log(`Auto-set role=athlete for new user ${userEmail} (matched Player.athlete_email)`);
+    } else if (guardianLinks.length > 0) {
       await base44.asServiceRole.entities.User.update(userId, { role: 'parent' });
       console.log(`Auto-set role=parent for new user ${userEmail} (${guardianLinks.length} guardian link(s))`);
 
