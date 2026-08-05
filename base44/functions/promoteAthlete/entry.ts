@@ -130,19 +130,11 @@ Deno.serve(async (req) => {
     // ── Perform promotion ──────────────────────────────────────────────────
     const nowIso = new Date().toISOString();
 
-    try {
-      // Base44's platform-level invite only accepts workspace roles 'user' or
-      // 'admin' — 'athlete' is a CU Connect app-level role, not a valid value
-      // here, and passing it throws client-side before any request is even
-      // sent (this was the root cause of promotion silently never firing).
-      // The app-level role is set separately by onUserCreated once the
-      // invited user actually signs up, by matching Player.athlete_email.
-      await base44.users.inviteUser(normalizedEmail, 'user');
-    } catch (inviteErr) {
-      await logAudit(authUser.id, authUser.email, 'denied', `promote_athlete:invite_failed:player=${player_id}`);
-      return Response.json({ error: `Could not send invitation: ${inviteErr.message}` }, { status: 500 });
-    }
-
+    // Stamp Player.athlete_email BEFORE sending the invite. onUserCreated (the
+    // automation that assigns role='athlete' to the new login) matches on this
+    // field the moment the invited User record is created — which can happen
+    // as an immediate side effect of inviteUser() below. Stamping first closes
+    // that race so the automation always sees the match, however soon it fires.
     await base44.asServiceRole.entities.Player.update(player_id, {
       athlete_email: normalizedEmail,
       is_promoted: true,
@@ -151,6 +143,33 @@ Deno.serve(async (req) => {
       consent_confirmed_at: nowIso,
       consent_confirmed_by: authUser.email,
     });
+
+    try {
+      // Base44's platform-level invite only accepts workspace roles 'user' or
+      // 'admin' — 'athlete' is a CU Connect app-level role, not a valid value
+      // here, and passing it throws client-side before any request is even
+      // sent (this was the root cause of promotion silently never firing).
+      // The app-level role is set separately by onUserCreated once the
+      // invited user actually signs up, by matching Player.athlete_email.
+      //
+      // Third arg is the post-signup redirect path. Athletes have no
+      // AcceptInvite-style profile step (see AppShell.jsx), so send them
+      // straight into the app instead of the generic /welcome landing page.
+      await base44.users.inviteUser(normalizedEmail, 'user', '/Portal');
+    } catch (inviteErr) {
+      await logAudit(authUser.id, authUser.email, 'denied', `promote_athlete:invite_failed:player=${player_id}`);
+      // Roll back the stamp so a failed invite doesn't leave the player
+      // permanently marked promoted with no account able to claim it.
+      await base44.asServiceRole.entities.Player.update(player_id, {
+        athlete_email: null,
+        is_promoted: false,
+        promoted_at: null,
+        promoted_by: null,
+        consent_confirmed_at: null,
+        consent_confirmed_by: null,
+      }).catch(() => {});
+      return Response.json({ error: `Could not send invitation: ${inviteErr.message}` }, { status: 500 });
+    }
 
     await logAudit(
       authUser.id,
