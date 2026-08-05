@@ -131,7 +131,13 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
 
     try {
-      await base44.users.inviteUser(normalizedEmail, 'athlete');
+      // Base44's platform-level invite only accepts workspace roles 'user' or
+      // 'admin' — 'athlete' is a CU Connect app-level role, not a valid value
+      // here, and passing it throws client-side before any request is even
+      // sent (this was the root cause of promotion silently never firing).
+      // The app-level role is set separately by onUserCreated once the
+      // invited user actually signs up, by matching Player.athlete_email.
+      await base44.users.inviteUser(normalizedEmail, 'user');
     } catch (inviteErr) {
       await logAudit(authUser.id, authUser.email, 'denied', `promote_athlete:invite_failed:player=${player_id}`);
       return Response.json({ error: `Could not send invitation: ${inviteErr.message}` }, { status: 500 });
