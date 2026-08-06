@@ -64,20 +64,37 @@ export default function InviteFamilyMember({ player, currentUserEmail, onClose, 
     setSending(true);
     setError(null);
 
-    await base44.entities.PlayerGuardian.create({
-      player_id: player.id,
-      player_name: `${player.first_name} ${player.last_name}`,
-      user_email: trimmed,
-      invited_by: currentUserEmail,
-      relationship,
-      permissions,
-    });
+    try {
+      // Routed through a dedicated backend function (asServiceRole) rather than
+      // a direct client-side PlayerGuardian.create() call — that create's own
+      // RLS requires data.user_email to match the CALLER's email, which can
+      // never be true here since the caller is inviting someone else's email.
+      // This silently failed for every non-staff parent (see project notes),
+      // leaving "Sending..." stuck forever since nothing after the throwing
+      // line ever ran. inviteFamilyMember re-checks server-side that the
+      // caller already has access to this player before granting someone
+      // else access to it, then creates the link and sends the invite.
+      const res = await base44.functions.invoke("inviteFamilyMember", {
+        email: trimmed,
+        player_id: player.id,
+        player_name: `${player.first_name} ${player.last_name}`,
+        relationship,
+        permissions,
+      });
 
-    await base44.functions.invoke("inviteParent", { email: trimmed });
+      if (res.data?.error) {
+        setError(res.data.error);
+        return;
+      }
 
-    queryClient.invalidateQueries({ queryKey: ["guardians", player.id] });
-    setSending(false);
-    setStep("success");
+      queryClient.invalidateQueries({ queryKey: ["guardians", player.id] });
+      setStep("success");
+    } catch (err) {
+      const serverMessage = err?.response?.data?.error || err?.message || "Failed to send invite. Please try again.";
+      setError(serverMessage);
+    } finally {
+      setSending(false);
+    }
   };
 
   // Auto-close success screen after 3 seconds
