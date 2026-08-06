@@ -21,14 +21,19 @@ export default function ParentCalendar() {
   const [showExport, setShowExport] = useState(false);
   const [filterTeam, setFilterTeam] = useState("all");
 
-  const { data: guardianLinks = [] } = useQuery({
-    queryKey: ["my-guardian-links", userEmail],
-    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
+  // Fetch this parent's linked players via getMyPlayers (asServiceRole union of
+  // Player.parent_email match + PlayerGuardian links) instead of a raw
+  // Player.list() call — RLS on Player can't join to PlayerGuardian, so a plain
+  // client query silently misses any guardian linked only via PlayerGuardian
+  // (e.g. a co-parent/family member added through "Invite Family" whose email
+  // never matches Player.parent_email). Same bug/fix as ChatSidebar.jsx.
+  const { data: myKids = [] } = useQuery({
+    queryKey: ["my-players-calendar", userEmail],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
     enabled: !!userEmail,
-  });
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ["all-players-for-parent"],
-    queryFn: () => base44.entities.Player.list(),
   });
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
@@ -53,8 +58,6 @@ export default function ParentCalendar() {
     enabled: myAssignments.length > 0,
   });
 
-  const myLinkedPlayerIds = new Set(guardianLinks.map(g => g.player_id));
-  const myKids = allPlayers.filter(p => myLinkedPlayerIds.has(p.id) || p.parent_email === userEmail);
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
   const myEvents = events
