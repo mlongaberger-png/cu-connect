@@ -6,6 +6,8 @@ import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
+import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const DOC_TYPES = [
   { value: "birth_certificate", label: "Birth Certificate" },
@@ -18,6 +20,8 @@ const DOC_TYPES = [
 
 export default function PlayerDocuments({ player }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -36,19 +40,35 @@ export default function PlayerDocuments({ player }) {
     const file = e.target.files[0];
     if (!file || !docType) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.PlayerDocument.create({
-      player_id: player.id,
-      player_name: `${player.first_name} ${player.last_name}`,
-      team_name: player.team_name,
-      doc_type: docType,
-      file_url,
-      file_name: file.name,
-    });
-    qc.invalidateQueries({ queryKey: ["player-docs", player.id] });
-    setUploading(false);
-    setDocType("");
-    e.target.value = "";
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.PlayerDocument.create({
+        player_id: player.id,
+        player_name: `${player.first_name} ${player.last_name}`,
+        team_name: player.team_name,
+        doc_type: docType,
+        file_url,
+        file_name: file.name,
+        // Required by PlayerDocument's create RLS (data.uploaded_by == caller's email) —
+        // omitting this made every single upload silently fail permission checks,
+        // regardless of who the caller was or how they were linked to the player.
+        uploaded_by: user?.email,
+      });
+      qc.invalidateQueries({ queryKey: ["player-docs", player.id] });
+      setDocType("");
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Always clear the uploading state and file input, even on failure —
+      // previously a thrown error here left the button stuck on "Uploading..."
+      // forever with no feedback, since nothing after the failing call ever ran.
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   return (
