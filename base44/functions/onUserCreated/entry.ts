@@ -22,8 +22,12 @@ Deno.serve(async (req) => {
     const guardianLinks = await base44.asServiceRole.entities.PlayerGuardian.filter({ user_email: userEmail });
 
     if (athletePlayers.length > 0) {
-      await base44.asServiceRole.entities.User.update(userId, { role: 'athlete' });
-      console.log(`Auto-set role=athlete for new user ${userEmail} (matched Player.athlete_email)`);
+      // athlete_paused has no schema default actually written to new records, and
+      // the Player/Message/Payment read RLS requires it to be the literal boolean
+      // false (an unset/undefined field does not match) — without this, a newly
+      // promoted athlete is silently locked out of their own data on first login.
+      await base44.asServiceRole.entities.User.update(userId, { role: 'athlete', athlete_paused: false });
+      console.log(`Auto-set role=athlete, athlete_paused=false for new user ${userEmail} (matched Player.athlete_email)`);
     } else if (guardianLinks.length > 0) {
       await base44.asServiceRole.entities.User.update(userId, { role: 'parent' });
       console.log(`Auto-set role=parent for new user ${userEmail} (${guardianLinks.length} guardian link(s))`);
