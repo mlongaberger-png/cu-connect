@@ -22,8 +22,11 @@ Deno.serve(async (req) => {
     // also their own guardian, so there's no ambiguity to resolve here.
     const athletePlayers = await base44.asServiceRole.entities.Player.filter({ athlete_email: user.email });
     if (athletePlayers.length > 0) {
-      await base44.asServiceRole.entities.User.update(user.id, { role: 'athlete' });
-      console.log(`Auto-upgraded ${user.email} from "${user.role}" → "athlete" (matched Player.athlete_email)`);
+      // See onUserCreated for why athlete_paused must be explicitly stamped false
+      // here too: it has no real schema default, and the Player/Message/Payment
+      // read RLS requires the literal boolean false, not just "not true".
+      await base44.asServiceRole.entities.User.update(user.id, { role: 'athlete', athlete_paused: false });
+      console.log(`Auto-upgraded ${user.email} from "${user.role}" → "athlete", athlete_paused=false (matched Player.athlete_email)`);
       return Response.json({ upgraded: true, role: 'athlete' });
     }
 
