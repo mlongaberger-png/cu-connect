@@ -97,20 +97,23 @@ export default function ChatSidebar({ activeChannelId }) {
   // skipped entirely — fall through to showing every team's channels org-wide.
   const isAthleteRole = !!currentUser && currentUser.role === 'athlete';
 
-  // Fetch guardian links to discover which players (and thus teams) this parent can access
-  const { data: myGuardians = [] } = useQuery({
-    queryKey: ["my-guardians", currentUser?.email],
-    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: currentUser.email }),
-    enabled: isParentRole,
-  });
-
-  const guardianPlayerIds = myGuardians.map(g => g.player_id).filter(Boolean);
-
-  // Fetch the Player records for those guardian links to collect team_ids
+  // Fetch this parent's linked players via the getMyPlayers backend function —
+  // deliberately NOT a raw Player.list()/filter() client call. Player RLS can
+  // only check data.parent_email == caller (no relational joins across
+  // entities), so a plain client query misses guardians linked only via
+  // PlayerGuardian — e.g. a co-parent/family member added afterward through
+  // "Invite Family" whose email never matches Player.parent_email. That
+  // silently returned zero players (and so zero team channels) for any
+  // secondary guardian. getMyPlayers already does this union server-side via
+  // asServiceRole (see its own comments) — same fix already relied on
+  // elsewhere (e.g. AccountSettings' "My Children" list).
   const { data: myPlayers = [] } = useQuery({
-    queryKey: ["my-players-by-guardian", guardianPlayerIds.join(',')],
-    queryFn: () => base44.entities.Player.list(),
-    enabled: isParentRole && guardianPlayerIds.length > 0,
+    queryKey: ["my-players-guardian", currentUser?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
+    enabled: isParentRole,
   });
 
   // Fetch the athlete's own player record(s) directly via athlete_email. Player RLS
@@ -126,10 +129,7 @@ export default function ChatSidebar({ activeChannelId }) {
   const isScopedRole = isParentRole || isAthleteRole;
 
   const allowedTeamIds = new Set([
-    ...myPlayers
-      .filter(p => guardianPlayerIds.includes(p.id))
-      .map(p => p.team_id)
-      .filter(Boolean),
+    ...myPlayers.map(p => p.team_id).filter(Boolean),
     ...myAthletePlayers.map(p => p.team_id).filter(Boolean),
   ]);
 
