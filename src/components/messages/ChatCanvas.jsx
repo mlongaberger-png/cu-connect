@@ -193,6 +193,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
 
 export default function ChatCanvas({ channelId, onOpenThread }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [, setSearchParams] = useSearchParams();
   const myId = user?.id || user?.email;
   const topSentinelRef = useRef(null);
