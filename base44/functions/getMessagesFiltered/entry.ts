@@ -90,6 +90,18 @@ Deno.serve(async (req) => {
       ? allMessages.filter(m => m.parent_message_id === parentMessageId)
       : allMessages.filter(m => !m.parent_message_id);
 
+    // Reply counts per parent message, computed from the full (pre-filter) allMessages set.
+    // The top-level feed above deliberately excludes replies (threadFiltered), so a client
+    // that only has access to the top-level response can never derive these counts itself —
+    // computing it here, from data the client never receives otherwise, is the only way the
+    // "💬 N replies" badge under a message can ever be non-zero.
+    const replyCounts = {};
+    for (const m of allMessages) {
+      if (m.parent_message_id) {
+        replyCounts[m.parent_message_id] = (replyCounts[m.parent_message_id] || 0) + 1;
+      }
+    }
+
     // ── Apply block filter ────────────────────────────────────
     const visible = threadFiltered.filter(m => !blockedIds.has(m.sender_user_id));
     const removed = allMessages.length - visible.length;
@@ -105,6 +117,7 @@ Deno.serve(async (req) => {
       messages: paged,
       filtered_count: removed,
       has_more: skip + limit < visible.length,
+      reply_counts: replyCounts,
     });
   } catch (error) {
     console.error('[getMessagesFiltered]', error.message);
