@@ -64,19 +64,43 @@ Deno.serve(async (req) => {
 
     // Reuse an existing direct channel between these two if one already exists
     const existing = await base44.asServiceRole.entities.Channel.filter({ type: 'direct' }, null, 1000);
-    const found = existing.find(ch => {
+    let channel = existing.find(ch => {
       try {
         const members = JSON.parse(ch.member_emails || '[]');
         return members.includes(myEmail) && members.includes(contact_email);
       } catch { return false; }
     });
-    if (found) return Response.json({ channel: found });
 
-    const channel = await base44.asServiceRole.entities.Channel.create({
-      type: 'direct',
-      name: target.full_name || target.email,
-      member_emails: JSON.stringify([myEmail, contact_email]),
-    });
+    if (!channel) {
+      channel = await base44.asServiceRole.entities.Channel.create({
+        type: 'direct',
+        name: target.full_name || target.email,
+        member_emails: JSON.stringify([myEmail, contact_email]),
+      });
+    }
+
+    // Seed ChannelMember rows for BOTH participants at creation time. Found live 2026-08-07,
+    // right after fixing the two bugs above: a brand-new direct channel had member_emails set
+    // on the Channel record (the source of truth used everywhere else — NewDmDialog, the
+    // sidebar's directChannels filter), but zero ChannelMember rows. getMessagesFiltered gates
+    // non-staff reads on ChannelMember, and onMessageCreated only resolves direct/carpool
+    // recipients from EXISTING ChannelMember rows rather than from member_emails — so a brand
+    // new DM was a dead end for a non-staff recipient: the first message would ever notify or
+    // become readable by them, because nothing ever bootstraps ChannelMember from member_emails.
+    // Confirmed live: a coach could send into a fresh DM, but the parent on the other end saw
+    // "No messages in this channel yet" for a message that existed correctly server-side.
+    const memberEmails = [myEmail, contact_email];
+    const existingMembers = await base44.asServiceRole.entities.ChannelMember.filter({ channel_id: channel.id }, null, 10);
+    const existingEmails = new Set(existingMembers.map(m => (m.user_email || '').toLowerCase()));
+    await Promise.all(
+      memberEmails
+        .filter(e => !existingEmails.has(e.toLowerCase()))
+        .map(e => base44.asServiceRole.entities.ChannelMember.create({
+          channel_id: channel.id,
+          user_email: e,
+          unread_count: 0,
+        }).catch(err => console.error(`[startDirectMessage] ChannelMember seed failed for ${e}:`, err.message)))
+    );
 
     return Response.json({ channel });
   } catch (error) {
