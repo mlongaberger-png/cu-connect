@@ -28,7 +28,12 @@ export default function Composer({ channelId, channel }) {
     queryFn: () => base44.entities.Team.list(),
   });
 
-  const isBroadcastOnly = channel?.is_broadcast_only && user?.role === "parent";
+  // Staff (admin/AD/coach) can post into a broadcast-only announcement channel; every
+  // other role (parent/grandparent/athlete/etc.) is read-only. Previously this only
+  // checked role === "parent", so grandparent/athlete/relative viewers of the same
+  // announcement channel could still reply even though parents on the same channel couldn't.
+  const isStaffRole = ["admin", "athletic_director", "coach"].includes(user?.role);
+  const isBroadcastOnly = channel?.is_broadcast_only && !isStaffRole;
 
   const shortName = channel?.name?.slice(0, 30) ?? "";
   const placeholder =
