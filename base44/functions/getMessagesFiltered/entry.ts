@@ -39,8 +39,16 @@ Deno.serve(async (req) => {
 
     const role = user.role;
 
-    // Admins and ADs bypass channel membership checks
-    const isStaff = role === 'admin' || role === 'athletic_director';
+    // Admins, ADs, and coaches bypass channel membership checks — matches
+    // ChatSidebar.jsx, which already shows these three roles every channel
+    // org-wide, unscoped by ChannelMember (see isScopedRole there, and the
+    // canCreate staff-role array). ChannelMember rows are only ever auto-
+    // created reactively for message *recipients* (onMessageCreated), and
+    // the sender is explicitly excluded from that — so a coach who is not
+    // already a member (the common case) could see every channel exist but
+    // could never read a single message in any of them, including their
+    // own. Fixed 2026-08-07.
+    const isStaff = role === 'admin' || role === 'athletic_director' || role === 'coach';
 
     if (!isStaff) {
       // Verify the caller is a ChannelMember of the requested channel
