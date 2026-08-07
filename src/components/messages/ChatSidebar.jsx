@@ -85,6 +85,12 @@ export default function ChatSidebar({ activeChannelId }) {
 
   const canCreate = ["admin", "athletic_director", "coach"].includes(currentUser?.role);
   const isAdmin = currentUser?.role === "admin";
+  // Channel.jsonc's delete RLS allows admin OR athletic_director (coach is deliberately
+  // excluded, matching create/update -- coaches can manage their own channels but not
+  // delete them). The delete button below previously only checked isAdmin, so an AD could
+  // never delete a channel from the UI even though the server would have allowed it --
+  // narrower than intended, not a security issue, but a real usability gap for that role.
+  const canDeleteChannel = ["admin", "athletic_director"].includes(currentUser?.role);
 
   const { data: orgTeams = [] } = useQuery({
     queryKey: ["org-teams"],
@@ -249,7 +255,13 @@ export default function ChatSidebar({ activeChannelId }) {
 
   const deleteChannelMutation = useMutation({
     mutationFn: (channelId) => base44.entities.Channel.delete(channelId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["channels"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
+      toast({ title: "Channel deleted" });
+    },
+    onError: (error) => {
+      toast({ title: "Couldn't delete channel", description: error?.message || "Please try again.", variant: "destructive" });
+    },
   });
 
   const handleCreateChannel = () => {
@@ -354,8 +366,8 @@ export default function ChatSidebar({ activeChannelId }) {
           }
         </span>
 
-        {/* Admin delete */}
-        {isAdmin && ch.type !== "direct" && (
+        {/* Admin/AD delete */}
+        {canDeleteChannel && ch.type !== "direct" && (
           <span
             onClick={(e) => {
               e.stopPropagation();
