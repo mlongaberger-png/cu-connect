@@ -23,10 +23,36 @@ export default function Composer({ channelId, channel }) {
   });
 
   // Fetch teams for the carpool modal context
-  const { data: myTeams = [] } = useQuery({
+  const { data: orgTeams = [] } = useQuery({
     queryKey: ["org-teams"],
     queryFn: () => base44.entities.Team.list(),
   });
+
+  // Same scoping bug/fix as ChatSidebar.jsx's carpoolTeams (see that file's comment) --
+  // orgTeams above is every team in the org, unscoped. Composer has its own separate
+  // "Request a Ride" entry point (the car icon), so it needs the same parent-vs-staff
+  // scoping independently rather than relying on ChatSidebar having already fixed it.
+  const isScopedRole = ["parent", "grandparent", "relative"].includes(user?.role);
+  const { data: myPlayers = [] } = useQuery({
+    queryKey: ["my-players-guardian", user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
+    enabled: isScopedRole,
+  });
+  const { data: myAthletePlayers = [] } = useQuery({
+    queryKey: ["my-players-by-athlete-email", user?.email],
+    queryFn: () => base44.entities.Player.filter({ athlete_email: user.email }),
+    enabled: user?.role === "athlete",
+  });
+  const allowedTeamIds = new Set([
+    ...myPlayers.map(p => p.team_id).filter(Boolean),
+    ...myAthletePlayers.map(p => p.team_id).filter(Boolean),
+  ]);
+  const myTeams = (isScopedRole || user?.role === "athlete")
+    ? orgTeams.filter(t => allowedTeamIds.has(t.id))
+    : orgTeams;
 
   // Staff (admin/AD/coach) can post into a broadcast-only announcement channel; every
   // other role (parent/grandparent/athlete/etc.) is read-only. Previously this only
