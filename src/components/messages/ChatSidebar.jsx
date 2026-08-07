@@ -481,7 +481,16 @@ export default function ChatSidebar({ activeChannelId }) {
         myTeamIds={orgTeams.map(t => t.id)}
         myTeams={orgTeams}
       />
-      <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} currentUser={currentUser} />
+      {/* onChannelCreated was previously never passed here at all, so NewDmDialog's
+          onSuccess handler threw ("onChannelCreated is not a function") as soon as a
+          channel was actually created — which silently aborted before onOpenChange(false)
+          could run, so the dialog never closed and the sidebar never navigated to the new
+          DM even though the channel was created successfully server-side. Found live
+          2026-08-07 immediately after fixing the two RLS/permission bugs that had been
+          masking this one (a coach and a parent could now both reach a successful create,
+          which is what finally exposed this). Wired to the same `select` used for every
+          other channel click, so a new DM opens immediately like any other channel. */}
+      <NewDmDialog open={showNewDm} onOpenChange={setShowNewDm} currentUser={currentUser} onChannelCreated={select} />
     </Tabs>
   );
 }
