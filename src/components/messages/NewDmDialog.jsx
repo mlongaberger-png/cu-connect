@@ -14,41 +14,18 @@ export default function NewDmDialog({ open, onOpenChange, currentUser, onChannel
   const [selected, setSelected] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ["all-users-for-dm"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: open,
-  });
-
-  // Fetch team channels to find teammates (for parent role restriction)
-  const { data: allChannels = [] } = useQuery({
-    queryKey: ["channels-for-dm"],
-    queryFn: () => base44.entities.Channel.list(),
-    enabled: open && !isLeadershipRole(currentUser?.role),
-  });
-
-  // Build set of emails in channels the current user is a member of
-  const teammateEmails = useMemo(() => {
-    if (isLeadershipRole(currentUser?.role)) return null; // null = no restriction
-    const myEmail = currentUser?.email;
-    const emails = new Set();
-    allChannels.forEach(ch => {
-      if (ch.type !== "team" && ch.type !== "announcement") return;
-      try {
-        const members = JSON.parse(ch.member_emails || "[]");
-        if (members.includes(myEmail)) members.forEach(e => emails.add(e));
-      } catch { /* skip */ }
-    });
-    return emails;
-  }, [allChannels, currentUser]);
-
-  // Exclude self; restrict parents to teammates + all leadership
-  const contacts = allUsers.filter(u => {
-    if (u.email === currentUser?.email) return false;
-    if (isLeadershipRole(currentUser?.role)) return true; // staff see everyone
-    if (isLeadershipRole(u.role)) return true; // parents can always DM staff
-    if (teammateEmails && teammateEmails.size > 0) return teammateEmails.has(u.email);
-    return false; // parent with no channels yet can only DM staff
+  // Fetched via a dedicated asServiceRole backend function, not the raw client SDK.
+  // (base44.entities.User.list() 403s for every non-admin role under this app's default
+  // User read RLS — confirmed live 2026-08-07 for both a coach and a parent test account —
+  // which made "New Direct Message" show "No contacts found" for literally everyone. See
+  // base44/functions/getDmContacts/entry.ts for the full writeup.)
+  const { data: contacts = [] } = useQuery({
+    queryKey: ["dm-contacts", currentUser?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getDmContacts");
+      return res.data?.contacts || [];
+    },
+    enabled: open && !!currentUser,
   });
 
   const leadership = contacts.filter(c => isLeadershipRole(c.role));
@@ -69,22 +46,15 @@ export default function NewDmDialog({ open, onOpenChange, currentUser, onChannel
 
   const createMutation = useMutation({
     mutationFn: async (contact) => {
-      // Check if a direct channel already exists for these two users
-      const existing = await base44.entities.Channel.filter({ type: "direct" });
-      const myEmail = currentUser?.email;
-      const theirEmail = contact.email;
-      const found = existing.find(ch => {
-        try {
-          const members = JSON.parse(ch.member_emails || "[]");
-          return members.includes(myEmail) && members.includes(theirEmail);
-        } catch { return false; }
-      });
-      if (found) return found;
-      return base44.entities.Channel.create({
-        type: "direct",
-        name: contact.full_name || contact.email,
-        member_emails: JSON.stringify([myEmail, theirEmail]),
-      });
+      // Also moved server-side (asServiceRole): Channel's create RLS is staff-only
+      // (admin/athletic_director/coach), so a parent picking a valid staff contact could
+      // never actually create the channel via a raw client Channel.create() call — this
+      // dedicated function re-implements the same contact-authorization check and creates
+      // (or reuses an existing) channel on the caller's behalf. See
+      // base44/functions/startDirectMessage/entry.ts.
+      const res = await base44.functions.invoke("startDirectMessage", { contact_email: contact.email });
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data.channel;
     },
     onSuccess: (channel) => {
       queryClient.invalidateQueries({ queryKey: ["channels", "direct"] });
