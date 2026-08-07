@@ -72,14 +72,14 @@
   ],
   "rls": {
     "create": {
-      "requester_email": "{{user.email}}"
+      "data.requester_email": "{{user.email}}"
     },
     "read": true,
     "update": {
-      "requester_email": "{{user.email}}"
+      "data.requester_email": "{{user.email}}"
     },
     "delete": {
-      "requester_email": "{{user.email}}"
+      "data.requester_email": "{{user.email}}"
     }
   }
 }
