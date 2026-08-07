@@ -17,6 +17,15 @@ import NewDmDialog from "@/components/messages/NewDmDialog";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 import { useToast } from "@/components/ui/use-toast";
 
+// Hidden-channel prefs are purely a local UI convenience (which channels this browser has
+// dismissed from the list) -- but they must be scoped per-user, same as the calendar-view
+// prefs in Schedule.jsx/ParentCalendar.jsx (PREF_KEY(email) pattern). Channel IDs are shared
+// entities (a team channel is the same record for every parent on that team), so a single
+// unscoped key would leak one account's hide choices to the next account that logs into the
+// same browser/device -- plausible here since families often share a home computer or a
+// school-issued tablet gets handed between a coach and a parent.
+const HIDDEN_CHANNELS_KEY = (email) => `cu_hidden_channels_${email || "default"}`;
+
 export default function ChatSidebar({ activeChannelId }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'teams';
@@ -31,8 +40,17 @@ export default function ChatSidebar({ activeChannelId }) {
   const [showCarpoolRequest, setShowCarpoolRequest] = useState(false);
   const [newChannelForm, setNewChannelForm] = useState({ name: "", type: "team", team_id: "" });
   const [selectedTeamIds, setSelectedTeamIds] = useState([]);
-  const [hiddenChannels, setHiddenChannels] = useState(() => JSON.parse(localStorage.getItem("cu_hidden_channels") || "[]"));
+  const [hiddenChannels, setHiddenChannels] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(HIDDEN_CHANNELS_KEY(user?.email)) || "[]"); } catch { return []; }
+  });
   const [showHiddenRecords, setShowHiddenRecords] = useState(false);
+
+  // Re-sync from the correctly-scoped key if the signed-in user changes without a full page
+  // reload (e.g. a future "switch account" flow) -- the useState initializer above only runs
+  // once, on mount, so this is the safety net for that case.
+  useEffect(() => {
+    try { setHiddenChannels(JSON.parse(localStorage.getItem(HIDDEN_CHANNELS_KEY(user?.email)) || "[]")); } catch { setHiddenChannels([]); }
+  }, [user?.email]);
 
   const toggleHideChannel = (id, e) => {
     e.stopPropagation();
@@ -40,7 +58,7 @@ export default function ChatSidebar({ activeChannelId }) {
       ? hiddenChannels.filter(cid => cid !== id)
       : [...hiddenChannels, id];
     setHiddenChannels(updated);
-    localStorage.setItem("cu_hidden_channels", JSON.stringify(updated));
+    try { localStorage.setItem(HIDDEN_CHANNELS_KEY(user?.email), JSON.stringify(updated)); } catch {}
   };
 
   const { data: currentUser } = useQuery({
