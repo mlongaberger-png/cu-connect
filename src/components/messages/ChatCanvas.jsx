@@ -23,6 +23,7 @@ import {
 
 function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact, onReportMessage, onBlockUser }) {
   const [hovered, setHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -177,15 +178,21 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
             message -- you can't report or block yourself. Backend (MessageReport entity,
             blockUser/getBlockedIds functions, getMessagesFiltered's two-way block filter,
             and the admin MessageModerationPanel) was already fully built; there was simply
-            no UI entry point anywhere in the app to actually file a report or block someone. */}
-        {hovered && !isOwn && (onReportMessage || onBlockUser) && (
-          <DropdownMenu>
+            no UI entry point anywhere in the app to actually file a report or block someone.
+            IMPORTANT: unlike the Reply/React buttons, this one must stay MOUNTED at all times
+            (visibility controlled by opacity, not by conditionally rendering the DropdownMenu) --
+            Radix's DropdownMenu adjusts pointer-events on the rest of the page while open, which
+            triggers a real mouseleave on this bubble's hover wrapper; if the whole DropdownMenu
+            were gated on `hovered` the way Reply/React are, that mouseleave would flip hovered to
+            false and unmount the trigger mid-open, instantly closing the menu right after it opens. */}
+        {!isOwn && (onReportMessage || onBlockUser) && (
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
-                className="absolute -top-3 -right-24
+                className={`absolute -top-3 -right-24
                   bg-card border border-border shadow-md rounded-full p-1.5
                   text-muted-foreground hover:text-primary hover:border-primary/40
-                  transition-colors z-10"
+                  transition-opacity z-10 ${(hovered || menuOpen) ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                 title="More options"
               >
                 <MoreVertical className="w-3.5 h-3.5" />
