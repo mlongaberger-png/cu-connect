@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft, SmilePlus } from "lucide-react";
+import { BellOff, Bell, ArrowLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft, SmilePlus, MoreVertical, Flag, UserX } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -12,8 +12,16 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import EmojiReactionPicker from "./EmojiReactionPicker";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
-function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact }) {
+function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact, onReportMessage, onBlockUser }) {
   const [hovered, setHovered] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
@@ -163,6 +171,35 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
           >
             <SmilePlus className="w-3.5 h-3.5" />
           </button>
+        )}
+
+        {/* Hover: Report/Block menu (desktop). Only makes sense on someone ELSE's
+            message -- you can't report or block yourself. Backend (MessageReport entity,
+            blockUser/getBlockedIds functions, getMessagesFiltered's two-way block filter,
+            and the admin MessageModerationPanel) was already fully built; there was simply
+            no UI entry point anywhere in the app to actually file a report or block someone. */}
+        {hovered && !isOwn && (onReportMessage || onBlockUser) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="absolute -top-3 -right-24
+                  bg-card border border-border shadow-md rounded-full p-1.5
+                  text-muted-foreground hover:text-primary hover:border-primary/40
+                  transition-colors z-10"
+                title="More options"
+              >
+                <MoreVertical className="w-3.5 h-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border-border">
+              <DropdownMenuItem onClick={() => onReportMessage?.(msg)} className="gap-2 cursor-pointer">
+                <Flag className="w-3.5 h-3.5" /> Report message
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onBlockUser?.(msg)} className="gap-2 cursor-pointer text-red-400 focus:text-red-400">
+                <UserX className="w-3.5 h-3.5" /> Block {msg.sender_name || "user"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Emoji picker (long-press) */}
