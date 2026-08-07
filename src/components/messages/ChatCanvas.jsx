@@ -254,6 +254,9 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   const topSentinelRef = useRef(null);
   const queryClient = useQueryClient();
   const [isMuted, setIsMuted] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("abusive");
+  const [blockTarget, setBlockTarget] = useState(null);
   const { isSupported, isSubscribed, isLoading: pushLoading, permission, subscribe: subscribePush, unsubscribe: unsubscribePush } = usePushNotifications();
 
   // Auto-clear unread when the user is actively viewing this channel
@@ -452,6 +455,60 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     },
   });
 
+  const reportMutation = useMutation({
+    mutationFn: async ({ msg, reason }) => {
+      return base44.entities.MessageReport.create({
+        message_id: msg.id,
+        message_content: msg.content_text,
+        reported_sender_name: msg.sender_name,
+        reporter_email: user.email,
+        reporter_name: user?.full_name || user?.email,
+        channel_id: channelId,
+        channel_name: channel?.name,
+        reason,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Report submitted", description: "Admins will review this message." });
+      setReportTarget(null);
+      setReportReason("abusive");
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't submit report",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // blockUser is a dedicated asServiceRole function (not a raw entity create) because it
+  // also needs to check for an existing block (idempotent) and reject self-blocking --
+  // see base44/functions/blockUser/entry.ts.
+  const blockMutation = useMutation({
+    mutationFn: async (msg) => {
+      const res = await base44.functions.invoke("blockUser", {
+        blocked_id: msg.sender_user_id,
+        blocked_name: msg.sender_name,
+        reason: "Blocked from chat",
+      });
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: "User blocked", description: "You won't see their messages anymore, and they won't see yours." });
+      setBlockTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't block that user",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Build reactions map: messageId -> array of reactions
   const reactionsMap = reactions.reduce((acc, r) => {
     if (!acc[r.message_id]) acc[r.message_id] = [];
@@ -592,6 +649,8 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
                   replyCount={replyCountMap[msg.id] || 0}
                   reactions={reactionsMap[msg.id] || []}
                   onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
+                  onReportMessage={(m) => setReportTarget(m)}
+                  onBlockUser={(m) => setBlockTarget(m)}
                 />
               );
             })}
@@ -601,6 +660,69 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
 
       {/* Composer */}
       <Composer channelId={channelId} channel={channel} />
+
+      {/* Report message dialog */}
+      <Dialog open={!!reportTarget} onOpenChange={(open) => { if (!open) { setReportTarget(null); setReportReason("abusive"); } }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Report message</DialogTitle>
+            <DialogDescription>
+              Report this message from {reportTarget?.sender_name || "this user"} to admins for review.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {reportTarget?.content_text && (
+              <div className="bg-surface rounded-lg border border-border p-3 text-sm text-muted-foreground italic">
+                "{reportTarget.content_text}"
+              </div>
+            )}
+            <Select value={reportReason} onValueChange={setReportReason}>
+              <SelectTrigger className="bg-surface border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="abusive">Abusive</SelectItem>
+                <SelectItem value="harassment">Harassment</SelectItem>
+                <SelectItem value="spam">Spam</SelectItem>
+                <SelectItem value="inappropriate">Inappropriate</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportTarget(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={reportMutation.isPending}
+              onClick={() => reportMutation.mutate({ msg: reportTarget, reason: reportReason })}
+            >
+              Submit report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Block user confirmation */}
+      <AlertDialog open={!!blockTarget} onOpenChange={(open) => !open && setBlockTarget(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block {blockTarget?.sender_name || "this user"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You won't see their messages anymore, and they won't see yours, in any channel.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={blockMutation.isPending}
+              onClick={() => blockMutation.mutate(blockTarget)}
+            >
+              Block user
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
