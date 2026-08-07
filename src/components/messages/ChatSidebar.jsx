@@ -133,6 +133,15 @@ export default function ChatSidebar({ activeChannelId }) {
     ...myAthletePlayers.map(p => p.team_id).filter(Boolean),
   ]);
 
+  // Teams to offer in the Carpool "Find a Ride" modal. Staff (admin/AD/coach) can
+  // request/broadcast for any team in the org, same as their channel-management scope
+  // elsewhere. Parents/grandparents/relatives/athletes must be scoped to only their own
+  // athlete's team(s) via allowedTeamIds -- orgTeams itself is Team.list() with no RLS
+  // scoping, so passing it through unfiltered let any parent see and broadcast carpool
+  // requests for teams their family has no connection to (and two unrelated teams
+  // sharing the same opponent/date made the event picker look like it had duplicate rows).
+  const carpoolTeams = isScopedRole ? orgTeams.filter(t => allowedTeamIds.has(t.id)) : orgTeams;
+
   // Only count unreads for channels that actually exist and are visible
   const visibleChannelIds = new Set(allChannels.map(ch => ch.id));
   const unreadMap = myMemberships.reduce((acc, m) => {
@@ -478,8 +487,8 @@ export default function ChatSidebar({ activeChannelId }) {
         open={showCarpoolRequest}
         onOpenChange={setShowCarpoolRequest}
         currentUser={currentUser}
-        myTeamIds={orgTeams.map(t => t.id)}
-        myTeams={orgTeams}
+        myTeamIds={carpoolTeams.map(t => t.id)}
+        myTeams={carpoolTeams}
       />
       {/* onChannelCreated was previously never passed here at all, so NewDmDialog's
           onSuccess handler threw ("onChannelCreated is not a function") as soon as a
