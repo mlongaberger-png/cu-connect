@@ -284,7 +284,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
         limit: 50,
         skip: pageParam,
       });
-      return { messages: res.data?.messages || [], hasMore: res.data?.has_more ?? false };
+      return { messages: res.data?.messages || [], hasMore: res.data?.has_more ?? false, replyCounts: res.data?.reply_counts || {} };
     },
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.hasMore) return undefined;
@@ -357,6 +357,10 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const allMessages = data?.pages?.flatMap(p => p.messages) ?? [];
+  // Server-computed reply counts (see getMessagesFiltered) -- every page's reply_counts is
+  // derived from the same near-complete per-channel message set, so pages agree; just take
+  // the first page's rather than trying to merge N identical objects.
+  const serverReplyCounts = data?.pages?.[0]?.replyCounts ?? {};
 
   // When new messages arrive while viewing, clear unread immediately
   useEffect(() => {
@@ -418,13 +422,11 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     return acc;
   }, {});
 
-  // Build a map of parent_message_id -> reply count for thread badges
-  const replyCountMap = allMessages.reduce((acc, msg) => {
-    if (msg.parent_message_id) {
-      acc[msg.parent_message_id] = (acc[msg.parent_message_id] || 0) + 1;
-    }
-    return acc;
-  }, {});
+  // Reply counts per parent message, from the server (see getMessagesFiltered) -- allMessages
+  // here is the TOP-LEVEL feed only (getMessagesFiltered deliberately excludes replies from it),
+  // so counting parent_message_id occurrences in allMessages itself would always be zero; the
+  // server computes this from the full per-channel set instead, before applying that filter.
+  const replyCountMap = serverReplyCounts;
 
   // Only show top-level messages in the main canvas
   const topLevelMessages = allMessages.filter(msg => !msg.parent_message_id);
