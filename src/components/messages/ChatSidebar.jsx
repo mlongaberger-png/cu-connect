@@ -239,11 +239,17 @@ export default function ChatSidebar({ activeChannelId }) {
     const name = newChannelForm.name.trim();
     const type = newChannelForm.type;
 
+    // Announcement channels are meant to be staff-broadcast / parent-read-only (see
+    // Composer.jsx's isBroadcastOnly check) -- that check reads Channel.is_broadcast_only,
+    // which nothing was ever setting on creation, so every announcement channel silently
+    // let parents reply just like a regular team chat. Set it here for the type it's meant for.
+    const isBroadcastOnly = type === "announcement" ? true : undefined;
+
     if (selectedTeamIds.length > 0) {
       // Create one channel per selected team
       const channels = selectedTeamIds.map(id => {
         const team = orgTeams.find(t => t.id === id);
-        return { name, type, team_id: id };
+        return { name, type, team_id: id, is_broadcast_only: isBroadcastOnly };
       });
       createChannelMutation.mutate(channels);
     } else {
@@ -251,6 +257,7 @@ export default function ChatSidebar({ activeChannelId }) {
         name,
         type,
         team_id: newChannelForm.team_id || undefined,
+        is_broadcast_only: isBroadcastOnly,
       });
     }
   };
