@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function CarpoolRequestModal({ open, onOpenChange, currentUser, myTeamIds, myTeams }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [form, setForm] = useState({
     event_id: "",
     seats_needed: "1",
@@ -73,6 +75,13 @@ export default function CarpoolRequestModal({ open, onOpenChange, currentUser, m
       setForm({ event_id: "", seats_needed: "1", neighborhood_zip: "", notes: "" });
       onOpenChange(false);
     },
+    onError: (error) => {
+      toast({
+        title: "Couldn't post your ride request",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleSubmit = (e) => {
@@ -116,7 +125,7 @@ export default function CarpoolRequestModal({ open, onOpenChange, currentUser, m
                 ) : events.map(e => (
                   <SelectItem key={e.id} value={e.id}>
                     {format(new Date(e.date + "T00:00:00"), "MMM d")} — {e.title}
-                    {e.opponent ? ` vs ${e.opponent}` : ""}
+                    {e.opponent && !e.title?.toLowerCase().includes(e.opponent.toLowerCase()) ? ` vs ${e.opponent}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
