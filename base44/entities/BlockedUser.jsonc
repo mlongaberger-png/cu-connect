@@ -34,7 +34,7 @@
   "rls": {
     "create": true,
     "read": {
-      "blocker_id": "{{user.id}}"
+      "data.blocker_id": "{{user.id}}"
     },
     "update": {
       "data.blocker_id": "{{user.id}}"
