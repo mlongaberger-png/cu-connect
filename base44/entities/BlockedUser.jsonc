@@ -37,10 +37,10 @@
       "blocker_id": "{{user.id}}"
     },
     "update": {
-      "blocker_id": "{{user.id}}"
+      "data.blocker_id": "{{user.id}}"
     },
     "delete": {
-      "blocker_id": "{{user.id}}"
+      "data.blocker_id": "{{user.id}}"
     }
   }
 }
