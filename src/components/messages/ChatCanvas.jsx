@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft } from "lucide-react";
+import { BellOff, Bell, ArrowLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft, SmilePlus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import Composer from "./Composer";
@@ -144,6 +144,24 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
             title="Reply in thread"
           >
             <MessageSquareText className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Hover: React button (desktop). The emoji picker was previously reachable ONLY via
+            a 500ms touch-and-hold gesture (handleBubbleTouchStart) -- there was no mouse
+            equivalent at all, so reactions were completely unreachable on a desktop/mouse
+            browser regardless of the RLS fix above. This gives desktop the same picker via
+            a normal click, positioned next to the existing reply-in-thread hover button. */}
+        {hovered && (
+          <button
+            onClick={() => setShowPicker(true)}
+            className={`absolute -top-3 ${isOwn ? "-left-16" : "-right-16"} 
+              bg-card border border-border shadow-md rounded-full p-1.5 
+              text-muted-foreground hover:text-primary hover:border-primary/40 
+              transition-colors z-10`}
+            title="React"
+          >
+            <SmilePlus className="w-3.5 h-3.5" />
           </button>
         )}
 
