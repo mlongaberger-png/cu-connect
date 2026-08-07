@@ -193,7 +193,14 @@ export default function ChatSidebar({ activeChannelId }) {
       return members.includes(userEmail);
     } catch { return false; }
   });
-  const carpoolChannels = allChannels.filter(ch => ch.type === "carpool");
+  // Same team-scoping as teamChannels/announceChannels above -- carpool channels are
+  // also team-specific (Channel.team_id), so an unscoped filter here would show (and
+  // let a scoped role open/post into) every team's carpool channel, not just their own.
+  const carpoolChannels = allChannels.filter(ch => {
+    if (ch.type !== "carpool") return false;
+    if (isScopedRole && !allowedTeamIds.has(ch.team_id)) return false;
+    return true;
+  });
   const announceChannels = allChannels.filter(ch => {
     if (ch.type !== "announcement") return false;
     if (isScopedRole && !allowedTeamIds.has(ch.team_id)) return false;
