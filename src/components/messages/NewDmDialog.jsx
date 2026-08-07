@@ -57,8 +57,13 @@ export default function NewDmDialog({ open, onOpenChange, currentUser, onChannel
       return res.data.channel;
     },
     onSuccess: (channel) => {
-      queryClient.invalidateQueries({ queryKey: ["channels", "direct"] });
-      onChannelCreated(channel.id);
+      // ChatSidebar.jsx's actual channel-list query key is ["channels"] (confirmed by
+      // reading that file directly), not ["channels", "direct"] — invalidating the latter
+      // never matched the former under React Query's prefix-matching rules, so the sidebar
+      // never picked up a newly-created DM without a full page reload. Fixed alongside the
+      // onChannelCreated wiring bug in ChatSidebar.jsx.
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
+      onChannelCreated?.(channel.id);
       onOpenChange(false);
       setSelected(null);
       setSearch("");
