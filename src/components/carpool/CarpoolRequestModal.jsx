@@ -38,9 +38,11 @@ export default function CarpoolRequestModal({ open, onOpenChange, currentUser, m
       // 1. Create the carpool request record
       const request = await base44.entities.CarpoolRequest.create(data);
 
-      // 2. Find the carpool channel for this team and post a message
+      // 2. Find the carpool channel for this team and post a message. Deliberately NOT
+      // falling back to allChannels[0] when no team-matching channel exists -- that used
+      // to silently broadcast the ride request into a different team's carpool channel.
       const allChannels = await base44.entities.Channel.filter({ type: "carpool" });
-      const carpoolChannel = allChannels.find(ch => ch.team_id === data.team_id) || allChannels[0];
+      const carpoolChannel = allChannels.find(ch => ch.team_id === data.team_id);
 
       if (carpoolChannel) {
         const eventLabel = data.event_title ? `${data.event_title} on ${data.event_date}` : data.event_date;
