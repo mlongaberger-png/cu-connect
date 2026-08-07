@@ -11,6 +11,7 @@ import ScoreCard from "./cards/ScoreCard";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useOrgTimezone } from "@/hooks/useOrgTimezone";
 import EmojiReactionPicker from "./EmojiReactionPicker";
+import { useToast } from "@/components/ui/use-toast";
 
 function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact }) {
   const [hovered, setHovered] = useState(false);
@@ -382,6 +383,13 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reactions", channelId] }),
+    onError: (error) => {
+      toast({
+        title: "Couldn't react to that message",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Build reactions map: messageId -> array of reactions
