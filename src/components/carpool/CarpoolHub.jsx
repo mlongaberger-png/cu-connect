@@ -227,6 +227,11 @@ export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) 
           responded ? (
             <p className="text-xs text-green-400 flex items-center gap-1">✓ You responded to this post</p>
           ) : respondingTo === req.id ? (
+            null
+          ) : null
+        )}
+        {showActions && !isMyPost && respondingTo === req.id === false && !responded && (
+          respondingTo === req.id ? (
             <div className="space-y-2">
               <Input
                 value={responseMsg}
