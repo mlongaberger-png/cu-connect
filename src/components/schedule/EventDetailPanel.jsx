@@ -183,15 +183,25 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
     const body = type === "pregame"
       ? `${event.start_time ? `Tip-off at ${formatTime12h(event.start_time)}` : "Game is starting!"}${event.location ? ` · ${event.location}` : ""}`
       : `${event.our_score != null ? `${event.our_score} – ${event.opponent_score ?? "?"}` : "Game complete!"}${event.result ? ` · ${event.result.toUpperCase()}` : ""}`;
-    await base44.functions.invoke("sendPushNotification", {
-      title,
-      body,
-      url: "/ParentPortal",
-      team_id: event.team_id || null,
-    });
-    setSendingNotif(null);
-    setNotifSent(type);
-    setTimeout(() => setNotifSent(null), 3000);
+    try {
+      const res = await base44.functions.invoke("sendPushNotification", {
+        title,
+        body,
+        url: "/ParentPortal",
+        team_id: event.team_id || null,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      setNotifSent(type);
+      setTimeout(() => setNotifSent(null), 3000);
+    } catch (err) {
+      toast({
+        title: "Failed to send notification",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingNotif(null);
+    }
   };
 
   const hasScore = event.our_score != null && event.our_score !== "";
