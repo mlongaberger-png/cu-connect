@@ -22,7 +22,14 @@ Deno.serve(async (req) => {
       if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const callerUsers = await base44.asServiceRole.entities.User.filter({ email: caller.email });
       const callerRole = callerUsers[0]?.role;
-      if (!['admin'].includes(callerRole)) {
+      // Was admin-only, which silently 403'd every call from a coach or AD
+      // assigning a parent to a slot via SnackManagerPanel (the call is
+      // fire-and-forget with .catch(), so the confirmation notification
+      // just never queued, with no visible symptom). Widened to the same
+      // staff set already used for every other coach-relevant backend
+      // function in this app (sendPushNotification, inviteFamilyMember,
+      // sendFilmAssignment, etc).
+      if (!['admin', 'athletic_director', 'coach'].includes(callerRole)) {
         console.error(`sendSnackReminder: forbidden role '${callerRole}' for ${caller.email}`);
         return Response.json({ error: 'Forbidden' }, { status: 403 });
       }
