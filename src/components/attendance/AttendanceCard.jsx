@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, XCircle, HelpCircle, Users, Lock, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 import AttendanceDetailModal from "./AttendanceDetailModal";
 
 const EVENT_TYPE_COLORS = {
@@ -62,6 +63,7 @@ function PlayerRsvpRow({ player, responseMap, upsertMutation, showName }) {
 
 export default function AttendanceCard({ request, isStaff, currentUser, myPlayers, allPlayers }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [showDetail, setShowDetail] = useState(false);
 
   const { data: responses = [] } = useQuery({
@@ -98,7 +100,14 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
       });
       return { previous };
     },
-    onError: (_e, _v, ctx) => { if (ctx?.previous) queryClient.setQueryData(["attendance-responses", request.id], ctx.previous); },
+    onError: (err, _v, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["attendance-responses", request.id], ctx.previous);
+      toast({
+        title: "Failed to save RSVP",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["attendance-responses", request.id] }),
   });
 
