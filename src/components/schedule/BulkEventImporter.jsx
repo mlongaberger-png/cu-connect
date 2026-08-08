@@ -83,39 +83,44 @@ export default function BulkEventImporter({ open, onOpenChange, teams }) {
     if (isExcel) {
       // Use LLM extraction for Excel
       setImporting(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            events: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  type: { type: "string" },
-                  team: { type: "string" },
-                  date: { type: "string", description: "YYYY-MM-DD" },
-                  start_time: { type: "string", description: "HH:MM" },
-                  end_time: { type: "string", description: "HH:MM" },
-                  location: { type: "string" },
-                  opponent: { type: "string" },
-                  notes: { type: "string" },
-                  recur_type: { type: "string", description: "none, daily, weekly, or monthly" },
-                  recur_count: { type: "string", description: "Number of occurrences" },
+      try {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url,
+          json_schema: {
+            type: "object",
+            properties: {
+              events: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    type: { type: "string" },
+                    team: { type: "string" },
+                    date: { type: "string", description: "YYYY-MM-DD" },
+                    start_time: { type: "string", description: "HH:MM" },
+                    end_time: { type: "string", description: "HH:MM" },
+                    location: { type: "string" },
+                    opponent: { type: "string" },
+                    notes: { type: "string" },
+                    recur_type: { type: "string", description: "none, daily, weekly, or monthly" },
+                    recur_count: { type: "string", description: "Number of occurrences" },
+                  },
                 },
               },
             },
           },
-        },
-      });
-      setImporting(false);
-      if (result.status === "success" && result.output?.events) {
-        setRows(result.output.events);
-      } else {
-        setErrors(["Could not parse the Excel file. Try CSV format."]);
+        });
+        if (result.status === "success" && result.output?.events) {
+          setRows(result.output.events);
+        } else {
+          setErrors(["Could not parse the Excel file. Try CSV format."]);
+        }
+      } catch (err) {
+        setErrors([err?.message || "Failed to upload or parse the Excel file. Try CSV format."]);
+      } finally {
+        setImporting(false);
       }
     } else {
       // CSV
@@ -140,14 +145,20 @@ export default function BulkEventImporter({ open, onOpenChange, teams }) {
 
   const handleImport = async () => {
     setImporting(true);
+    setErrors([]);
     const valid = allExpanded
       .filter(e => e.title && e.date)
       .map(e => Object.fromEntries(Object.entries(e).filter(([k]) => ALLOWED_EVENT_FIELDS.has(k))));
-    await base44.entities.Event.bulkCreate(valid);
-    queryClient.invalidateQueries({ queryKey: ["events"] });
-    setImportedCount(valid.length);
-    setImporting(false);
-    setDone(true);
+    try {
+      await base44.entities.Event.bulkCreate(valid);
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setImportedCount(valid.length);
+      setDone(true);
+    } catch (err) {
+      setErrors([err?.message || "Failed to import events. Please try again."]);
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleClose = () => {
