@@ -78,6 +78,26 @@ export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) 
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (id) => base44.entities.CarpoolRequest.update(id, { status: "cancelled" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["carpool-requests"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't cancel your request",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCancelRequest = (id) => {
+    if (window.confirm("Cancel this carpool request? Other families will no longer see it.")) {
+      cancelMutation.mutate(id);
+    }
+  };
+
   const teamRequests = requests.filter(r => myTeamIds?.includes(r.team_id) && r.status === "open");
   const myRides = requests.filter(r => r.requester_email === userEmail);
 
