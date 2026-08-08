@@ -512,7 +512,7 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
                     onClick={() => handleParentRsvp(opt.status)}
                     disabled={rsvpLoading !== null}
                     className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                      myResponse?.status === opt.status
+                      RSVP_STATUS_MAP[opt.status] === myResponse?.status
                         ? opt.active
                         : "bg-surface border-border text-muted-foreground hover:text-foreground"
                     } ${rsvpLoading === opt.status ? "opacity-60" : ""}`}
