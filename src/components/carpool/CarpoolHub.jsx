@@ -53,6 +53,13 @@ export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) 
       setRespondingTo(null);
       setResponseMsg("");
     },
+    onError: (error) => {
+      toast({
+        title: "Couldn't send your response",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const createOffer = useMutation({
@@ -61,6 +68,13 @@ export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) 
       queryClient.invalidateQueries({ queryKey: ["carpool-requests"] });
       setShowOfferForm(false);
       setOfferForm({ event_id: "", seats_available: "2", pickup_location: "", notes: "" });
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't post your ride offer",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
