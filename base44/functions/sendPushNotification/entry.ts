@@ -84,8 +84,13 @@ Deno.serve(async (req) => {
 
     const { user_emails, title, body, url, team_id, room_id } = await req.json();
 
-    if (!user_emails?.length || !title) {
-      return Response.json({ error: 'user_emails and title are required' }, { status: 400 });
+    // Callers either pass an explicit recipient list, or scope the audience via
+    // team_id/room_id (resolved to guardian/room-access emails below) — no
+    // caller in the app passes user_emails today, they all rely on team_id/
+    // room_id, so requiring user_emails unconditionally silently 400'd every
+    // push notification sent anywhere in the app.
+    if (!title || (!user_emails?.length && !team_id && !room_id)) {
+      return Response.json({ error: 'title is required, plus at least one of user_emails, team_id, or room_id' }, { status: 400 });
     }
 
     // Get VAPID keys (for web push subscribers)
@@ -155,8 +160,12 @@ Deno.serve(async (req) => {
       subsMap[k].push(s);
     });
 
+    // Explicit recipient list wins if given; otherwise fall back to the
+    // team/room audience already resolved into allowedEmails above.
+    const recipients = user_emails?.length ? user_emails : Array.from(allowedEmails || []);
+
     const pushPromises = [];
-    for (const email of user_emails) {
+    for (const email of recipients) {
       if (allowedEmails && !allowedEmails.has(email)) {
         skipped++;
         continue;
