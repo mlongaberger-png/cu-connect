@@ -39,14 +39,14 @@
   ],
   "rls": {
     "create": {
-      "responder_email": "{{user.email}}"
+      "data.responder_email": "{{user.email}}"
     },
     "read": true,
     "update": {
-      "responder_email": "{{user.email}}"
+      "data.responder_email": "{{user.email}}"
     },
     "delete": {
-      "responder_email": "{{user.email}}"
+      "data.responder_email": "{{user.email}}"
     }
   }
 }
