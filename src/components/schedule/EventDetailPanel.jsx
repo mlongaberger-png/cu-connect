@@ -10,6 +10,7 @@ import { generateICSContent, downloadICS } from "@/utils/calendarExport";
 import { useOrgTimezone } from "@/lib/useOrgTimezone";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 import RsvpBreakdown from "@/components/schedule/RsvpBreakdown";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import UniformSelector from "@/components/schedule/UniformSelector";
@@ -41,6 +42,7 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   const { abbr } = useOrgTimezone();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...event });
   const [saving, setSaving] = useState(false);
@@ -77,21 +79,30 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   const handleParentRsvp = async (status) => {
     if (!attendanceReq || !user?.email) return;
     setRsvpLoading(status);
-    if (myResponse) {
-      await base44.entities.AttendanceResponse.update(myResponse.id, { status });
-    } else {
-      await base44.entities.AttendanceResponse.create({
-        request_id: attendanceReq.id,
-        team_id: attendanceReq.team_id,
-        channel_id: attendanceReq.channel_id,
-        responder_email: user.email,
-        responder_name: user.full_name || user.email,
-        status,
+    try {
+      if (myResponse) {
+        await base44.entities.AttendanceResponse.update(myResponse.id, { status });
+      } else {
+        await base44.entities.AttendanceResponse.create({
+          request_id: attendanceReq.id,
+          team_id: attendanceReq.team_id,
+          channel_id: attendanceReq.channel_id,
+          responder_email: user.email,
+          responder_name: user.full_name || user.email,
+          status,
+        });
+      }
+      await refetchRsvp();
+      queryClient.invalidateQueries({ queryKey: ["attendance-requests"] });
+    } catch (err) {
+      toast({
+        title: "Failed to save RSVP",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
       });
+    } finally {
+      setRsvpLoading(null);
     }
-    await refetchRsvp();
-    setRsvpLoading(null);
-    queryClient.invalidateQueries({ queryKey: ["attendance-requests"] });
   };
 
   if (!event) return null;
