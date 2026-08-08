@@ -45,6 +45,7 @@ import IssuesFixedReport from "@/pages/IssuesFixedReport";
 import Applications from "@/pages/Applications";
 import UniformInventory from "@/pages/UniformInventory";
 import AppDocumentation from "@/pages/AppDocumentation";
+import Carpool from "@/pages/Carpool";
 
 const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
 const STAFF_ONLY_PATHS = [
@@ -209,6 +210,7 @@ export default function AppShell() {
           <Route path="/PracticePlans" element={<PracticePlans />} />
           <Route path="/Applications" element={<Applications />} />
           <Route path="/UniformInventory" element={<UniformInventory />} />
+          <Route path="/Carpool" element={<Carpool />} />
         </Route>
 
       </Route>
