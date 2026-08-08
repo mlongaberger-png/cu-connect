@@ -227,11 +227,6 @@ export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) 
           responded ? (
             <p className="text-xs text-green-400 flex items-center gap-1">✓ You responded to this post</p>
           ) : respondingTo === req.id ? (
-            null
-          ) : null
-        )}
-        {showActions && !isMyPost && respondingTo === req.id === false && !responded && (
-          respondingTo === req.id ? (
             <div className="space-y-2">
               <Input
                 value={responseMsg}
@@ -263,7 +258,24 @@ export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) 
             )
           )
         )}
-        {showActions && isMyPost && <p className="text-xs text-muted-foreground">Your post</p>}
+        {isMyPost && (
+          req.status === "cancelled" ? (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">Cancelled</p>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">Your post</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleCancelRequest(req.id)}
+                disabled={cancelMutation.isPending}
+                className="h-7 text-xs gap-1 border-border text-muted-foreground hover:text-destructive hover:border-destructive/40"
+              >
+                <X className="w-3 h-3" /> {cancelMutation.isPending ? "Cancelling…" : "Cancel Request"}
+              </Button>
+            </div>
+          )
+        )}
       </Card>
     );
   };
