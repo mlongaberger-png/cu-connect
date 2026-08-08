@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Car, Calendar, MapPin, Users, MessageSquare, X } from "lucide-react";
 import { format } from "date-fns";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function CarpoolHub({ currentUser, myTeamIds, myTeams, events }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const userEmail = currentUser?.email || "";
   const userName = currentUser?.full_name || userEmail;
 
