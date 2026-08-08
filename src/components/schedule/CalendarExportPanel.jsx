@@ -3,6 +3,7 @@ import { Download, Link, Calendar, X, Check, Smartphone, RefreshCw, Key } from "
 import { Button } from "@/components/ui/button";
 import { generateICSContent, downloadICS } from "@/utils/calendarExport";
 import { base44 } from "@/api/base44Client";
+import { appParams } from "@/lib/app-params";
 
 export default function CalendarExportPanel({ events, teams, myTeamIds, onClose }) {
   const [copied, setCopied] = useState(false);
@@ -28,7 +29,7 @@ export default function CalendarExportPanel({ events, teams, myTeamIds, onClose 
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const subscriptionUrl = token
-    ? `${window.location.origin}/api/calendar/feed?token=${token}`
+    ? `${appParams.appBaseUrl || window.location.origin}/api/apps/${appParams.appId}/functions/icsCalendarFeed?token=${token}`
     : null;
 
   const handleDownloadAll = () => {
