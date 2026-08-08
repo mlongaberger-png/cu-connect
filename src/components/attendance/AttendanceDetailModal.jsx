@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, HelpCircle, Lock } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 const STATUS_CONFIG = {
   attending: { icon: CheckCircle2, color: "text-green-400", bg: "bg-green-500/20", label: "Attending" },
@@ -13,6 +14,7 @@ const STATUS_CONFIG = {
 
 export default function AttendanceDetailModal({ request, onClose, isStaff, players }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: responses = [] } = useQuery({
     queryKey: ["attendance-responses", request.id],
@@ -25,12 +27,26 @@ export default function AttendanceDetailModal({ request, onClose, isStaff, playe
     mutationFn: ({ responseId, status }) =>
       base44.entities.AttendanceResponse.update(responseId, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attendance-responses", request.id] }),
+    onError: (err) => {
+      toast({
+        title: "Failed to update RSVP",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const lockMutation = useMutation({
     mutationFn: () =>
       base44.entities.AttendanceRequest.update(request.id, { is_locked: !request.is_locked }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["attendance-requests", request.channel_id] }),
+    onError: (err) => {
+      toast({
+        title: "Failed to update lock status",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Build roster with response status
