@@ -68,32 +68,56 @@ export default function EventDetailPanel({ event, onClose, onUpdate, onDelete, c
   });
   const attendanceReq = eventAttendanceRequests[0] || null;
 
-  // Parent's current RSVP response
+  // getMyPlayers unions Player.parent_email matches with PlayerGuardian links
+  // server-side (asServiceRole), since RLS can't join Player -> PlayerGuardian.
+  const { data: myPlayers = [] } = useQuery({
+    queryKey: ["my-players", user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPlayers", {});
+      return res.data?.players || [];
+    },
+    enabled: !!user?.email && !canEdit,
+    staleTime: 30000,
+  });
+  const eligiblePlayers = attendanceReq
+    ? myPlayers.filter(p => p.team_id === attendanceReq.team_id)
+    : [];
+
+  // Parent's current RSVP response(s) — AttendanceResponse is keyed per player_id
   const { data: myResponses = [], refetch: refetchRsvp } = useQuery({
     queryKey: ["my-rsvp-event", attendanceReq?.id, user?.email],
-    queryFn: () => base44.entities.AttendanceResponse.filter({ request_id: attendanceReq.id, responder_email: user.email }),
+    queryFn: () => base44.entities.AttendanceResponse.filter({ attendance_request_id: attendanceReq.id, responder_email: user.email }),
     enabled: !!attendanceReq?.id && !!user?.email && !canEdit,
   });
   const myResponse = myResponses[0] || null;
 
-  const handleParentRsvp = async (status) => {
+  const RSVP_STATUS_MAP = { going: "attending", not_going: "not_attending", maybe: "maybe" };
+
+  const handleParentRsvp = async (uiStatus) => {
     if (!attendanceReq || !user?.email) return;
-    setRsvpLoading(status);
+    const status = RSVP_STATUS_MAP[uiStatus] || uiStatus;
+    setRsvpLoading(uiStatus);
     try {
-      if (myResponse) {
-        await base44.entities.AttendanceResponse.update(myResponse.id, { status });
-      } else {
-        await base44.entities.AttendanceResponse.create({
-          request_id: attendanceReq.id,
+      if (eligiblePlayers.length === 0) {
+        throw new Error("No eligible athletes found for this team.");
+      }
+      await Promise.all(eligiblePlayers.map(player => {
+        const existing = myResponses.find(r => r.player_id === player.id);
+        if (existing) {
+          return base44.entities.AttendanceResponse.update(existing.id, { status });
+        }
+        return base44.entities.AttendanceResponse.create({
+          attendance_request_id: attendanceReq.id,
+          player_id: player.id,
+          player_name: `${player.first_name} ${player.last_name}`,
           team_id: attendanceReq.team_id,
-          channel_id: attendanceReq.channel_id,
           responder_email: user.email,
-          responder_name: user.full_name || user.email,
           status,
         });
-      }
+      }));
       await refetchRsvp();
       queryClient.invalidateQueries({ queryKey: ["attendance-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-responses", attendanceReq.id] });
     } catch (err) {
       toast({
         title: "Failed to save RSVP",
