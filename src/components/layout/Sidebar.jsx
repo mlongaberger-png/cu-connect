@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen, GraduationCap, Inbox, Shirt } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen, GraduationCap, Inbox, Shirt, Car } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const staffNavGroups = [
@@ -15,6 +15,7 @@ const staffNavGroups = [
       { path: "/Portal", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "athletic_director", "coach"] },
       { path: "/Schedule", label: "Schedule", icon: Calendar, roles: ["admin", "athletic_director", "coach"] },
       { path: "/Messages", label: "Messages", icon: MessageSquare, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/Carpool", label: "Carpool", icon: Car, roles: ["admin", "athletic_director", "coach"] },
     ]
   },
   {
