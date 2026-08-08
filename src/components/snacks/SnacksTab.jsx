@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cookie, CheckCircle2, Clock, Calendar, MapPin, Plus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { formatTime12h } from "@/utils/dateTime";
+import { useToast } from "@/components/ui/use-toast";
 
 const SLOT_COLORS = {
   "Drinks":         "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -63,6 +64,7 @@ function SlotCard({ slot, userEmail, userName, myPlayerIds, onSignUp, onDrop, lo
 
 export default function SnacksTab({ myTeamIds, userEmail, userName, myKids, events }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [loadingSlot, setLoadingSlot] = useState(null);
 
   const { data: allSlots = [] } = useQuery({
@@ -98,27 +100,51 @@ export default function SnacksTab({ myTeamIds, userEmail, userName, myKids, even
 
   const handleSignUp = async (slot) => {
     setLoadingSlot(slot.id);
-    await base44.entities.SnackAssignment.update(slot.id, {
-      assigned_email: userEmail,
-      assigned_name: userName || userEmail,
-    });
-    // Send confirmation push notification to the user
-    base44.functions.invoke("sendSnackReminder", {
-      type: "confirmation",
-      snack_slot_id: slot.id,
-    }).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
-    setLoadingSlot(null);
+    try {
+      // Routed through a dedicated backend function (asServiceRole) rather
+      // than a direct client-side SnackAssignment.update() call -- that
+      // update's own RLS only allows admin/athletic_director/coach, so a
+      // parent's sign-up always failed with a permission-denied error
+      // (silently, since this call previously had no try/catch, leaving
+      // the button stuck on its loading spinner forever). The function
+      // re-checks server-side that the caller has a linked player on this
+      // slot's team before letting them claim it, and also queues the
+      // confirmation notification itself.
+      const res = await base44.functions.invoke("snackSlotSelfService", {
+        slot_id: slot.id,
+        action: "sign_up",
+      });
+      if (res.data?.error) {
+        toast({ title: "Couldn't sign up", description: res.data.error, variant: "destructive" });
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
+    } catch (err) {
+      const serverMessage = err?.response?.data?.error || err?.message || "Something went wrong. Please try again.";
+      toast({ title: "Couldn't sign up", description: serverMessage, variant: "destructive" });
+    } finally {
+      setLoadingSlot(null);
+    }
   };
 
   const handleDrop = async (slot) => {
     setLoadingSlot(slot.id);
-    await base44.entities.SnackAssignment.update(slot.id, {
-      assigned_email: "",
-      assigned_name: "",
-    });
-    queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
-    setLoadingSlot(null);
+    try {
+      const res = await base44.functions.invoke("snackSlotSelfService", {
+        slot_id: slot.id,
+        action: "drop",
+      });
+      if (res.data?.error) {
+        toast({ title: "Couldn't drop slot", description: res.data.error, variant: "destructive" });
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
+    } catch (err) {
+      const serverMessage = err?.response?.data?.error || err?.message || "Something went wrong. Please try again.";
+      toast({ title: "Couldn't drop slot", description: serverMessage, variant: "destructive" });
+    } finally {
+      setLoadingSlot(null);
+    }
   };
 
   const mySignedUpCount = mySlots.filter(s => s.assigned_email === userEmail).length;
