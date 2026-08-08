@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { formatTime12h } from "@/utils/dateTime";
+import { useToast } from "@/components/ui/use-toast";
 
 const SLOT_TYPES = ["Drinks", "Snacks", "Post-game Food", "Other"];
 
@@ -19,6 +20,7 @@ const SLOT_COLORS = {
 
 export default function SnackManagerPanel({ teams, events, currentUser }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [filterTeam, setFilterTeam] = useState("all");
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [addingTo, setAddingTo] = useState(null); // event_id being added to
@@ -77,38 +79,52 @@ export default function SnackManagerPanel({ teams, events, currentUser }) {
 
   const handleAddSlot = async (event) => {
     setSaving(true);
-    await base44.entities.SnackAssignment.create({
-      event_id: event.id,
-      event_title: event.title,
-      event_date: event.date,
-      event_time: event.start_time || "",
-      team_id: event.team_id,
-      team_name: event.team_name || teams.find(t => t.id === event.team_id)?.name || "",
-      slot_type: newSlotType,
-      slot_label: newSlotLabel.trim() || "",
-      notes: newSlotNotes.trim(),
-      created_by_email: currentUser?.email || "",
-      created_by_name: currentUser?.full_name || "",
-    });
-    queryClient.invalidateQueries({ queryKey: ["snack-assignments-admin"] });
-    queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
-    setNewSlotType("Snacks");
-    setNewSlotLabel("");
-    setNewSlotNotes("");
-    setAddingTo(null);
-    setSaving(false);
+    try {
+      await base44.entities.SnackAssignment.create({
+        event_id: event.id,
+        event_title: event.title,
+        event_date: event.date,
+        event_time: event.start_time || "",
+        team_id: event.team_id,
+        team_name: event.team_name || teams.find(t => t.id === event.team_id)?.name || "",
+        slot_type: newSlotType,
+        slot_label: newSlotLabel.trim() || "",
+        notes: newSlotNotes.trim(),
+        created_by_email: currentUser?.email || "",
+        created_by_name: currentUser?.full_name || "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["snack-assignments-admin"] });
+      queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
+      setNewSlotType("Snacks");
+      setNewSlotLabel("");
+      setNewSlotNotes("");
+      setAddingTo(null);
+    } catch (err) {
+      toast({ title: "Couldn't add snack slot", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAssign = async (slot, email, name) => {
+    // Note: caller-driven try/catch/finally (setSaving) lives in SlotRow's
+    // handleAssignChange below, since that's what owns the "Saving..."
+    // loading state for this particular slot's Select control.
     await base44.entities.SnackAssignment.update(slot.id, {
       assigned_email: email,
       assigned_name: name,
     });
     if (email) {
+      // Staff-triggered confirmation (coach/AD/admin assigning a parent) --
+      // sendSnackReminder's own permission gate requires staff role, which
+      // this caller already is, so this is safe to fire-and-forget. A
+      // failure here is non-fatal (the assignment itself already
+      // succeeded above), so it's intentionally not surfaced as an error
+      // toast -- just logged for visibility.
       base44.functions.invoke("sendSnackReminder", {
         type: "confirmation",
         snack_slot_id: slot.id,
-      }).catch(() => {});
+      }).catch(err => console.error("sendSnackReminder failed (non-fatal):", err?.message));
     }
     queryClient.invalidateQueries({ queryKey: ["snack-assignments-admin"] });
     queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
@@ -116,9 +132,13 @@ export default function SnackManagerPanel({ teams, events, currentUser }) {
 
   const handleDelete = async (slotId) => {
     if (!confirm("Remove this snack slot?")) return;
-    await base44.entities.SnackAssignment.delete(slotId);
-    queryClient.invalidateQueries({ queryKey: ["snack-assignments-admin"] });
-    queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
+    try {
+      await base44.entities.SnackAssignment.delete(slotId);
+      queryClient.invalidateQueries({ queryKey: ["snack-assignments-admin"] });
+      queryClient.invalidateQueries({ queryKey: ["snack-assignments"] });
+    } catch (err) {
+      toast({ title: "Couldn't remove snack slot", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
+    }
   };
 
   return (
@@ -254,17 +274,25 @@ export default function SnackManagerPanel({ teams, events, currentUser }) {
 }
 
 function SlotRow({ slot, parentOptions, onAssign, onDelete }) {
+  const { toast } = useToast();
   const [assignEmail, setAssignEmail] = useState(slot.assigned_email || "");
   const [saving, setSaving] = useState(false);
   const label = slot.slot_label || slot.slot_type;
   const colorClass = SLOT_COLORS[slot.slot_type] || SLOT_COLORS["Other"];
 
   const handleAssignChange = async (email) => {
+    const previousEmail = assignEmail;
     setAssignEmail(email);
     setSaving(true);
-    const name = email ? (parentOptions.find(p => p.email === email)?.name || email) : "";
-    await onAssign(slot, email === "__clear__" ? "" : email, name);
-    setSaving(false);
+    try {
+      const name = email ? (parentOptions.find(p => p.email === email)?.name || email) : "";
+      await onAssign(slot, email === "__clear__" ? "" : email, name);
+    } catch (err) {
+      setAssignEmail(previousEmail);
+      toast({ title: "Couldn't update assignment", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
