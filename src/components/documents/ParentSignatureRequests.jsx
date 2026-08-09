@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Clock, PenLine, Download, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, PenLine, Download, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
 export default function ParentSignatureRequests({ myKids, userEmail, userName }) {
@@ -13,6 +13,7 @@ export default function ParentSignatureRequests({ myKids, userEmail, userName })
   const [signing, setSigning] = useState(null); // the request being signed
   const [typedName, setTypedName] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [signError, setSignError] = useState(null);
 
   const myPlayerIds = myKids.map(k => k.id);
 
@@ -26,37 +27,34 @@ export default function ParentSignatureRequests({ myKids, userEmail, userName })
   const myRequests = allRequests.filter(r => myPlayerIds.includes(r.player_id) && r.status !== "revoked");
 
   const signMutation = useMutation({
+    // Routed through signSignatureRequest (asServiceRole) rather than direct
+    // client-side SignatureRequest.update() + PlayerDocument.create() calls --
+    // SignatureRequest's update RLS is admin/athletic_director ONLY, with no
+    // exception for the parent the request is addressed to. Every parent's
+    // "Sign Document" click 403'd against that RLS, and with no onError here
+    // the dialog just sat there with no feedback while the request stayed
+    // "pending" forever. The backend function verifies the caller is the
+    // linked parent/guardian for the request's player before accepting the
+    // signature, then performs both writes together server-side.
     mutationFn: async (req) => {
-      // Mark request as signed
-      await base44.entities.SignatureRequest.update(req.id, {
-        status: "signed",
-        signed_by_email: userEmail,
+      const res = await base44.functions.invoke("signSignatureRequest", {
+        request_id: req.id,
         signed_by_name: typedName || userName || userEmail,
-        signed_at: new Date().toISOString(),
-        signed_file_url: req.file_url,
       });
-      // Store in PlayerDocument for permanent record
-      const player = myKids.find(k => k.id === req.player_id);
-      await base44.entities.PlayerDocument.create({
-        player_id: req.player_id,
-        player_name: req.player_name,
-        team_name: req.team_name,
-        doc_type: req.doc_type === "medical_form" ? "physical"
-          : req.doc_type === "liability_waiver" ? "waiver"
-          : req.doc_type === "consent_form" ? "consent_form"
-          : "other",
-        file_url: req.file_url,
-        file_name: req.document_name,
-        uploaded_by: userEmail,
-        notes: `E-signed by ${typedName || userName || userEmail} on ${format(new Date(), "MMM d, yyyy 'at' h:mm a")}`,
-      });
+      if (res.data?.error) {
+        throw new Error(res.data.error);
+      }
     },
     onSuccess: () => {
+      setSignError(null);
       qc.invalidateQueries({ queryKey: ["signature-requests-parent", userEmail] });
       qc.invalidateQueries({ queryKey: ["player-docs"] });
       setSigning(null);
       setTypedName("");
       setAgreed(false);
+    },
+    onError: (err) => {
+      setSignError(err?.response?.data?.error || err?.message || "Failed to sign document. Please try again.");
     },
   });
 
@@ -132,7 +130,7 @@ export default function ParentSignatureRequests({ myKids, userEmail, userName })
       )}
 
       {/* E-Sign Dialog */}
-      <Dialog open={!!signing} onOpenChange={open => { if (!open) setSigning(null); }}>
+      <Dialog open={!!signing} onOpenChange={open => { if (!open) { setSigning(null); setSignError(null); } }}>
         <DialogContent className="max-w-md bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -177,6 +175,12 @@ export default function ParentSignatureRequests({ myKids, userEmail, userName })
                   I have reviewed this document and agree that my typed name above constitutes my legal electronic signature. I understand this signature is legally binding.
                 </span>
               </label>
+
+              {signError && (
+                <div className="flex items-center gap-1.5 text-sm text-destructive">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" /> {signError}
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
