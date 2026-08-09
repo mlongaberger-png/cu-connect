@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Trash2, Pencil, Users, Calendar, MessageSquare, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
+import { UserPlus, Trash2, Pencil, Users, Calendar, MessageSquare, CreditCard, AlertCircle } from "lucide-react";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import InviteFamilyMember from "./InviteFamilyMember";
