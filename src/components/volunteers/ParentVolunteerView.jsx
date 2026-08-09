@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Users, CheckCircle2, Clock, Download, Calendar } from "lucide-react";
 import { format, isBefore, parseISO } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 // Build an ICS file string for one or more volunteer assignments
 function buildVolunteerICS(entries) {
@@ -66,6 +67,7 @@ function downloadICS(content, filename) {
 
 export default function ParentVolunteerView({ myKids, userEmail, userName }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
 
@@ -81,14 +83,43 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
     enabled: !!userEmail,
   });
 
+  // Both routed through volunteerSlotSelfService (asServiceRole) rather than raw
+  // client create()/delete() calls. Sign-up alone could technically go straight
+  // through the client SDK (VolunteerAssignment's create RLS already allows a
+  // parent to create their own record), but delete is admin/AD-only -- a parent's
+  // own "Cancel" click would always 403 without this. Routing both through one
+  // function also lets the opportunity's signup_deadline actually be enforced
+  // server-side for both directions, not just used to hide the Cancel button.
   const signupMutation = useMutation({
-    mutationFn: (data) => base44.entities.VolunteerAssignment.create(data),
+    mutationFn: async (data) => {
+      const res = await base44.functions.invoke("volunteerSlotSelfService", { action: "sign_up", ...data });
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["volunteer-assignments-parent", userEmail] }),
+    onError: (err) => {
+      toast({
+        title: "Couldn't sign up",
+        description: err?.response?.data?.error || err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (id) => base44.entities.VolunteerAssignment.delete(id),
+    mutationFn: async (assignment_id) => {
+      const res = await base44.functions.invoke("volunteerSlotSelfService", { action: "cancel", assignment_id });
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["volunteer-assignments-parent", userEmail] }),
+    onError: (err) => {
+      toast({
+        title: "Couldn't cancel",
+        description: err?.response?.data?.error || err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const myAssignments = assignments.filter(a => a.volunteer_email === userEmail);
