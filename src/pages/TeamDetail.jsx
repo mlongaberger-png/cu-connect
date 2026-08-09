@@ -15,13 +15,18 @@ import { Link } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
 import RosterPDFButton from "@/components/roster/RosterPDFButton";
 import RosterImporter from "@/components/roster/RosterImporter";
-import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
+import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import TeamComplianceTab from "@/components/teams/TeamComplianceTab";
 import DepthChartTab from "@/components/teams/DepthChartTab";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function TeamDetail() {
-  const { isAdmin, isAD } = useAdminOrADGuard();
+  // Was useAdminOrADGuard() (admin/AD only), which redirected Coach to /Portal before
+  // any of this component's own logic ever ran — despite canManage/isCoach checks
+  // throughout this file (Compliance, Depth Chart, Snacks tabs) already assuming Coach
+  // has access. useScheduleGuard() is the existing admin/AD/coach guard used elsewhere
+  // (e.g. the Carpool page) and matches what this page's own permission checks expect.
+  const { isAdmin, isAD } = useScheduleGuard();
   const { user } = useAuth();
   const isCoach = user?.role === "coach";
   const canManage = isAdmin || isAD;
