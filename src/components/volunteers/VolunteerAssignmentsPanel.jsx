@@ -164,7 +164,7 @@ export default function VolunteerAssignmentsPanel({ teams, filterTeam, user, isA
                       {opp ? (
                         <div>
                           <p className="text-foreground">{opp.role_name}</p>
-                          <p className="text-xs text-muted-foreground">{opp.date ? format(new Date(opp.date), "MMM d, yyyy") : ""}</p>
+                          <p className="text-xs text-muted-foreground">{opp.date ? fmtDate(opp.date, "MMM d, yyyy") : ""}</p>
                         </div>
                       ) : "—"}
                     </td>
@@ -215,7 +215,7 @@ export default function VolunteerAssignmentsPanel({ teams, filterTeam, user, isA
                 <SelectTrigger><SelectValue placeholder="Select opportunity" /></SelectTrigger>
                 <SelectContent>
                   {visibleOpps.map(o => (
-                    <SelectItem key={o.id} value={o.id}>{o.role_name} – {o.team_name} – {o.date ? format(new Date(o.date), "MMM d") : ""}</SelectItem>
+                    <SelectItem key={o.id} value={o.id}>{o.role_name} – {o.team_name} – {o.date ? fmtDate(o.date, "MMM d") : ""}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
