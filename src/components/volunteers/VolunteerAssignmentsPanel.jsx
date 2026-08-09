@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Users } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 const STATUS_OPTIONS = [
   { value: "signed_up", label: "Signed Up" },
@@ -25,6 +26,12 @@ const STATUS_CLASSES = {
 
 export default function VolunteerAssignmentsPanel({ teams, filterTeam, user, isAdmin, isCoach }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onMutationError = (err, fallback) => toast({
+    title: fallback,
+    description: err?.response?.data?.error || err?.message || "Please try again.",
+    variant: "destructive",
+  });
   const [open, setOpen] = useState(false);
   const [filterOpp, setFilterOpp] = useState("all");
   const [form, setForm] = useState({ opportunity_id: "", player_id: "", volunteer_name: "", volunteer_email: "", admin_notes: "" });
@@ -51,16 +58,19 @@ export default function VolunteerAssignmentsPanel({ teams, filterTeam, user, isA
       setOpen(false);
       setForm({ opportunity_id: "", player_id: "", volunteer_name: "", volunteer_email: "", admin_notes: "" });
     },
+    onError: (err) => onMutationError(err, "Couldn't assign volunteer"),
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.VolunteerAssignment.update(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["volunteer-assignments"] }),
+    onError: (err) => onMutationError(err, "Couldn't update status"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.VolunteerAssignment.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["volunteer-assignments"] }),
+    onError: (err) => onMutationError(err, "Couldn't remove assignment"),
   });
 
   const myTeamIds = new Set(teams.map(t => t.id));
