@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { CheckCircle2, Cookie, Car } from "lucide-react";
+import { CheckCircle2, Cookie, Car, Users } from "lucide-react";
 import AttendanceCard from "@/components/attendance/AttendanceCard";
 import SnacksTab from "@/components/snacks/SnacksTab";
 import CarpoolHub from "@/components/carpool/CarpoolHub";
+// Built (VolunteerOpportunity/VolunteerAssignment CRUD, signup/cancel mutations, ICS
+// export) but never mounted anywhere in the app -- confirmed via a repo-wide grep
+// turning up zero import sites outside this file and the self-generated doc report.
+// Added as a fourth subtab here, matching where every other rotating-duty feature
+// (RSVP, Snacks, Carpool) already lives for parents.
+import ParentVolunteerView from "@/components/volunteers/ParentVolunteerView";
 
 const SUBTABS = [
-  { id: "rsvp",    label: "RSVPs",   icon: CheckCircle2 },
-  { id: "snacks",  label: "Snacks",  icon: Cookie },
-  { id: "carpool", label: "Carpool", icon: Car },
+  { id: "rsvp",      label: "RSVPs",     icon: CheckCircle2 },
+  { id: "snacks",    label: "Snacks",    icon: Cookie },
+  { id: "carpool",   label: "Carpool",   icon: Car },
+  { id: "volunteer", label: "Volunteer", icon: Users },
 ];
 
 export default function RsvpVolunteerTab({
@@ -125,6 +132,14 @@ export default function RsvpVolunteerTab({
           myTeamIds={myTeamIds}
           myTeams={myTeams}
           events={events}
+        />
+      )}
+
+      {sub === "volunteer" && (
+        <ParentVolunteerView
+          myKids={myKids}
+          userEmail={userEmail}
+          userName={userName}
         />
       )}
     </div>
