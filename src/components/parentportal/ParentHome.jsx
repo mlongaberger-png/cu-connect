@@ -59,9 +59,32 @@ export default function ParentHome() {
   });
   const { data: announcements = [] } = useQuery({ queryKey: ["announcements"], queryFn: () => base44.entities.Announcement.list("-created_date") });
   const { data: sports = [] } = useQuery({ queryKey: ["sports"], queryFn: () => base44.entities.Sport.list() });
+  // getMyPaymentsFiltered scopes invoices server-side (asServiceRole) to whatever this
+  // caller is actually authorized to see -- direct parent_email match, a guardian with
+  // financial_contributor permission, or the promoted/unpaused athlete themselves --
+  // since Payment's RLS read rule can't join to PlayerGuardian. A raw Payment.list()
+  // call here silently returned zero invoices for any "financial contributor" guardian
+  // whose access depends on the PlayerGuardian link, which made this card show a false
+  // "All paid ✓" instead of the real outstanding balance. Same fix as ParentPortal.jsx /
+  // PlayerPayments.jsx, same queryKey shape so all three share one cache.
   const { data: allPayments = [] } = useQuery({
-    queryKey: ["payments-all", userEmail],
-    queryFn: () => base44.entities.Payment.list(),
+    queryKey: ["my-payments-filtered"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPaymentsFiltered", {});
+      return res.data?.payments || [];
+    },
+    enabled: !!userEmail,
+  });
+  // This card is the only place on this Home dashboard that surfaces actual dollar
+  // amounts/status inline (Documents & Forms and Messages below are just navigation,
+  // no sensitive data rendered directly) -- so it's the one place worth gating locally
+  // on the financial_contributor permission here, independent of ParentPortal.jsx's
+  // broader (and currently non-functional for this flow -- see that file) tab-visibility
+  // check. A primary parent (direct Player.parent_email match) always has full access,
+  // same convention as getMyPaymentsFiltered/createCheckout.
+  const { data: myGuardianLinksHome = [] } = useQuery({
+    queryKey: ["my-guardian-links-home", userEmail],
+    queryFn: () => base44.entities.PlayerGuardian.filter({ user_email: userEmail }),
     enabled: !!userEmail,
   });
 
