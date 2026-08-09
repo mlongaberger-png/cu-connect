@@ -6,6 +6,7 @@ import { Plus, Users, ClipboardList, Shield } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
+import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import VolunteerRolesPanel from "@/components/volunteers/VolunteerRolesPanel";
 import VolunteerOpportunitiesPanel from "@/components/volunteers/VolunteerOpportunitiesPanel";
 import VolunteerAssignmentsPanel from "@/components/volunteers/VolunteerAssignmentsPanel";
@@ -17,6 +18,16 @@ const TABS = [
 ];
 
 export default function Volunteers() {
+  // This page had NO role guard at all -- any authenticated user (including a
+  // Parent navigating here directly, e.g. by URL) would see the full staff
+  // management UI: every team's volunteer opportunities/assignments org-wide,
+  // including admin-only notes fields ("Admin Notes (not visible to parents)" /
+  // opp.notes) that are only conditionally hidden from rendering for isAdmin/isCoach
+  // -- but isAdmin/isCoach were computed from user.role with no gate keeping a
+  // Parent off the page in the first place. The Sidebar nav link was already
+  // correctly restricted to admin/athletic_director/coach; this just makes direct
+  // navigation match that, using the same guard already used by the Carpool page.
+  useScheduleGuard();
   const { user } = useAuth();
   const role = user?.role;
   const isAdmin = role === "admin";
