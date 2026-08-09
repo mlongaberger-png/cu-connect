@@ -72,10 +72,23 @@ function InvoiceRow({ inv, onClick }) {
 
 export function PlayerPaymentCard({ player, onPay, loadingFor }) {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const { data: payments = [], isLoading } = useQuery({
-    queryKey: ["payments", player.id],
-    queryFn: () => base44.entities.Payment.filter({ player_id: player.id }),
+  // getMyPaymentsFiltered scopes invoices server-side (asServiceRole) to whatever the
+  // caller is actually authorized to see -- direct parent_email match, a guardian with
+  // financial_contributor permission, or the promoted/unpaused athlete themselves --
+  // since Payment's RLS read rule can't join to PlayerGuardian (same platform
+  // limitation as getMyPlayers/getEventsFiltered). The raw Payment.filter({player_id})
+  // call this replaced silently returned zero invoices for any "financial contributor"
+  // guardian whose access depends on the PlayerGuardian link rather than a direct email
+  // match. Uses a queryKey with no player.id so every card on the page shares one
+  // cached fetch instead of firing N separate calls.
+  const { data: allMyPayments = [], isLoading } = useQuery({
+    queryKey: ["my-payments-filtered"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPaymentsFiltered", {});
+      return res.data?.payments || [];
+    },
   });
+  const payments = allMyPayments.filter(p => p.player_id === player.id);
 
   const visible = payments.filter(p => p.status !== "draft");
   const unpaid = visible.filter(p => !["paid","draft","voided","refunded"].includes(p.status));
