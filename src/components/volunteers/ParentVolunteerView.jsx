@@ -133,7 +133,7 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
   const myOpps = opportunities.filter(o =>
     myTeamIds.includes(o.team_id) &&
     !o.is_locked &&
-    new Date(o.date) >= new Date() &&
+    parseISO(o.date) >= new Date() &&
     (!o.signup_deadline || !isBefore(parseISO(o.signup_deadline), new Date()))
   );
 
@@ -205,7 +205,7 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{opp?.role_name || "Role"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {opp?.date ? format(new Date(opp.date), "MMM d, yyyy") : ""}{opp?.start_time ? ` at ${opp.start_time}` : ""}
+                      {opp?.date ? format(parseISO(opp.date), "MMM d, yyyy") : ""}{opp?.start_time ? ` at ${opp.start_time}` : ""}
                       {opp?.team_name ? ` · ${opp.team_name}` : ""}
                     </p>
                   </div>
@@ -263,7 +263,7 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                       <Clock className="w-3 h-3" />
-                      {opp.date ? format(new Date(opp.date), "EEEE, MMM d") : ""}
+                      {opp.date ? format(parseISO(opp.date), "EEEE, MMM d") : ""}
                       {opp.start_time && ` · ${opp.start_time}${opp.end_time ? ` – ${opp.end_time}` : ""}`}
                     </div>
                     <div className="mt-2 flex items-center gap-2">
