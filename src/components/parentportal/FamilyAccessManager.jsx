@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Trash2, Pencil, Users, Calendar, MessageSquare, CreditCard, CheckCircle } from "lucide-react";
+import { UserPlus, Trash2, Pencil, Users, Calendar, MessageSquare, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import InviteFamilyMember from "./InviteFamilyMember";
@@ -19,6 +19,7 @@ export default function FamilyAccessManager({ players, currentUserEmail }) {
   const [showInviteFor, setShowInviteFor] = useState(null); // player
   const [editingGuardian, setEditingGuardian] = useState(null); // guardian record
   const [removingId, setRemovingId] = useState(null);
+  const [removeError, setRemoveError] = useState(null);
 
   // Fetch all guardians for all players
   const playerIds = players.map(p => p.id);
@@ -39,9 +40,29 @@ export default function FamilyAccessManager({ players, currentUserEmail }) {
 
   const handleRemove = async (guardian) => {
     setRemovingId(guardian.id);
-    await base44.entities.PlayerGuardian.delete(guardian.id);
-    queryClient.invalidateQueries({ queryKey: ["all-guardians-family", playerIds.join(",")] });
-    setRemovingId(null);
+    setRemoveError(null);
+    try {
+      // Routed through updateFamilyAccess (asServiceRole) rather than a direct
+      // client-side PlayerGuardian.delete() call -- that entity's delete RLS
+      // is admin/athletic_director/coach ONLY, with no exception for a primary
+      // parent revoking their own invited co-guardian's access. The old direct
+      // call 403'd for every real parent, and with no try/catch here the click
+      // silently did nothing with no error shown.
+      const res = await base44.functions.invoke("updateFamilyAccess", {
+        action: "revoke",
+        guardian_id: guardian.id,
+      });
+      if (res.data?.error) {
+        setRemoveError(res.data.error);
+        setRemovingId(null);
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["all-guardians-family", playerIds.join(",")] });
+      setRemovingId(null);
+    } catch (err) {
+      setRemovingId(null);
+      setRemoveError(err?.response?.data?.error || err?.message || "Failed to revoke access. Please try again.");
+    }
   };
 
   const guardiansByPlayer = players.map(player => ({
@@ -65,6 +86,12 @@ export default function FamilyAccessManager({ players, currentUserEmail }) {
           <p className="text-xs text-muted-foreground mt-0.5">Invite grandparents or other family members with specific permissions</p>
         </div>
       </div>
+
+      {removeError && (
+        <div className="flex items-center gap-1.5 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {removeError}
+        </div>
+      )}
 
       {guardiansByPlayer.map(({ player, guardians }) => (
         <div key={player.id} className="bg-card rounded-2xl border border-border p-4 space-y-3">
