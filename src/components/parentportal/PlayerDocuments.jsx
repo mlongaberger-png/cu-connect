@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Upload, FileText, Trash2, CheckCircle } from "lucide-react";
+import { Upload, FileText, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,7 @@ export default function PlayerDocuments({ player }) {
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   const { data: docs = [] } = useQuery({
     queryKey: ["player-docs", player.id],
@@ -33,7 +34,19 @@ export default function PlayerDocuments({ player }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.PlayerDocument.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["player-docs", player.id] }),
+    onSuccess: () => {
+      setDeleteError(null);
+      qc.invalidateQueries({ queryKey: ["player-docs", player.id] });
+    },
+    // PlayerDocument's delete RLS previously only allowed staff (admin/AD/coach) --
+    // a parent deleting their own uploaded document 404'd/403'd with no feedback
+    // at all, since this mutation had no onError. The RLS now also allows the
+    // uploader (matching the update rule's existing pattern), but this handler
+    // stays so a real failure (e.g. someone else's document) surfaces a message
+    // instead of silently leaving the item in the list.
+    onError: (err) => {
+      setDeleteError(err?.response?.data?.error || err?.message || "Failed to delete document. Please try again.");
+    },
   });
 
   const handleUpload = async (e) => {
@@ -78,6 +91,12 @@ export default function PlayerDocuments({ player }) {
         <h3 className="font-semibold text-foreground">{player.first_name} {player.last_name}</h3>
         <span className="text-xs text-muted-foreground ml-auto">{player.team_name}</span>
       </div>
+
+      {deleteError && (
+        <div className="flex items-center gap-1.5 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2 mb-3">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {deleteError}
+        </div>
+      )}
 
       {/* Existing Docs */}
       <div className="space-y-2 mb-4">
@@ -125,7 +144,7 @@ export default function PlayerDocuments({ player }) {
                       Cancel
                     </button>
                     <button
-                      onClick={() => { deleteMutation.mutate(doc.id); setConfirmDeleteId(null); }}
+                      onClick={() => { setDeleteError(null); deleteMutation.mutate(doc.id); setConfirmDeleteId(null); }}
                       className="text-xs px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors font-medium"
                     >
                       Delete
