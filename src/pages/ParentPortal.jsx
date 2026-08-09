@@ -42,7 +42,7 @@ const ALL_TABS = [
   { id: "rsvp-volunteers", label: "RSVP, Snacks & Carpool", icon: Users },
 ];
 
-// Tabs always visible to grandparents regardless of permissions
+// Tabs always visible to restricted family members regardless of granted permissions
 const GRANDPARENT_ALWAYS_VISIBLE = ["overview"];
 
 export default function ParentPortal() {
@@ -51,7 +51,6 @@ export default function ParentPortal() {
   const { user, isLoadingAuth, refreshUser } = useAuth();
   const userEmail = user?.email;
   const isGrandparent = user?.role === "grandparent";
-  const isRestrictedFamily = isGrandparent; // extend to other limited roles if needed
 
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
@@ -105,19 +104,6 @@ export default function ParentPortal() {
     staleTime: 60_000,
   });
 
-  // Aggregate permissions from all guardian links (for restricted family members)
-  const myPermissions = new Set(
-    myGuardianLinks.flatMap(g => g.permissions || [])
-  );
-
-  // Derive visible tabs based on role + permissions
-  const TABS = ALL_TABS.filter(tab => {
-    if (!isRestrictedFamily) return true; // full parents/staff see everything
-    if (GRANDPARENT_ALWAYS_VISIBLE.includes(tab.id)) return true;
-    if (!tab.permission) return false; // tabs with no permission key are hidden for restricted users
-    return myPermissions.has(tab.permission);
-  });
-
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list(),
@@ -136,6 +122,35 @@ export default function ParentPortal() {
     },
     enabled: !!userEmail,
     staleTime: 60_000,
+  });
+
+  // Aggregate permissions from all guardian links (for restricted family members)
+  const myPermissions = new Set(
+    myGuardianLinks.flatMap(g => g.permissions || [])
+  );
+
+  // FIX (Aug 9, 2026): isRestrictedFamily used to be `user.role === "grandparent"`
+  // only. But no code path (onUserCreated / autoUpgradeParentRole) ever assigns that
+  // role from the parent-initiated "Invite Family Member" co-guardian flow -- every
+  // co-guardian invited that way, regardless of real-world relationship or the
+  // view_calendar/view_messages/financial_contributor checkboxes selected at invite
+  // time, ends up with role "parent" like anyone else. That made the permission
+  // system restrict nothing in practice for its actual primary use case: any invited
+  // co-guardian saw every tab. The real signal for "this caller should be permission-
+  // gated" is whether they're ONLY a secondary guardian -- i.e. not the primary
+  // Player.parent_email match on ANY of their linked players -- not their role string.
+  // Kept `isGrandparent` as an additional OR so the (separate, admin-initiated,
+  // still-functional) staff "Invite Parent/Grandparent" path's role assignment keeps
+  // working exactly as before.
+  const isPrimaryForAnyKid = myLinkedPlayers.some(p => p.parent_email === userEmail);
+  const isRestrictedFamily = isGrandparent || (myLinkedPlayers.length > 0 && !isPrimaryForAnyKid);
+
+  // Derive visible tabs based on permissions
+  const TABS = ALL_TABS.filter(tab => {
+    if (!isRestrictedFamily) return true; // full parents/staff see everything
+    if (GRANDPARENT_ALWAYS_VISIBLE.includes(tab.id)) return true;
+    if (!tab.permission) return false; // tabs with no permission key are hidden for restricted users
+    return myPermissions.has(tab.permission);
   });
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
