@@ -144,14 +144,12 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
     // Find a kid on this team
     const kid = myKids.find(k => k.team_id === opp.team_id);
     if (!kid) return;
+    // player_name/team_id/volunteer_name/volunteer_email/status are all derived
+    // server-side in volunteerSlotSelfService (from the caller's own auth + the
+    // opportunity record), not trusted from the client.
     signupMutation.mutate({
       opportunity_id: opp.id,
       player_id: kid.id,
-      player_name: `${kid.first_name} ${kid.last_name}`,
-      team_id: opp.team_id,
-      volunteer_name: userName || userEmail,
-      volunteer_email: userEmail,
-      status: "signed_up",
     });
   };
 
