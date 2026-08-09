@@ -9,13 +9,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Plus, Users, ChevronRight, Filter, Trash2, ShieldCheck } from "lucide-react";
 import TeamAvatarPicker, { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
-import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
+import { useScheduleGuard } from "@/hooks/useRoleGuard";
 
 const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
 const seasonOptions = ["fall", "winter", "spring", "summer"];
 
 export default function Teams() {
-  const { isAdmin } = useAdminOrADGuard();
+  // Was useAdminOrADGuard() (admin/AD only) — blocked Coach from this page entirely,
+  // which was the only in-app link into TeamDetail (roster/compliance/snacks/depth
+  // chart), a page whose own permission checks already assume Coach access throughout.
+  // Scoped below to the coach's own team(s) via CoachProfile, same pattern already
+  // used for the Carpool page's coach branch — unlike admin/AD, who legitimately see
+  // every team org-wide.
+  const { isAdmin, isCoach, user } = useScheduleGuard();
   const [showForm, setShowForm] = useState(false);
   const [filterSport, setFilterSport] = useState("all");
   const [form, setForm] = useState({ name: "", sport_id: "", sport_name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: "2026", avatar_url: null, avatar_type: null });
@@ -32,6 +38,11 @@ export default function Teams() {
   const { data: players = [] } = useQuery({
     queryKey: ["players"],
     queryFn: () => base44.entities.Player.list()
+  });
+  const { data: coachProfiles = [] } = useQuery({
+    queryKey: ["coach-profiles-teams", user?.email],
+    queryFn: () => base44.entities.CoachProfile.filter({ user_email: user.email }),
+    enabled: isCoach && !!user?.email
   });
 
   const createMutation = useMutation({
@@ -51,7 +62,9 @@ export default function Teams() {
   };
 
   const sortedSports = [...sports].sort((a, b) => a.name.localeCompare(b.name));
-  const filteredTeams = (filterSport === "all" ? teams : teams.filter((t) => t.sport_id === filterSport))
+  const coachTeamIds = new Set(coachProfiles.map((cp) => cp.team_id));
+  const scopedTeams = isCoach ? teams.filter((t) => coachTeamIds.has(t.id)) : teams;
+  const filteredTeams = (filterSport === "all" ? scopedTeams : scopedTeams.filter((t) => t.sport_id === filterSport))
     .slice().sort((a, b) => a.name.localeCompare(b.name));
   const playerCount = (teamId) => players.filter((p) => p.team_id === teamId).length;
 
