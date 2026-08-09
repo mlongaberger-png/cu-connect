@@ -175,9 +175,20 @@ export default function ParentPortal() {
     staleTime: 300_000,
   });
 
+  // getMyPaymentsFiltered scopes invoices server-side (asServiceRole) to whatever this
+  // caller is actually authorized to see -- direct parent_email match, a guardian with
+  // financial_contributor permission, or the promoted/unpaused athlete themselves --
+  // since Payment's RLS read rule can't join to PlayerGuardian (same platform
+  // limitation as getMyPlayers/getEventsFiltered). A raw Payment.list() call here
+  // silently returned zero invoices for any "financial contributor" guardian whose
+  // access depends on the PlayerGuardian link rather than a direct email match --
+  // same queryKey shape as PlayerPaymentCard's own fetch so the two share one cache.
   const { data: allPayments = [] } = useQuery({
-    queryKey: ["payments-all", userEmail],
-    queryFn: () => base44.entities.Payment.list(),
+    queryKey: ["my-payments-filtered"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getMyPaymentsFiltered", {});
+      return res.data?.payments || [];
+    },
     enabled: !!userEmail,
     staleTime: 60_000,
   });
