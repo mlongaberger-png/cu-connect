@@ -125,11 +125,16 @@ export default function ParentVolunteerView({ myKids, userEmail, userName }) {
   const myAssignments = assignments.filter(a => a.volunteer_email === userEmail);
   const myAssignmentOppIds = new Set(myAssignments.map(a => a.opportunity_id));
 
-  // Opportunities for my teams
+  // Opportunities for my teams. signup_deadline is documented on the entity as the
+  // cutoff for both signing up AND cancelling -- previously only checked for cancel
+  // (via canCancel below), so a parent could still see/click "Sign Up" on an
+  // opportunity whose deadline had already passed. volunteerSlotSelfService enforces
+  // this server-side too; this filter just keeps the list consistent with that.
   const myOpps = opportunities.filter(o =>
     myTeamIds.includes(o.team_id) &&
     !o.is_locked &&
-    new Date(o.date) >= new Date()
+    new Date(o.date) >= new Date() &&
+    (!o.signup_deadline || !isBefore(parseISO(o.signup_deadline), new Date()))
   );
 
   const getFilledCount = (oppId) =>
