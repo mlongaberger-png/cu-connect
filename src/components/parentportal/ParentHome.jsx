@@ -109,6 +109,13 @@ export default function ParentHome() {
   );
   const totalOwed = myUnpaid.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+  // A primary parent (direct Player.parent_email match on at least one linked kid)
+  // always has full financial access; a secondary guardian needs the explicit
+  // financial_contributor permission on their PlayerGuardian link(s).
+  const isPrimaryForAnyKid = myKids.some(k => k.parent_email === userEmail);
+  const myHomePermissions = new Set(myGuardianLinksHome.flatMap(g => g.permissions || []));
+  const hasFinancialAccess = isPrimaryForAnyKid || myHomePermissions.has("financial_contributor");
+
   const { data: sigRequests = [] } = useQuery({
     queryKey: ["my-sig-requests-home", userEmail],
     queryFn: async () => {
