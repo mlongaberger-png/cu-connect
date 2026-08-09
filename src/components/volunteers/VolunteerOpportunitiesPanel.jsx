@@ -7,8 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Calendar, Users, Lock, Unlock, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+
+// Date-only fields (opp.date) must go through parseISO, NOT new Date(dateString) --
+// new Date() parses a bare "YYYY-MM-DD" as UTC midnight, which format() then renders
+// in the browser's local timezone, rolling the displayed date back a day for any
+// timezone behind UTC. Same root cause already fixed once in the ICS calendar feed
+// (see icsCalendarFeed/entry.ts) -- confirmed live here too: a same-day-created test
+// opportunity stored as 2026-08-16 displayed as "Aug 15, 2026".
+const fmtDate = (dateStr, pattern) => (dateStr ? format(parseISO(dateStr), pattern) : "");
 
 export default function VolunteerOpportunitiesPanel({ teams, filterTeam, user, isAdmin, isCoach }) {
   const queryClient = useQueryClient();
@@ -127,7 +135,7 @@ export default function VolunteerOpportunitiesPanel({ teams, filterTeam, user, i
                       {isFull && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Full</span>}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                      <span>{opp.date ? format(new Date(opp.date), "MMM d, yyyy") : "No date"}</span>
+                      <span>{opp.date ? fmtDate(opp.date, "MMM d, yyyy") : "No date"}</span>
                       {opp.start_time && <span>{opp.start_time}{opp.end_time ? ` – ${opp.end_time}` : ""}</span>}
                       {opp.event_name && <span className="text-primary">📅 {opp.event_name}</span>}
                     </div>
