@@ -102,6 +102,16 @@ export default function ParentPortal() {
       setDeepLinkedEventId(eventId);
       setActiveTab("schedule");
     }
+    // Generic deep-link support for any tab id -- this page never actually read a
+    // `tab` query param before, so ParentHome.jsx's "Balance due" alert, "Payments"
+    // Finance card, and "documents need your signature" alert (all of which link to
+    // /ParentPortal?tab=payments or ?tab=documents) silently landed on Overview
+    // instead of the intended tab. Validated against the known tab ids so a garbage/
+    // typo'd value can't set activeTab to something with no matching render block.
+    const tabParam = params.get("tab");
+    if (tabParam && ALL_TABS.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
   }, []);
 
   const { data: myGuardianLinks = [] } = useQuery({
