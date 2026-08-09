@@ -5,7 +5,6 @@ import { Upload, FileText, Trash2, CheckCircle, AlertCircle } from "lucide-react
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
