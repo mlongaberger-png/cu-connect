@@ -421,28 +421,33 @@ export default function ParentHome() {
         <DollarSign className="w-4 h-4 text-primary" /> Finance
       </h2>
 
-      {/* 5. Payments Summary */}
-      <section
-        className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
-        onClick={() => navigate("/ParentPortal?tab=payments")}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-primary" />
+      {/* 5. Payments Summary -- only for callers with actual financial access (primary
+          parent, or a guardian explicitly granted financial_contributor); otherwise
+          this card would show real dollar amounts to someone who wasn't granted that
+          permission at invite time. */}
+      {hasFinancialAccess && (
+        <section
+          className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
+          onClick={() => navigate("/ParentPortal?tab=payments")}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Payments</p>
+                {totalOwed > 0 ? (
+                  <p className="text-xs text-primary font-medium">${(totalOwed / 100).toFixed(2)} outstanding</p>
+                ) : (
+                  <p className="text-xs text-green-400">All paid ✓</p>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Payments</p>
-              {totalOwed > 0 ? (
-                <p className="text-xs text-primary font-medium">${(totalOwed / 100).toFixed(2)} outstanding</p>
-              ) : (
-                <p className="text-xs text-green-400">All paid ✓</p>
-              )}
-            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 6. Documents Summary */}
       <section
