@@ -71,6 +71,9 @@
     "delete": {
       "$or": [
         {
+          "data.uploaded_by": "{{user.email}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
