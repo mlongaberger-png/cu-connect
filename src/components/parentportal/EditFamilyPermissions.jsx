@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Calendar, MessageSquare, CreditCard, CheckCircle, Save, Loader2 } from "lucide-react";
+import { Calendar, MessageSquare, CreditCard, CheckCircle, Save, Loader2, AlertCircle } from "lucide-react";
 
 const PERMISSION_OPTIONS = [
   {
@@ -32,7 +31,7 @@ export default function EditFamilyPermissions({ guardian, onClose }) {
   const [permissions, setPermissions] = useState(guardian.permissions || []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const queryClient = useQueryClient();
+  const [error, setError] = useState(null);
 
   const togglePermission = (id) => {
     setPermissions(prev =>
@@ -42,14 +41,34 @@ export default function EditFamilyPermissions({ guardian, onClose }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.PlayerGuardian.update(guardian.id, { permissions });
-    queryClient.invalidateQueries({ queryKey: ["guardians", guardian.player_id] });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      onClose();
-    }, 2000);
+    setError(null);
+    try {
+      // Routed through updateFamilyAccess (asServiceRole) rather than a direct
+      // client-side PlayerGuardian.update() call -- that entity's update RLS
+      // is admin/athletic_director/coach ONLY, with no exception for a primary
+      // parent managing their own invited co-guardian's permissions. The old
+      // direct call 403'd for every real parent, and with no try/catch here
+      // the button was stuck on "Saving..." forever with no error shown.
+      const res = await base44.functions.invoke("updateFamilyAccess", {
+        action: "update_permissions",
+        guardian_id: guardian.id,
+        permissions,
+      });
+      if (res.data?.error) {
+        setError(res.data.error);
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        onClose();
+      }, 2000);
+    } catch (err) {
+      setSaving(false);
+      setError(err?.response?.data?.error || err?.message || "Failed to save permissions. Please try again.");
+    }
   };
 
   return (
@@ -92,6 +111,12 @@ export default function EditFamilyPermissions({ guardian, onClose }) {
       {saved && (
         <div className="flex items-center justify-center gap-2 py-2 text-green-400 text-sm font-medium">
           <CheckCircle className="w-4 h-4" /> Permissions updated!
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-1.5 text-sm text-destructive">
+          <AlertCircle className="w-4 h-4" /> {error}
         </div>
       )}
 
