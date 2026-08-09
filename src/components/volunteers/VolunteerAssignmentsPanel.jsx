@@ -7,8 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Users } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+
+// See VolunteerOpportunitiesPanel.jsx for why date-only fields go through parseISO,
+// not new Date(dateString) -- confirmed live during Phase 7 QA (a same-day-created
+// opportunity stored as 2026-08-16 displayed as "Aug 15, 2026").
+const fmtDate = (dateStr, pattern) => (dateStr ? format(parseISO(dateStr), pattern) : "");
 
 const STATUS_OPTIONS = [
   { value: "signed_up", label: "Signed Up" },
@@ -116,7 +121,7 @@ export default function VolunteerAssignmentsPanel({ teams, filterTeam, user, isA
             <SelectContent>
               <SelectItem value="all">All Opportunities</SelectItem>
               {visibleOpps.map(o => (
-                <SelectItem key={o.id} value={o.id}>{o.role_name} – {o.date ? format(new Date(o.date), "MMM d") : ""}</SelectItem>
+                <SelectItem key={o.id} value={o.id}>{o.role_name} – {o.date ? fmtDate(o.date, "MMM d") : ""}</SelectItem>
               ))}
             </SelectContent>
           </Select>
