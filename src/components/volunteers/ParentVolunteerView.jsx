@@ -9,8 +9,12 @@ import { useToast } from "@/components/ui/use-toast";
 // Build an ICS file string for one or more volunteer assignments
 function buildVolunteerICS(entries) {
   const pad = (n) => String(n).padStart(2, "0");
+  // parseISO, not new Date(dateStr) -- same UTC-midnight-vs-local-timezone shift
+  // documented throughout this file/panel (see fmtDate note in the sibling staff
+  // panels): new Date("YYYY-MM-DD") parses as UTC, so .setHours()/.getDate() below
+  // would read back a day early in any timezone behind UTC.
   const toICSDate = (dateStr, timeStr) => {
-    const d = new Date(dateStr);
+    const d = parseISO(dateStr);
     if (timeStr) {
       const [h, m] = timeStr.split(":").map(Number);
       d.setHours(h, m, 0, 0);
