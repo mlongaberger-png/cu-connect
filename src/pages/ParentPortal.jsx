@@ -42,8 +42,15 @@ const ALL_TABS = [
   { id: "rsvp-volunteers", label: "RSVP, Snacks & Carpool", icon: Users },
 ];
 
-// Tabs always visible to restricted family members regardless of granted permissions
-const GRANDPARENT_ALWAYS_VISIBLE = ["overview"];
+// Tabs always visible to restricted family members regardless of granted permissions --
+// these three have no dedicated permission checkbox in the invite flow (only
+// Schedule/Payments/Messages do, via view_calendar/financial_contributor/
+// view_messages), so there'd be no way for a restricted guardian to ever regain them
+// otherwise. Matthew's call (Aug 9, 2026): Documents, Athlete Cards, and RSVP/Snacks/
+// Carpool should stay visible to every family member regardless of granted
+// permissions -- only Payments (and Schedule/Messages, unchanged) are meant to be
+// gated by what was actually granted at invite time.
+const GRANDPARENT_ALWAYS_VISIBLE = ["overview", "documents", "athlete-cards", "rsvp-volunteers"];
 
 export default function ParentPortal() {
   const location = useLocation();
