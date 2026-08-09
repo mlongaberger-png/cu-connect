@@ -8,9 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Calendar, Users, Lock, Unlock, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function VolunteerOpportunitiesPanel({ teams, filterTeam, user, isAdmin, isCoach }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onMutationError = (err, fallback) => toast({
+    title: fallback,
+    description: err?.response?.data?.error || err?.message || "Please try again.",
+    variant: "destructive",
+  });
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [form, setForm] = useState({
@@ -45,16 +52,19 @@ export default function VolunteerOpportunitiesPanel({ teams, filterTeam, user, i
       setOpen(false);
       resetForm();
     },
+    onError: (err) => onMutationError(err, "Couldn't create opportunity"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.VolunteerOpportunity.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["volunteer-opportunities"] }),
+    onError: (err) => onMutationError(err, "Couldn't delete opportunity"),
   });
 
   const toggleLockMutation = useMutation({
     mutationFn: ({ id, is_locked }) => base44.entities.VolunteerOpportunity.update(id, { is_locked }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["volunteer-opportunities"] }),
+    onError: (err) => onMutationError(err, "Couldn't update opportunity"),
   });
 
   const resetForm = () => setForm({ team_id: "", role_id: "", event_id: "", date: "", start_time: "", end_time: "", required_count: 1, notes: "", signup_deadline: "" });
