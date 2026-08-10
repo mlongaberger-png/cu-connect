@@ -12,6 +12,7 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked, parentNa
   const [linking, setLinking] = useState(false);
   const [linked, setLinked] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [linkError, setLinkError] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -140,6 +141,13 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked, parentNa
           <p className="text-xs text-muted-foreground">
             This will link these players to your current account (<span className="text-primary">{currentUserEmail}</span>).
           </p>
+
+          {linkError && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{linkError}</span>
+            </div>
+          )}
 
           <Button onClick={handleLink} disabled={linking} className="w-full bg-primary text-primary-foreground">
             {linking ? "Linking…" : "Link to My Account"}
