@@ -78,7 +78,14 @@ export default function Welcome() {
       <footer className="py-5 text-center text-xs text-muted-foreground border-t border-border">
         © {new Date().getFullYear()} Cornerstone United Athletics
         <span className="mx-2">·</span>
-        <Link to="/LegalPages" className="hover:text-foreground underline underline-offset-2 transition-colors">Privacy Policy</Link>
+        {/* /LegalPages is only routed inside the authenticated app tree (see
+            AppShell.jsx) -- a logged-out visitor clicking it here would hit
+            the public catch-all route and get silently redirected right back
+            to /welcome instead of seeing anything. /privacy-policy is the
+            actual public route for this content (in AppShell's PUBLIC_PATHS
+            and PublicRoutes), and is exactly what PrivacyPolicy.jsx's own
+            "back" link already points to. */}
+        <Link to="/privacy-policy" className="hover:text-foreground underline underline-offset-2 transition-colors">Privacy Policy</Link>
       </footer>
     </div>
   );
