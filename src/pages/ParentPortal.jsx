@@ -61,6 +61,14 @@ export default function ParentPortal() {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [playerLinked, setPlayerLinked] = useState(false);
+  // LinkPlayerByEmail was imported here but never actually rendered anywhere
+  // in the app -- confirmed via a full-codebase search, it's the only file
+  // that imports it besides its own definition. That made the QA plan's
+  // "Link Player by Email" test case (search by the email a child was
+  // registered under, as opposed to AddChildForm's name/DOB search) entirely
+  // unreachable. Wiring it in here as an alternate path alongside AddChildForm
+  // in the zero-kids empty state, where it clearly was always meant to go.
+  const [showEmailSearch, setShowEmailSearch] = useState(false);
 
   const PREF_KEY = `cu_cal_view_${userEmail || "default"}`;
   const savedCalView = (() => { try { return localStorage.getItem(PREF_KEY); } catch { return null; } })();
@@ -487,11 +495,35 @@ export default function ParentPortal() {
               <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
                 We're finishing your setup. If your admin has sent you an invite, check your email. Otherwise, add your child below — if they're already in the system we'll link you automatically, otherwise we'll submit their info for review.
               </p>
-              <AddChildForm
-                parentEmail={userEmail}
-                parentName={user?.full_name || user?.display_name || ""}
-                onChildAdded={() => setPlayerLinked(p => !p)}
-              />
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailSearch(false)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${!showEmailSearch ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground border border-border"}`}
+                >
+                  Add Your Child
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailSearch(true)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${showEmailSearch ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground border border-border"}`}
+                >
+                  I Know the Registration Email
+                </button>
+              </div>
+              {showEmailSearch ? (
+                <LinkPlayerByEmail
+                  currentUserEmail={userEmail}
+                  parentName={user?.full_name || user?.display_name || ""}
+                  onLinked={() => setPlayerLinked(p => !p)}
+                />
+              ) : (
+                <AddChildForm
+                  parentEmail={userEmail}
+                  parentName={user?.full_name || user?.display_name || ""}
+                  onChildAdded={() => setPlayerLinked(p => !p)}
+                />
+              )}
             </>
           )}
         </div>
