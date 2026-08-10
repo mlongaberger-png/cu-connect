@@ -58,15 +58,35 @@ export default function NotificationSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      if (existing.length > 0) {
-        return base44.entities.NotificationPreference.update(existing[0].id, data);
-      } else {
-        return base44.entities.NotificationPreference.create({ ...data, user_email: userEmail });
-      }
+      // NotificationPreference's RLS is keyed on user_email == caller's email
+      // (same as it should be), but a direct client-side create/update against
+      // this entity 403s regardless -- confirmed via a raw network capture, the
+      // request body matches the RLS rule exactly and still gets rejected.
+      // Route the save through a backend function that writes with
+      // asServiceRole instead, matching how PushSubscription/ChannelMember
+      // (same flat "user_email": "{{user.email}}" RLS shape) are already saved
+      // elsewhere in this app.
+      const { messages_enabled, messages_method, schedule_enabled, schedule_method,
+        attendance_enabled, attendance_method, payments_enabled, payments_method,
+        volunteers_enabled, volunteers_method, documents_enabled, documents_method,
+        quiet_hours_enabled, quiet_start, quiet_end } = data;
+      return base44.functions.invoke("saveNotificationPreferences", {
+        messages_enabled, messages_method, schedule_enabled, schedule_method,
+        attendance_enabled, attendance_method, payments_enabled, payments_method,
+        volunteers_enabled, volunteers_method, documents_enabled, documents_method,
+        quiet_hours_enabled, quiet_start, quiet_end,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notif-prefs", userEmail] });
       toast({ title: "Preferences saved", description: "Your notification settings have been updated." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't save preferences",
+        description: error?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
