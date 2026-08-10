@@ -87,38 +87,20 @@ export default function AddChildForm({ parentEmail, parentName, onChildAdded, on
 
     setSaving(true);
     try {
-      // Link parent to existing player via PlayerGuardian
-      const existingLinks = await base44.entities.PlayerGuardian.filter({ player_id: selectedMatch.id, user_email: parentEmail });
-      if (!existingLinks.length) {
-        await base44.entities.PlayerGuardian.create({
-          player_id: selectedMatch.id,
-          player_name: `${selectedMatch.first_name} ${selectedMatch.last_name}`,
-          user_email: parentEmail,
-          relationship: "Guardian",
-          invited_by: parentEmail,
-        });
-      }
-
-      // Join the team's chat channel(s), if any exist
-      if (selectedMatch.team_id) {
-        try {
-          const teamChannels = await base44.entities.Channel.filter({ team_id: selectedMatch.team_id });
-          const joinable = teamChannels.filter(c => c.type === "team" || c.type === "announcement");
-          for (const channel of joinable) {
-            const existingMembership = await base44.entities.ChannelMember.filter({ channel_id: channel.id, user_email: parentEmail });
-            if (existingMembership.length === 0) {
-              await base44.entities.ChannelMember.create({
-                channel_id: channel.id,
-                user_email: parentEmail,
-                user_name: parentName || "",
-                unread_count: 0,
-              });
-            }
-          }
-        } catch (channelErr) {
-          console.error("Channel membership setup failed (non-fatal):", channelErr.message);
-        }
-      }
+      // Routed through linkPlayerGuardian (asServiceRole) rather than direct
+      // client-side PlayerGuardian.create()/ChannelMember.create() calls --
+      // both entities' create RLS have an $or branch for data.user_email ==
+      // the caller's own email (exactly this case), but that branch never
+      // actually grants access in practice: confirmed via a raw network probe
+      // as a real logged-in parent, body.user_email === caller's own email,
+      // still 403 "Permission denied". This previously failed silently for
+      // every parent linking to a matched player this way.
+      await base44.functions.invoke("linkPlayerGuardian", {
+        player_id: selectedMatch.id,
+        player_name: `${selectedMatch.first_name} ${selectedMatch.last_name}`,
+        relationship: "Guardian",
+        join_channels: true,
+      });
 
       const child = { ...selectedMatch, _linked: true, _label: `${selectedMatch.first_name} ${selectedMatch.last_name}` };
       setAddedChildren(prev => [...prev, child]);
