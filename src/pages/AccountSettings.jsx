@@ -146,7 +146,7 @@ export default function AccountSettings() {
       await base44.integrations.Core.SendEmail({
         to: user.email,
         subject: "Sign in to Cornerstone United Athletics",
-        body: `Hi ${user.full_name || "there"},\n\nYou requested a new sign-in link. Please log in at the portal to access your account.\n\nIf you didn't request this, you can ignore this email.`,
+        body: `Hi ${user.display_name || user.full_name || "there"},\n\nYou requested a new sign-in link. Please log in at the portal to access your account.\n\nIf you didn't request this, you can ignore this email.`,
       });
       setMagicLinkSent(true);
       toast({ title: "Link sent!", description: "Check your email for a new sign-in link." });
@@ -382,7 +382,7 @@ export default function AccountSettings() {
             <CardDescription>Manage your children's profiles and check their status.</CardDescription>
           </CardHeader>
           <CardContent>
-            <MyChildrenPanel userEmail={user?.email} userName={user?.full_name} linkedPlayers={linkedPlayers} />
+            <MyChildrenPanel userEmail={user?.email} userName={user?.display_name || user?.full_name} linkedPlayers={linkedPlayers} />
           </CardContent>
         </Card>
       )}
