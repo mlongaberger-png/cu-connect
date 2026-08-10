@@ -24,7 +24,7 @@ export default function AccountSettings() {
   const [pausingId, setPausingId] = useState(null);
 
   const [form, setForm] = useState({
-    full_name: user?.full_name || "",
+    full_name: user?.display_name || user?.full_name || "",
     phone: user?.phone || "",
     avatar_url: user?.avatar_url || "",
   });
@@ -116,11 +116,19 @@ export default function AccountSettings() {
     }
     setSaving(true);
     try {
-      await base44.auth.updateMe({
-        full_name: form.full_name.trim(),
-        phone: form.phone.trim(),
-        avatar_url: form.avatar_url,
-      });
+      // full_name is a platform auth field and can't actually be changed via
+      // base44.auth.updateMe() -- it silently no-ops (see updateMyProfile's
+      // header comment for the full story). Route the name through the new
+      // self-service function, which stores it as the User entity's own
+      // display_name field instead (the same pattern the admin-side
+      // ParentAccountsTab/StaffAccountsPanel editors already use).
+      await Promise.all([
+        base44.functions.invoke("updateMyProfile", { full_name: form.full_name.trim() }),
+        base44.auth.updateMe({
+          phone: form.phone.trim(),
+          avatar_url: form.avatar_url,
+        }),
+      ]);
       toast({ title: "✓ Changes saved", description: "Your profile has been updated.", duration: 3000 });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -203,7 +211,7 @@ export default function AccountSettings() {
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </div>
             <div>
-              <p className="font-medium text-foreground">{user?.full_name || "—"}</p>
+              <p className="font-medium text-foreground">{user?.display_name || user?.full_name || "—"}</p>
               <Badge variant="outline" className="mt-1 text-xs capitalize">{roleLabel}</Badge>
             </div>
           </div>
