@@ -42,27 +42,31 @@ export default function LinkPlayerByEmail({ currentUserEmail, onLinked, parentNa
     if (!found) return;
     setLinking(true);
 
-    for (const player of found) {
-      // Check if guardian link already exists
-      const existing = await base44.entities.PlayerGuardian.filter({
-        player_id: player.id,
-        user_email: currentUserEmail,
-      });
-
-      if (existing.length === 0) {
-        await base44.entities.PlayerGuardian.create({
+    try {
+      // Routed through linkPlayerGuardian (asServiceRole) rather than a direct
+      // client-side PlayerGuardian.create() call -- that create's RLS has an
+      // $or branch for data.user_email == the caller's own email, which is
+      // exactly this case (self-linking with your own email), but that branch
+      // never actually grants access in practice (confirmed via a raw network
+      // probe: 403 "Permission denied" even with a perfectly matching
+      // user_email). This previously failed silently for every parent using
+      // this search-by-email flow, with no catch here to surface the error.
+      for (const player of found) {
+        await base44.functions.invoke("linkPlayerGuardian", {
           player_id: player.id,
           player_name: `${player.first_name} ${player.last_name}`,
-          user_email: currentUserEmail,
           relationship: "Guardian",
-          invited_by: "self",
+          join_channels: true,
         });
       }
-    }
 
-    setLinking(false);
-    setLinked(true);
-    setTimeout(() => onLinked(), 1500);
+      setLinking(false);
+      setLinked(true);
+      setTimeout(() => onLinked(), 1500);
+    } catch (err) {
+      setLinking(false);
+      setLinkError(err?.response?.data?.error || err?.message || "Failed to link player. Please try again.");
+    }
   };
 
   if (linked) {
