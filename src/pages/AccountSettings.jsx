@@ -157,7 +157,7 @@ export default function AccountSettings() {
     }
   };
 
-  const initials = (user?.full_name || user?.email || "?")
+  const initials = (user?.display_name || user?.full_name || user?.email || "?")
     .split(" ")
     .map(w => w[0])
     .join("")
