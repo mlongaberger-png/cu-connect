@@ -43,9 +43,20 @@ export default function NotificationSettings() {
     base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
   };
 
+  // Read routed through getNotificationPreferences (asServiceRole) rather
+  // than a direct client-side NotificationPreference.filter() call -- that
+  // read's RLS is the same "user_email" == the caller's own email match as
+  // the create rule, and turns out to be just as unreliable: a real, correct
+  // record can exist (confirmed via an admin-level query) and this filter()
+  // call still returns []. Without this fix every save looked successful but
+  // the page could never see its own saved row, so it always reloaded back
+  // to DEFAULTS.
   const { data: existing = [] } = useQuery({
     queryKey: ["notif-prefs", userEmail],
-    queryFn: () => base44.entities.NotificationPreference.filter({ user_email: userEmail }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getNotificationPreferences", {});
+      return res.data?.preference ? [res.data.preference] : [];
+    },
     enabled: !!userEmail,
     onSuccess: (data) => {
       if (data.length > 0) setPrefs({ ...DEFAULTS, ...data[0] });
