@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
         athlete_dob: a.athlete_dob,
         target_team_id: a.team_id,
         target_team_name: team?.name || '',
-        sport_name: team?.name || team?.sport_name || '',
+        sport_name: team?.sport_name || '',
         status: 'pending',
         applied_at: appliedAt,
         referral_source: referral_source || undefined,
