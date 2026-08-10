@@ -527,7 +527,7 @@ export default function ParentPortal() {
         player={promotingPlayer}
         currentUserEmail={userEmail}
         onClose={() => setPromotingPlayer(null)}
-        onPromoted={() => setPromotingPlayer(null)}
+        onPromoted={() => { setPromotingPlayer(null); setPlayerLinked(p => !p); }}
       />
     )}
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
