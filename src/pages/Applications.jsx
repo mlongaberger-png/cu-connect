@@ -32,6 +32,18 @@ const REFERRAL_LABELS = {
 function formatDate(iso) {
   if (!iso) return "—";
   try {
+    // Date-only strings (e.g. "2012-09-20", as stored for athlete_dob) must be
+    // rendered as the calendar date itself, not shifted by timezone conversion.
+    // Parsing "YYYY-MM-DD" as UTC (the ISO 8601 default) and then formatting in
+    // a timezone behind UTC rolls the displayed date back a day, so build the
+    // Date from local components instead for those.
+    const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (dateOnlyMatch) {
+      const [, y, m, d] = dateOnlyMatch;
+      return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      });
+    }
     return new Date(iso.endsWith("Z") ? iso : iso + "Z").toLocaleDateString("en-US", {
       month: "short", day: "numeric", year: "numeric",
     });
