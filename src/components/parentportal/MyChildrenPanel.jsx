@@ -25,6 +25,19 @@ export default function MyChildrenPanel({ userEmail, userName, linkedPlayers = [
 
   const handleChildAdded = () => {
     queryClient.invalidateQueries({ queryKey: ["my-pending-children", userEmail] });
+    // AccountSettings.jsx (this component's only caller) owns the
+    // "my-players-settings" query that supplies our `linkedPlayers` prop, and
+    // never had a way to know a child was just linked -- confirmed live: after
+    // successfully linking to an existing player match (verified via an
+    // admin-level PlayerGuardian query, the link really was created), the
+    // newly-linked child never appeared in this panel without a manual page
+    // reload, since only the pending-children query above got invalidated.
+    // Same "real success, stale UI" bug class as ParentPortal.jsx's earlier
+    // promotion-refresh fix. Invalidating the exact key AccountSettings.jsx
+    // queries with is a bit of a layering shortcut, but this component has
+    // exactly one caller, so it's a safe, targeted fix rather than plumbing a
+    // new callback prop through for one query key.
+    queryClient.invalidateQueries({ queryKey: ["my-players-settings", userEmail] });
     setShowAddForm(false);
   };
 
