@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle, BarChart2, Sparkles, RefreshCw, Archive, ArchiveRestore } from "lucide-react";
 import TeamAvatarPicker from "@/components/teams/TeamAvatarPicker";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
