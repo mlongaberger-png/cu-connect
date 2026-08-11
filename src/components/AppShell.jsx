@@ -34,7 +34,10 @@ import PracticePlans from "@/pages/PracticePlans";
 import GameDayPlaylists from "@/pages/GameDayPlaylists";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ParentCalendar from "@/pages/ParentCalendar";
-import Playbooks from "@/pages/Playbooks";
+// Playbooks is temporarily taken down pending a full rebuild (Matthew's
+// decision, Aug 2026) -- the route below redirects everyone to /Portal
+// instead of rendering this page. Import kept commented for the rebuild.
+// import Playbooks from "@/pages/Playbooks";
 import CoachesTraining from "@/pages/CoachesTraining";
 import MessagesLayout from "@/pages/MessagesLayout";
 import ParentSportsRegister from "@/pages/ParentSportsRegister";
@@ -187,7 +190,8 @@ export default function AppShell() {
         <Route path="/AccountSettings" element={<AccountSettings />} />
         <Route path="/Gallery" element={<Gallery />} />
         <Route path="/GameDayPlaylists" element={<GameDayPlaylists />} />
-        <Route path="/Playbooks" element={<Playbooks />} />
+        {/* Playbooks taken down pending a full rebuild -- redirects instead of rendering */}
+        <Route path="/Playbooks" element={<Navigate to="/Portal" replace />} />
         <Route path="/Messages" element={<MessagesLayout />} />
         <Route path="/sports-directory" element={<ParentSportsRegister />} />
         <Route path="/Register" element={<Register />} />
