@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Image, Upload, Trash2, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Gallery() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const role = user?.role;
   const isStaff = ["admin", "athletic_director", "coach"].includes(role);
   const isParent = role === "parent" || role === "user";
@@ -75,6 +77,9 @@ export default function Gallery() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.PhotoPost.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["photos"] }),
+    onError: (err) => {
+      toast({ title: "Couldn't delete photo", description: err?.message || "Something went wrong.", variant: "destructive" });
+    },
   });
 
   const handleFileSelect = (e) => {
@@ -108,6 +113,12 @@ export default function Gallery() {
       setShowUpload(false);
       setUploadForm({ team_id: "", caption: "" });
       setSelectedFiles([]);
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err?.message || "Something went wrong uploading your photo. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
       setUploadProgress({ done: 0, total: 0 });
