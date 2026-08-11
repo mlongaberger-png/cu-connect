@@ -261,6 +261,18 @@ export default function Teams() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!deleteBlockedMessage} onOpenChange={(open) => { if (!open) setDeleteBlockedMessage(null); }}>
+        <DialogContent className="bg-card border-border text-foreground max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Can't delete this team</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{deleteBlockedMessage}</p>
+          <div className="flex justify-end">
+            <Button onClick={() => setDeleteBlockedMessage(null)} className="bg-primary text-primary-foreground">Got it</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>);
 
 }
