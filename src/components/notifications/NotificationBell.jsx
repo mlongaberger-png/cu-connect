@@ -4,7 +4,12 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Megaphone, Calendar, X, CheckCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO, format } from "date-fns";
+// Aug 11, 2026 (Phase 13 QA, same bug class as PracticePlans.jsx et al.): e.date is
+// a plain YYYY-MM-DD string; new Date(str) parses as UTC midnight, which sits
+// BEFORE local "today" in timezones behind UTC and was dropping today's events
+// from the notification feed too early in the day.
+import { parseLocalDate } from "@/utils/dateTime";
 
 const STORAGE_KEY = "cu_read_notification_ids";
 
@@ -94,6 +99,7 @@ export default function NotificationBell() {
       ]);
 
       const now = new Date();
+      const todayLocal = parseLocalDate(format(new Date(), "yyyy-MM-dd"));
       const filteredAnnouncements = isStaff
         ? announcements
         : announcements.filter(a => a.target === "org" || (a.target === "team" && allowedTeamIds.has(a.target_id)));
@@ -110,7 +116,7 @@ export default function NotificationBell() {
           date: a.created_date,
           link: "/Portal",
         })),
-        ...filteredEvents.filter(e => new Date(e.date) >= now).slice(0, 5).map(e => ({
+        ...filteredEvents.filter(e => parseLocalDate(e.date) >= todayLocal).slice(0, 5).map(e => ({
           id: `evt-${e.id}`,
           type: "event",
           title: e.title,
