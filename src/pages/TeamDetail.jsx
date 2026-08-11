@@ -21,6 +21,10 @@ import TeamComplianceTab from "@/components/teams/TeamComplianceTab";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { AGE_BRACKET_ORDER, getNextAgeBracket, suggestRolledOverName, suggestNextSeasonYear } from "@/lib/teamRollover";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 export default function TeamDetail() {
   // Was useAdminOrADGuard() (admin/AD only), which redirected Coach to /Portal before
@@ -54,6 +58,7 @@ export default function TeamDetail() {
   const [viewStatsPlayer, setViewStatsPlayer] = useState(null);
   const [showRolloverDialog, setShowRolloverDialog] = useState(false);
   const [rolloverForm, setRolloverForm] = useState(null);
+  const [showEndSeasonConfirm, setShowEndSeasonConfirm] = useState(false);
 
   const handleInviteParent = async (player) => {
     if (!player.parent_email) return;
@@ -336,7 +341,7 @@ export default function TeamDetail() {
               </Button>
               <Button
                 variant="outline" size="sm"
-                onClick={() => { if (confirm(`End the season for "${team.name}"? It will be archived (hidden from the active Teams list) but its roster and history stay intact. You can reactivate it later.`)) endSeasonMutation.mutate(); }}
+                onClick={() => setShowEndSeasonConfirm(true)}
                 disabled={endSeasonMutation.isPending}
                 className="flex-shrink-0 border-border text-xs gap-1.5 text-muted-foreground"
               >
