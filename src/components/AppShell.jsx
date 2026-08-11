@@ -15,6 +15,7 @@ import Documents from "@/pages/Documents";
 import ParentPortal from "@/pages/ParentPortal";
 import Register from "@/pages/Register";
 import AthleticDirectors from "@/pages/AthleticDirectors";
+import FieldStatus from "@/pages/FieldStatus";
 import Volunteers from "@/pages/Volunteers";
 import AuditLog from "@/pages/AuditLog";
 import NotificationSettings from "@/pages/NotificationSettings";
@@ -207,6 +208,7 @@ export default function AppShell() {
           <Route path="/Announcements" element={<Announcements />} />
           <Route path="/Documents" element={<Documents />} />
           <Route path="/AthleticDirectors" element={<AthleticDirectors />} />
+          <Route path="/FieldStatus" element={<FieldStatus />} />
           <Route path="/Volunteers" element={<Volunteers />} />
           <Route path="/AuditLog" element={<AuditLog />} />
           <Route path="/SeasonManager" element={<SeasonManager />} />
