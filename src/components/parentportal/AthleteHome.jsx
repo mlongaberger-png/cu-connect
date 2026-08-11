@@ -172,19 +172,20 @@ export default function AthleteHome() {
         </div>
       </section>
 
-      {/* 7. Playbooks CTA */}
-      <section
-        className="bg-card border border-border rounded-2xl p-4 cursor-pointer hover:border-primary/30 transition-colors"
-        onClick={() => navigate("/Playbooks")}
-      >
+      {/* 7. Playbooks CTA -- feature taken down pending a full rebuild (Aug 2026);
+          shown disabled instead of removed so athletes aren't confused by a
+          card that silently vanished, but it no longer navigates anywhere. */}
+      <section className="bg-card border border-border rounded-2xl p-4 opacity-50 cursor-not-allowed">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-muted-foreground" />
             </div>
-            <p className="text-sm font-semibold text-foreground">Playbooks &amp; Film</p>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Playbooks &amp; Film</p>
+              <p className="text-xs text-muted-foreground">Coming back soon</p>
+            </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </div>
       </section>
     </div>
