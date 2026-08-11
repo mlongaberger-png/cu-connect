@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle, BarChart2, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, UserCircle, Mail, Phone, Send, CheckCircle, Pencil, Settings, Eye, EyeOff, FileUp, ShieldCheck, Users, DollarSign, Cookie, AlertTriangle, BarChart2, Sparkles, RefreshCw, Archive, ArchiveRestore } from "lucide-react";
 import TeamAvatarPicker from "@/components/teams/TeamAvatarPicker";
 import StatsUploadModal from "@/components/stats/StatsUploadModal";
 import BaseballStatsDisplay from "@/components/stats/BaseballStatsDisplay";
 import SnackManagerPanel from "@/components/snacks/SnackManagerPanel";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AdminInvoiceManager from "@/components/parentportal/AdminInvoiceManager";
 import RosterPDFButton from "@/components/roster/RosterPDFButton";
 import RosterImporter from "@/components/roster/RosterImporter";
@@ -19,6 +19,8 @@ import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import TeamComplianceTab from "@/components/teams/TeamComplianceTab";
 // DepthChartTab removed -- depth chart feature removed altogether (Aug 2026).
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import { AGE_BRACKET_ORDER, getNextAgeBracket, suggestRolledOverName, suggestNextSeasonYear } from "@/lib/teamRollover";
 
 export default function TeamDetail() {
   // Was useAdminOrADGuard() (admin/AD only), which redirected Coach to /Portal before
