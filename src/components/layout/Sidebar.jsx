@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings, Image, ClipboardList, Music2, GraduationCap, Inbox, Shirt, Car } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList, Music2, GraduationCap, Inbox, Shirt, Car, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const staffNavGroups = [
@@ -39,6 +39,10 @@ const staffNavGroups = [
       { path: "/Announcements", label: "Announcements", icon: Megaphone, roles: ["admin", "athletic_director"] },
       { path: "/Documents", label: "Documents", icon: FolderOpen, roles: ["admin", "athletic_director"] },
       { path: "/ParentPortal", label: "Parent View", icon: UserCircle, roles: ["admin", "athletic_director", "coach"] },
+      // Field Status added Aug 11, 2026: FieldStatus.jsonc's RLS already allowed AD (create/delete)
+      // and coach (update) -- this nav item and its route just finally expose that access; previously
+      // the only UI path in was AthleticDirectors.jsx below, which is admin-only.
+      { path: "/FieldStatus", label: "Field Status", icon: MapPin, roles: ["admin", "athletic_director", "coach"] },
       { path: "/AthleticDirectors", label: "Admin Console", icon: ShieldCheck, roles: ["admin"] },
     ]
   }
