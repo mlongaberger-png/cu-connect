@@ -43,7 +43,7 @@
     "create": {
       "$and": [
         {
-          "uploader_email": "{{user.email}}"
+          "data.uploader_email": "{{user.email}}"
         },
         {
           "$or": [
@@ -111,12 +111,12 @@
       ]
     },
     "update": {
-      "uploader_email": "{{user.email}}"
+      "data.uploader_email": "{{user.email}}"
     },
     "delete": {
       "$or": [
         {
-          "uploader_email": "{{user.email}}"
+          "data.uploader_email": "{{user.email}}"
         },
         {
           "user_condition": {
