@@ -98,7 +98,6 @@ export default function NotificationBell() {
           : base44.functions.invoke("getEventsFiltered", {}).then(evRes => (evRes.data?.events || []).slice(0, 20)),
       ]);
 
-      const now = new Date();
       const todayLocal = parseLocalDate(format(new Date(), "yyyy-MM-dd"));
       const filteredAnnouncements = isStaff
         ? announcements
