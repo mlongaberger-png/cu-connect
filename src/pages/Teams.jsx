@@ -102,6 +102,22 @@ export default function Teams() {
           <p className="text-sm text-muted-foreground mt-1">{teams.length} teams across {sports.length} sports</p>
         </div>
         <div className="flex gap-3">
+          {!isCoach && (
+            <div className="flex items-center rounded-lg border border-border bg-surface p-0.5">
+              <button
+                onClick={() => setStatusFilter("active")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${statusFilter === "active" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setStatusFilter("archived")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${statusFilter === "archived" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Archived{archivedCount > 0 ? ` (${archivedCount})` : ""}
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={filterSport} onValueChange={setFilterSport}>
