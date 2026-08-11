@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, ClipboardList, Trash2, ChevronDown, ChevronUp, Clock, Copy, Pencil, GripVertical } from "lucide-react";
-import { format } from "date-fns";
 // Aug 11, 2026 (Phase 13 coach-role QA testing): plan.date is a plain YYYY-MM-DD
 // string with no time/timezone. new Date(plan.date) parses that as UTC midnight,
 // which display-formats one day EARLIER than the stored/entered date in any
