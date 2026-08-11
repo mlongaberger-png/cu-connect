@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const ROLES = [
   { value: "coach", label: "Head Coach" },
@@ -19,6 +20,7 @@ const ROLES = [
 
 export default function LeadershipApplicationForm({ onClose }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [form, setForm] = useState({
     applicant_name: "", applicant_email: "", applicant_phone: "",
     role_applying_for: "", sport_interest: "", experience: "",
@@ -27,16 +29,30 @@ export default function LeadershipApplicationForm({ onClose }) {
   const [submitted, setSubmitted] = useState(false);
 
   const submitMutation = useMutation({
-    mutationFn: (data) => base44.entities.LeadershipApplication.create(data),
+    mutationFn: (data) => base44.functions.invoke("submitLeadershipApplication", data).then(res => {
+      if (!res.data?.success) throw new Error(res.data?.error || "Something went wrong. Please try again.");
+      return res.data;
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leadership-applications"] });
       setSubmitted(true);
+    },
+    onError: (err) => {
+      toast({
+        title: "Couldn't submit application",
+        description: err?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitMutation.mutate({ ...form, status: "pending" });
+    // applicant_email is stamped server-side from the logged-in caller
+    // (see submitLeadershipApplication) rather than trusted from this
+    // self-typed field, so a typo/mismatch here can no longer 403 silently.
+    const { applicant_email: _ignored, ...rest } = form;
+    submitMutation.mutate(rest);
   };
 
   if (submitted) {
