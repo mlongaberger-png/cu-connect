@@ -13,7 +13,7 @@ import { format } from "date-fns";
 // displays one day early and, for "today" comparisons, sits before local today in
 // timezones behind UTC. formatDate/parseLocalDate (utils/dateTime.js) are the
 // existing fix for this in the codebase.
-import { formatDate, parseLocalDate } from "@/utils/dateTime";
+import { formatDate } from "@/utils/dateTime";
 
 export default function CreateAttendanceDialog({ open, onOpenChange, channelId, teamId, teamName, user }) {
   const queryClient = useQueryClient();
