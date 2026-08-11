@@ -30,6 +30,8 @@ export default function TeamDetail() {
   // (e.g. the Carpool page) and matches what this page's own permission checks expect.
   const { isAdmin, isAD } = useScheduleGuard();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const isCoach = user?.role === "coach";
   const canManage = isAdmin || isAD;
   const canViewCompliance = canManage || isCoach;
