@@ -42,21 +42,23 @@
     },
     "bg_check_passed": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "DEPRECATED Aug 2026 -- moved to CoachCompliance (one record per coach instead of per team assignment, to avoid duplicate/conflicting values for coaches on multiple teams). No longer read or written by the app; left in place rather than risking a schema-removal side effect."
     },
     "bg_check_expires": {
       "type": "string",
       "format": "date",
-      "description": "Background check expiration date"
+      "description": "DEPRECATED Aug 2026 -- moved to CoachCompliance (one record per coach instead of per team assignment, to avoid duplicate/conflicting values for coaches on multiple teams). No longer read or written by the app; left in place rather than risking a schema-removal side effect."
     },
     "nays_completed": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "DEPRECATED Aug 2026 -- moved to CoachCompliance (one record per coach instead of per team assignment, to avoid duplicate/conflicting values for coaches on multiple teams). No longer read or written by the app; left in place rather than risking a schema-removal side effect."
     },
     "nays_expires": {
       "type": "string",
       "format": "date",
-      "description": "NAYS certification expiration date"
+      "description": "DEPRECATED Aug 2026 -- moved to CoachCompliance (one record per coach instead of per team assignment, to avoid duplicate/conflicting values for coaches on multiple teams). No longer read or written by the app; left in place rather than risking a schema-removal side effect."
     },
     "last_reminder_sent": {
       "type": "string",
@@ -66,7 +68,7 @@
         "one_month"
       ],
       "default": "none",
-      "description": "Tracks the most recent automated reminder tier sent"
+      "description": "DEPRECATED Aug 2026 -- moved to CoachCompliance, which uses a widened six_month/three_month/one_month tier ladder. This field is no longer read or written by the app; left in place rather than risking a schema-removal side effect."
     }
   },
   "required": [
