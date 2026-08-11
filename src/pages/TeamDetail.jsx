@@ -21,7 +21,7 @@ import TeamComplianceTab from "@/components/teams/TeamComplianceTab";
 // DepthChartTab removed -- depth chart feature removed altogether (Aug 2026).
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-import { AGE_BRACKET_ORDER, getNextAgeBracket, suggestRolledOverName, suggestNextSeasonYear } from "@/lib/teamRollover";
+import { getNextAgeBracket, suggestRolledOverName, suggestNextSeasonYear } from "@/lib/teamRollover";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
