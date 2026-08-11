@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, MapPin, Clock, Megaphone, Trophy, UserCircle, FileText, CreditCard, Download, DollarSign, LogOut, MessageSquare, Users } from "lucide-react";
-import { formatDate, formatTime12h } from "@/utils/dateTime";
+import { formatDate, formatTime12h, parseLocalDate } from "@/utils/dateTime";
 import { format } from "date-fns";
 import PlayerDocuments from "@/components/parentportal/PlayerDocuments";
 import ParentSignatureRequests from "@/components/documents/ParentSignatureRequests";
@@ -239,7 +239,11 @@ export default function ParentPortal() {
   const myTeamIds = [...new Set(myKids.map(k => k.team_id))];
   const myTeams = teams.filter(t => myTeamIds.includes(t.id));
   const myEvents = events.filter(e => myTeamIds.includes(e.team_id) && e.date).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const myUpcomingEvents = myEvents.filter(e => new Date(e.date) >= new Date(new Date().toDateString()));
+  // Aug 11, 2026 (Phase 13 QA): e.date is YYYY-MM-DD; new Date(e.date) parses as UTC
+  // midnight, which sits BEFORE local "today" in any timezone behind UTC -- was
+  // silently dropping today's events from "upcoming" late in the day. Use
+  // parseLocalDate so the comparison is local-midnight vs local-midnight.
+  const myUpcomingEvents = myEvents.filter(e => parseLocalDate(e.date) >= parseLocalDate(new Date().toISOString().slice(0, 10)));
   const myAnnouncements = announcements.filter(a =>
     a.target === "org" || myTeamIds.includes(a.target_id) || myTeams.some(t => t.sport_id === a.target_id)
   );
