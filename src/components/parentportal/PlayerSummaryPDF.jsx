@@ -1,5 +1,9 @@
 import { jsPDF } from "jspdf";
 import { format } from "date-fns";
+// Aug 11, 2026 (Phase 13 QA, same bug class as PracticePlans.jsx/ParentPortal.jsx):
+// event dates are plain YYYY-MM-DD strings; new Date(str) parses as UTC midnight,
+// which is BEFORE local "today" in timezones behind UTC and displays one day early.
+import { formatDate, parseLocalDate } from "@/utils/dateTime";
 
 function addSectionHeader(doc, text, y) {
   doc.setFillColor(184, 145, 74); // gold
@@ -195,9 +199,9 @@ export async function generatePlayerSummaryPDF({ player, team, sport, events = [
   }
 
   // ── Upcoming Events ──
-  const today = new Date(new Date().toDateString());
+  const today = parseLocalDate(format(new Date(), "yyyy-MM-dd"));
   const upcoming = teamEvents
-    .filter(e => e.date && new Date(e.date) >= today && !e.is_cancelled)
+    .filter(e => e.date && parseLocalDate(e.date) >= today && !e.is_cancelled)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 6);
 
@@ -211,7 +215,7 @@ export async function generatePlayerSummaryPDF({ player, team, sport, events = [
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(184, 145, 74);
-      doc.text(format(new Date(evt.date), "MMM d"), 18, y + 8);
+      doc.text(formatDate(evt.date, "MMM d"), 18, y + 8);
       doc.setTextColor(220, 210, 190);
       doc.text(evt.title || "Event", 40, y + 8);
       doc.setFont("helvetica", "normal");
