@@ -79,6 +79,17 @@ export default function TeamDetail() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list(),
+  });
+  const { data: teamEvents = [] } = useQuery({
+    queryKey: ["events-team", teamId],
+    queryFn: () => base44.entities.Event.filter({ team_id: teamId }, "-date"),
+    enabled: !!teamId,
+  });
+  const team = teams.find(t => t.id === teamId);
+
   // Compliance badge (task 38): CoachCompliance RLS restricts read to admin/AD
   // (sensitive PII), so only fetch/show it for canManage users -- same scoping
   // as the Teams.jsx list badge.
@@ -90,17 +101,6 @@ export default function TeamDetail() {
   const coachCompliance = canManage && team?.coach_email
     ? complianceRecords.find(r => r.user_email?.toLowerCase() === team.coach_email.toLowerCase())
     : null;
-
-  const { data: teams = [] } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => base44.entities.Team.list(),
-  });
-  const { data: teamEvents = [] } = useQuery({
-    queryKey: ["events-team", teamId],
-    queryFn: () => base44.entities.Event.filter({ team_id: teamId }, "-date"),
-    enabled: !!teamId,
-  });
-  const team = teams.find(t => t.id === teamId);
 
   const { data: allPlayers = [] } = useQuery({
     queryKey: ["players"],
