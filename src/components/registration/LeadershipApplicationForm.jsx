@@ -82,8 +82,9 @@ export default function LeadershipApplicationForm({ onClose }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
-              <Input type="email" value={form.applicant_email} onChange={e => setForm(f => ({ ...f, applicant_email: e.target.value }))} required className="bg-surface border-border mt-1" />
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={user?.email || ""} disabled className="bg-surface border-border mt-1 opacity-70" />
+              <p className="text-[11px] text-muted-foreground mt-1">We'll use your account email so we can reach you about this application.</p>
             </div>
             <div>
               <Label className="text-xs">Phone</Label>
