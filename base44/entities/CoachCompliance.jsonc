@@ -1,0 +1,108 @@
+{
+  "name": "CoachCompliance",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Coach's login email -- unique identity key, one record per coach (unlike CoachProfile, which is one record per team assignment)"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Denormalized coach name"
+    },
+    "bg_check_passed": {
+      "type": "boolean",
+      "default": false
+    },
+    "bg_check_expires": {
+      "type": "string",
+      "format": "date",
+      "description": "Background check expiration date"
+    },
+    "nays_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "nays_expires": {
+      "type": "string",
+      "format": "date",
+      "description": "NAYS certification expiration date"
+    },
+    "last_reminder_sent": {
+      "type": "string",
+      "enum": [
+        "none",
+        "six_month",
+        "three_month",
+        "one_month"
+      ],
+      "default": "none",
+      "description": "Tracks the most recent automated reminder tier sent (complianceCron)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-text notes for the safety officer/AD (e.g. how a document was received)"
+    }
+  },
+  "required": [
+    "user_email"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    }
+  }
+}
