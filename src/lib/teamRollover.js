@@ -8,8 +8,18 @@
 // everything they produce is a pre-filled SUGGESTION the admin can edit
 // before confirming a rollover, never something silently auto-applied.
 
+// Bug found live-testing Phase 11 (Aug 11, 2026): this originally listed every
+// sequential integer (6U,7U,8U,9U,10U...), so "8U" suggested "9U" as the next
+// bracket. Team.jsonc's own declared age_group enum -- and Matthew's own
+// explicit example ("move from 8u to 10u") -- both skip by twos. Fixed to
+// match the declared enum (6U,8U,10U,12U,14U,16U,18U,Adult) for the numeric
+// progression, with the free-text tiers actually seen in real team data
+// (Junior High/Junior Varsity/Varsity) appended between 18U and Adult. A
+// bracket not in this list (e.g. the real but non-standard "7U" seen in
+// production data) simply yields no suggestion -- getNextAgeBracket returns
+// null and the caller falls back to the unchanged value, always editable.
 export const AGE_BRACKET_ORDER = [
-  "6U", "7U", "8U", "9U", "10U", "11U", "12U", "13U", "14U",
+  "6U", "8U", "10U", "12U", "14U", "16U", "18U",
   "Junior High", "Junior Varsity", "Varsity", "Adult",
 ];
 
