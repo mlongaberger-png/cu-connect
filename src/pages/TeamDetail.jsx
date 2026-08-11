@@ -646,6 +646,95 @@ export default function TeamDetail() {
         </DialogContent>
       </Dialog>
 
+      {/* End Season confirmation */}
+      <AlertDialog open={showEndSeasonConfirm} onOpenChange={setShowEndSeasonConfirm}>
+        <AlertDialogContent className="bg-card border-border text-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle>End the season for "{team.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It will be archived and hidden from the active Teams list, but its roster and history stay intact. You can reactivate it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => endSeasonMutation.mutate()}>End Season</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Roll Over to New Season */}
+      <Dialog open={showRolloverDialog} onOpenChange={setShowRolloverDialog}>
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle>Roll Over "{team.name}" to a New Season</DialogTitle>
+          </DialogHeader>
+          {rolloverForm && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Creates a new team for the new season and archives this one. Its roster/gallery/message history stays attributed to this team and is unaffected.
+              </p>
+              <div>
+                <Label>New Team Name</Label>
+                <Input
+                  value={rolloverForm.new_name}
+                  onChange={e => setRolloverForm(f => ({ ...f, new_name: e.target.value }))}
+                  className="bg-surface border-border mt-1"
+                />
+              </div>
+              <div>
+                <Label>New Age Group / Division</Label>
+                <Input
+                  value={rolloverForm.new_age_group}
+                  onChange={e => setRolloverForm(f => ({ ...f, new_age_group: e.target.value }))}
+                  placeholder="e.g. 10U, Junior Varsity..."
+                  className="bg-surface border-border mt-1"
+                />
+                {getNextAgeBracket(team.age_group) && (
+                  <p className="text-[11px] text-muted-foreground mt-1">Suggested next bracket after "{team.age_group}". Edit if this isn't right.</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Season</Label>
+                  <Select value={rolloverForm.new_season} onValueChange={v => setRolloverForm(f => ({ ...f, new_season: v }))}>
+                    <SelectTrigger className="bg-surface border-border mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      {["fall", "winter", "spring", "summer"].map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Year</Label>
+                  <Input
+                    value={rolloverForm.new_year}
+                    onChange={e => setRolloverForm(f => ({ ...f, new_year: e.target.value }))}
+                    className="bg-surface border-border mt-1"
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rolloverForm.carry_roster}
+                  onChange={e => setRolloverForm(f => ({ ...f, carry_roster: e.target.checked }))}
+                />
+                Carry the current roster forward ({players.filter(p => p.is_active !== false).length} active player{players.filter(p => p.is_active !== false).length === 1 ? "" : "s"})
+              </label>
+              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <Button variant="outline" onClick={() => setShowRolloverDialog(false)} className="border-border">Cancel</Button>
+                <Button
+                  onClick={() => rolloverMutation.mutate(rolloverForm)}
+                  disabled={!rolloverForm.new_name || !rolloverForm.new_age_group || rolloverMutation.isPending}
+                  className="bg-primary text-primary-foreground"
+                >
+                  {rolloverMutation.isPending ? "Rolling over..." : "Roll Over Team"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Stats Upload Modal */}
       <StatsUploadModal
         open={!!statsPlayer}
