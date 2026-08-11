@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -15,6 +15,7 @@ import { Plus, Users, ChevronRight, Filter, Trash2, ShieldCheck } from "lucide-r
 import TeamAvatarPicker, { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import { useToast } from "@/components/ui/use-toast";
+import { statusForCompliance, COMPLIANCE_BADGE } from "@/lib/coachCompliance";
 
 const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
 const seasonOptions = ["fall", "winter", "spring", "summer"];
@@ -67,6 +68,22 @@ export default function Teams() {
     queryFn: () => base44.entities.CoachProfile.filter({ user_email: user.email }),
     enabled: isCoach && !!user?.email
   });
+  // Compliance badge (task 38): CoachCompliance RLS restricts read to admin/AD
+  // (it holds sensitive PII), so only fetch/show it for canManage users --
+  // matches the "visible flag, no restriction" decision, scoped to the roles
+  // who can actually see compliance data elsewhere in the app.
+  const { data: complianceRecords = [] } = useQuery({
+    queryKey: ["coach-compliance-badge"],
+    queryFn: () => base44.entities.CoachCompliance.list(),
+    enabled: canManage
+  });
+  const complianceByEmail = useMemo(() => {
+    const map = {};
+    for (const r of complianceRecords) {
+      if (r.user_email) map[r.user_email.toLowerCase()] = r;
+    }
+    return map;
+  }, [complianceRecords]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Team.create(data),
@@ -207,6 +224,14 @@ export default function Teams() {
                     )}
                     <span className="text-xs text-muted-foreground">{playerCount(team.id)} players</span>
                     {team.head_coach && <span className="text-xs text-muted-foreground">Coach: {team.head_coach}</span>}
+                    {canManage && team.coach_email && (() => {
+                      const badge = COMPLIANCE_BADGE[statusForCompliance(complianceByEmail[team.coach_email.toLowerCase()])];
+                      return (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </Link>
