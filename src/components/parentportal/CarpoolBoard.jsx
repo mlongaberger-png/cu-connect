@@ -5,6 +5,10 @@ import { Car, Plus, MessageSquare, X, Users, MapPin, Calendar, Clock } from "luc
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
+// Aug 11, 2026 (Phase 13 QA, same bug class as PracticePlans.jsx et al.): event.date
+// is a plain YYYY-MM-DD string; new Date(str) parses as UTC midnight, which sits
+// BEFORE local "today" in timezones behind UTC and can drop today's carpool events.
+import { parseLocalDate } from "@/utils/dateTime";
 
 export default function CarpoolBoard({ myKids, userEmail, userName, myTeamIds, myTeams, events }) {
   const queryClient = useQueryClient();
@@ -67,7 +71,7 @@ export default function CarpoolBoard({ myKids, userEmail, userName, myTeamIds, m
   });
 
   const myTeamRequests = requests.filter(r => myTeamIds.includes(r.team_id) && r.status === "open");
-  const upcomingEvents = events.filter(e => new Date(e.date) >= new Date()).slice(0, 20);
+  const upcomingEvents = events.filter(e => parseLocalDate(e.date) >= parseLocalDate(format(new Date(), "yyyy-MM-dd"))).slice(0, 20);
 
   const getResponsesFor = (reqId) => responses.filter(r => r.carpool_request_id === reqId);
   const myResponse = (reqId) => responses.find(r => r.carpool_request_id === reqId && r.responder_email === userEmail);
