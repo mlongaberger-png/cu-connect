@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings, Image, ClipboardList, Music2, BookOpen, GraduationCap, Inbox, Shirt, Car } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList, Music2, GraduationCap, Inbox, Shirt, Car } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const staffNavGroups = [
