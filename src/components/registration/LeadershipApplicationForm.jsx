@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/lib/AuthContext";
 
 const ROLES = [
   { value: "coach", label: "Head Coach" },
@@ -21,6 +22,7 @@ const ROLES = [
 export default function LeadershipApplicationForm({ onClose }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     applicant_name: "", applicant_email: "", applicant_phone: "",
     role_applying_for: "", sport_interest: "", experience: "",
