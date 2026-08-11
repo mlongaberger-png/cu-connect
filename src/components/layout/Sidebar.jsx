@@ -28,7 +28,7 @@ const staffNavGroups = [
       { path: "/UniformInventory", label: "Uniform Inventory", icon: Shirt, roles: ["admin", "athletic_director", "coach"] },
       { path: "/Applications", label: "Applications & Requests", icon: Inbox, roles: ["admin", "athletic_director", "coach"] },
       { path: "/GameDayPlaylists", label: "Game Day Music", icon: Music2, roles: ["admin", "athletic_director", "coach"] },
-      { path: "/Playbooks", label: "Playbooks", icon: BookOpen, roles: ["admin", "athletic_director", "coach"] },
+      // Playbooks nav item removed -- feature taken down pending a full rebuild (Aug 2026).
       { path: "/Gallery", label: "Gallery", icon: Image, roles: ["admin", "athletic_director", "coach"] },
     ]
   },
