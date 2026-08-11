@@ -10,6 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, ClipboardList, Trash2, ChevronDown, ChevronUp, Clock, Copy, Pencil, GripVertical } from "lucide-react";
 import { format } from "date-fns";
+// Aug 11, 2026 (Phase 13 coach-role QA testing): plan.date is a plain YYYY-MM-DD
+// string with no time/timezone. new Date(plan.date) parses that as UTC midnight,
+// which display-formats one day EARLIER than the stored/entered date in any
+// timezone behind UTC (confirmed live: entered/stored 2026-08-18, displayed
+// "Aug 17, 2026"). The app already has a fixed utility for exactly this bug
+// (src/utils/dateTime.js, formatDate/parseLocalDate) -- this page just wasn't
+// using it. Switched to formatDate below.
+import { formatDate } from "@/utils/dateTime";
 
 const BLANK_DRILL = { name: "", duration_minutes: 10, description: "", equipment: "" };
 
@@ -87,7 +95,7 @@ function PlanCard({ plan, onEdit, onDelete, onDuplicate }) {
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
             <span className="text-primary font-medium">{plan.team_name}</span>
-            {plan.date && <span>{format(new Date(plan.date), "MMM d, yyyy")}</span>}
+            {plan.date && <span>{formatDate(plan.date, "MMM d, yyyy")}</span>}
             {plan.focus && <span>Focus: {plan.focus}</span>}
             <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {plan.duration_minutes || totalMins}min · {drills.length} drills</span>
           </div>
