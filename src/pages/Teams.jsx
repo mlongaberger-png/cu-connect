@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Users, ChevronRight, Filter, Trash2, ShieldCheck } from "lucide-react";
 import TeamAvatarPicker, { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
@@ -35,6 +39,14 @@ export default function Teams() {
   const [filterSport, setFilterSport] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active"); // "active" | "archived"
   const [deleteBlockedMessage, setDeleteBlockedMessage] = useState(null);
+  // Bug found live-testing Phase 11 (Aug 11, 2026, section 56): the delete button used
+  // a native confirm() left over from before deleteTeamSafely existed. A native confirm()
+  // blocks the page's JS thread until dismissed -- this is the same freeze risk already
+  // hit once with Game Day Music's delete (section 53) and explicitly avoided for End
+  // Season (TeamDetail.jsx) by using AlertDialog instead. Replaced here too, both to fix
+  // the automation-freeze risk and for consistency with the rest of this feature's
+  // dialog pattern.
+  const [pendingDeleteTeam, setPendingDeleteTeam] = useState(null);
   const [form, setForm] = useState({ name: "", sport_id: "", sport_name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: "2026", avatar_url: null, avatar_type: null });
   const queryClient = useQueryClient();
 
@@ -200,7 +212,7 @@ export default function Teams() {
               </Link>
               {canManage && (
                 <button
-                  onClick={(e) => { e.preventDefault(); if (confirm(`Delete "${team.name}"?`)) deleteMutation.mutate(team.id); }}
+                  onClick={(e) => { e.preventDefault(); setPendingDeleteTeam(team); }}
                   className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -273,6 +285,26 @@ export default function Teams() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingDeleteTeam} onOpenChange={(open) => { if (!open) setPendingDeleteTeam(null); }}>
+        <AlertDialogContent className="bg-card border-border text-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{pendingDeleteTeam?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This can't be undone. If players are still rostered on this team, the delete will be blocked instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { deleteMutation.mutate(pendingDeleteTeam.id); setPendingDeleteTeam(null); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!deleteBlockedMessage} onOpenChange={(open) => { if (!open) setDeleteBlockedMessage(null); }}>
         <DialogContent className="bg-card border-border text-foreground max-w-sm">
