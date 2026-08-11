@@ -8,6 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardList } from "lucide-react";
 import { format } from "date-fns";
+// Aug 11, 2026 (Phase 13 QA, same bug class as PracticePlans.jsx et al.): event
+// dates are plain YYYY-MM-DD strings; new Date(str) parses as UTC midnight, which
+// displays one day early and, for "today" comparisons, sits before local today in
+// timezones behind UTC. formatDate/parseLocalDate (utils/dateTime.js) are the
+// existing fix for this in the codebase.
+import { formatDate, parseLocalDate } from "@/utils/dateTime";
 
 export default function CreateAttendanceDialog({ open, onOpenChange, channelId, teamId, teamName, user }) {
   const queryClient = useQueryClient();
@@ -24,7 +30,7 @@ export default function CreateAttendanceDialog({ open, onOpenChange, channelId, 
     enabled: !!teamId,
   });
 
-  const upcomingEvents = events.filter(e => !e.is_cancelled && e.date >= new Date().toISOString().split("T")[0]);
+  const upcomingEvents = events.filter(e => !e.is_cancelled && e.date >= format(new Date(), "yyyy-MM-dd"));
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.AttendanceRequest.create(data),
@@ -51,14 +57,14 @@ export default function CreateAttendanceDialog({ open, onOpenChange, channelId, 
     setEventType(ev.type || "practice");
     setEventDate(ev.date || "");
     setEventTime(ev.start_time || "");
-    const dateStr = ev.date ? format(new Date(ev.date), "EEE MMM d") : "";
+    const dateStr = ev.date ? formatDate(ev.date, "EEE MMM d") : "";
     const timeStr = ev.start_time || "";
     setLabel(`${(ev.type || "practice").charAt(0).toUpperCase() + (ev.type || "practice").slice(1)}${dateStr ? ` – ${dateStr}` : ""}${timeStr ? ` ${timeStr}` : ""}`);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const finalLabel = label.trim() || `${eventType.charAt(0).toUpperCase() + eventType.slice(1)}${eventDate ? ` – ${format(new Date(eventDate), "EEE MMM d")}` : ""}${eventTime ? ` ${eventTime}` : ""}`;
+    const finalLabel = label.trim() || `${eventType.charAt(0).toUpperCase() + eventType.slice(1)}${eventDate ? ` – ${formatDate(eventDate, "EEE MMM d")}` : ""}${eventTime ? ` ${eventTime}` : ""}`;
     createMutation.mutate({
       team_id: teamId,
       team_name: teamName,
@@ -93,7 +99,7 @@ export default function CreateAttendanceDialog({ open, onOpenChange, channelId, 
                   <SelectItem value="none">Custom (no event)</SelectItem>
                   {upcomingEvents.map(e => (
                     <SelectItem key={e.id} value={e.id}>
-                      {e.title} – {e.date ? format(new Date(e.date), "MMM d") : ""}
+                      {e.title} – {e.date ? formatDate(e.date, "MMM d") : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
