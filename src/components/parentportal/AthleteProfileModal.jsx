@@ -1,7 +1,10 @@
 import React from "react";
 import { Trophy, Calendar, MapPin, Clock, X, Star, Target, Zap, Shield, BarChart2 } from "lucide-react";
 import { format } from "date-fns";
-import { formatTime12h } from "@/utils/dateTime";
+// Aug 11, 2026 (Phase 13 QA, same bug class as PracticePlans.jsx et al.): event
+// dates are plain YYYY-MM-DD strings; new Date(str) parses as UTC midnight, which
+// is BEFORE local "today" in timezones behind UTC and displays one day early.
+import { formatTime12h, formatDate, parseLocalDate } from "@/utils/dateTime";
 import PlayerAvatar from "@/components/ui/PlayerAvatar";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -44,9 +47,9 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
   const winPct = resultEvents.length > 0 ? Math.round((wins / resultEvents.length) * 100) : null;
 
   // Upcoming events for this player's team
-  const today = new Date(new Date().toDateString());
+  const today = parseLocalDate(format(new Date(), "yyyy-MM-dd"));
   const upcoming = teamEvents
-    .filter(e => e.date && new Date(e.date) >= today && !e.is_cancelled)
+    .filter(e => e.date && parseLocalDate(e.date) >= today && !e.is_cancelled)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 5);
 
@@ -134,7 +137,7 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
                   <div key={evt.id} className="flex items-center justify-between bg-surface rounded-xl border border-border px-4 py-2.5">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{evt.title}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(evt.date), "MMM d, yyyy")}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(evt.date, "MMM d, yyyy")}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {(evt.our_score || evt.opponent_score) && (
@@ -168,8 +171,8 @@ export default function AthleteProfileModal({ player, team, sport, events = [], 
                 {upcoming.map(evt => (
                   <div key={evt.id} className="flex items-center gap-3 bg-surface rounded-xl border border-border p-3">
                     <div className="flex flex-col items-center min-w-[40px] bg-primary/10 rounded-xl p-2">
-                      <span className="text-[9px] text-primary uppercase font-bold">{format(new Date(evt.date), "MMM")}</span>
-                      <span className="text-base font-black text-foreground">{format(new Date(evt.date), "d")}</span>
+                      <span className="text-[9px] text-primary uppercase font-bold">{formatDate(evt.date, "MMM")}</span>
+                      <span className="text-base font-black text-foreground">{formatDate(evt.date, "d")}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
