@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
+import { useScheduleGuard } from "@/hooks/useRoleGuard";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +21,14 @@ const BLANK = { location_name: "", status: "open", alert_message: "", is_active:
 
 export default function FieldStatusManager() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  // FieldStatus.jsonc's RLS: create/delete = admin or AD; update = admin, AD, or coach.
+  // Gate the create/delete-only controls (Add Location, per-card delete) to admin/AD so a
+  // coach never sees a button that would just 403 -- matches the same silent-failure class
+  // documented repeatedly elsewhere in this project (no onError = failure looks like nothing
+  // happened). Edit + quick status toggles (both go through update) stay visible to coach too.
+  const { isAdmin, isAD } = useScheduleGuard();
+  const canManageAll = isAdmin || isAD;
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -40,11 +50,17 @@ export default function FieldStatusManager() {
       setEditing(null);
       setForm(BLANK);
     },
+    onError: (err) => {
+      toast({ title: "Couldn't save field status", description: err?.message || "Please try again.", variant: "destructive" });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.FieldStatus.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["field-statuses"] }),
+    onError: (err) => {
+      toast({ title: "Couldn't delete location", description: err?.message || "Please try again.", variant: "destructive" });
+    },
   });
 
   // Quick status toggle directly from the card
@@ -56,6 +72,9 @@ export default function FieldStatusManager() {
         updated_by_name: user?.full_name || user?.email || "Staff",
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["field-statuses"] }),
+    onError: (err) => {
+      toast({ title: "Couldn't update status", description: err?.message || "Please try again.", variant: "destructive" });
+    },
   });
 
   const handleEdit = (field) => {
@@ -88,9 +107,11 @@ export default function FieldStatusManager() {
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">Alerts appear instantly on the Parent Portal home feed.</p>
         </div>
-        <Button size="sm" onClick={() => { setEditing(null); setForm(BLANK); setShowForm(true); }} className="gap-1.5 text-xs">
-          <Plus className="w-3.5 h-3.5" /> Add Location
-        </Button>
+        {canManageAll && (
+          <Button size="sm" onClick={() => { setEditing(null); setForm(BLANK); setShowForm(true); }} className="gap-1.5 text-xs">
+            <Plus className="w-3.5 h-3.5" /> Add Location
+          </Button>
+        )}
       </div>
 
       {/* Field cards */}
@@ -129,9 +150,11 @@ export default function FieldStatusManager() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(field)} className="h-8 w-8 text-muted-foreground hover:text-primary">
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(field.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    {canManageAll && (
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(field.id)} className="h-8 w-8 text-muted-foreground hover:text-red-400">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
