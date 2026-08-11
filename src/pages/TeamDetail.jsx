@@ -23,6 +23,7 @@ import TeamCoachesTab from "@/components/teams/TeamCoachesTab";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextAgeBracket, suggestRolledOverName, suggestNextSeasonYear } from "@/lib/teamRollover";
+import { statusForCompliance, COMPLIANCE_BADGE } from "@/lib/coachCompliance";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -77,6 +78,18 @@ export default function TeamDetail() {
   const [jerseyConflict, setJerseyConflict] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const queryClient = useQueryClient();
+
+  // Compliance badge (task 38): CoachCompliance RLS restricts read to admin/AD
+  // (sensitive PII), so only fetch/show it for canManage users -- same scoping
+  // as the Teams.jsx list badge.
+  const { data: complianceRecords = [] } = useQuery({
+    queryKey: ["coach-compliance-badge", team?.id],
+    queryFn: () => base44.entities.CoachCompliance.list(),
+    enabled: canManage,
+  });
+  const coachCompliance = canManage && team?.coach_email
+    ? complianceRecords.find(r => r.user_email?.toLowerCase() === team.coach_email.toLowerCase())
+    : null;
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
@@ -419,7 +432,17 @@ export default function TeamDetail() {
               <UserCircle className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-foreground text-sm">{team.head_coach}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-foreground text-sm">{team.head_coach}</p>
+                {canManage && team.coach_email && (() => {
+                  const badge = COMPLIANCE_BADGE[statusForCompliance(coachCompliance)];
+                  return (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${badge.cls}`}>
+                      {badge.label}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                 {team.coach_email && (
                   <a href={`mailto:${team.coach_email}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
