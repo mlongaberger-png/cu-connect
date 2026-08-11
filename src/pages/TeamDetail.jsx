@@ -18,6 +18,7 @@ import RosterPDFButton from "@/components/roster/RosterPDFButton";
 import RosterImporter from "@/components/roster/RosterImporter";
 import { useScheduleGuard } from "@/hooks/useRoleGuard";
 import TeamComplianceTab from "@/components/teams/TeamComplianceTab";
+import TeamCoachesTab from "@/components/teams/TeamCoachesTab";
 // DepthChartTab removed -- depth chart feature removed altogether (Aug 2026).
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -386,12 +387,25 @@ export default function TeamDetail() {
               <Cookie className="w-4 h-4" /> Snacks
             </button>
           )}
+          {canManage && (
+            <button
+              onClick={() => setActiveTab("coaches")}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === "coaches" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            >
+              <UserCircle className="w-4 h-4" /> Coaches
+            </button>
+          )}
         </div>
       )}
 
       {/* Compliance Tab */}
       {activeTab === "compliance" && canViewCompliance && (
         <TeamComplianceTab team={team} players={players} />
+      )}
+
+      {/* Coaches Tab -- assigns real CoachProfile.team_id links, see TeamCoachesTab.jsx header comment */}
+      {activeTab === "coaches" && canManage && (
+        <TeamCoachesTab team={team} />
       )}
 
       {/* Roster tab content */}
