@@ -3,11 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { useAdminOrADGuard } from "@/hooks/useRoleGuard";
-import { ShieldCheck, AlertTriangle, XCircle, Bell, BellOff, Plus, Pencil, Trash2, Filter } from "lucide-react";
+import { ShieldCheck, AlertTriangle, XCircle, Bell, BellOff, Plus, Pencil, Trash2, Filter, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { differenceInDays, parseISO, format } from "date-fns";
 import CoachComplianceModal from "@/components/teams/CoachComplianceModal";
+import CoachComplianceImporter from "@/components/teams/CoachComplianceImporter";
 
 // Aug 2026 rewrite: this page used to read/write CoachProfile directly, but
 // CoachProfile is one record PER TEAM ASSIGNMENT (needed for team scoping in
@@ -129,6 +130,7 @@ export default function CoachesTraining() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [editingRecord, setEditingRecord] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showImporter, setShowImporter] = useState(false);
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["coach-compliance"],
@@ -196,9 +198,14 @@ export default function CoachesTraining() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Background checks &amp; NAYS certification compliance</p>
         </div>
-        <Button onClick={openNew} className="bg-primary text-primary-foreground gap-1.5 h-9">
-          <Plus className="w-4 h-4" /> Add Compliance Record
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowImporter(true)} className="border-border gap-1.5 h-9">
+            <FileUp className="w-4 h-4" /> Import
+          </Button>
+          <Button onClick={openNew} className="bg-primary text-primary-foreground gap-1.5 h-9">
+            <Plus className="w-4 h-4" /> Add Compliance Record
+          </Button>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -371,6 +378,8 @@ export default function CoachesTraining() {
           }}
         />
       )}
+
+      <CoachComplianceImporter open={showImporter} onOpenChange={setShowImporter} />
     </div>
   );
 }
