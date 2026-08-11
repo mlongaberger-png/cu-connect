@@ -27,11 +27,6 @@ function addRow(doc, label, value, y, x1 = 14, x2 = 60) {
   return y + 6;
 }
 
-function formatDate(d) {
-  if (!d) return "—";
-  try { return format(new Date(d), "MMM d, yyyy"); } catch { return d; }
-}
-
 function formatTime(t) {
   if (!t) return "";
   try {
@@ -96,7 +91,7 @@ export async function generatePlayerSummaryPDF({ player, team, sport, events = [
   y = addRow(doc, "Full Name", fullName, y);
   y = addRow(doc, "Jersey #", player.jersey_number || "—", y);
   y = addRow(doc, "Position", player.position || "—", y);
-  if (player.date_of_birth) y = addRow(doc, "Date of Birth", formatDate(player.date_of_birth), y);
+  if (player.date_of_birth) y = addRow(doc, "Date of Birth", formatDate(player.date_of_birth, "MMM d, yyyy"), y);
   y += 4;
 
   // ── Team Info ──
@@ -184,7 +179,7 @@ export async function generatePlayerSummaryPDF({ player, team, sport, events = [
       doc.text(evt.title || "Event", 18, y + 6.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(120, 110, 90);
-      doc.text(formatDate(evt.date), 100, y + 6.5);
+      doc.text(formatDate(evt.date, "MMM d, yyyy"), 100, y + 6.5);
       if (evt.our_score !== undefined && evt.opponent_score !== undefined) {
         doc.setTextColor(184, 145, 74);
         doc.text(`${evt.our_score ?? "?"} – ${evt.opponent_score ?? "?"}`, 145, y + 6.5);
