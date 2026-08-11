@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Loader2, Users, ChevronRight, ClipboardList, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import LeadershipApplicationForm from "@/components/registration/LeadershipApplicationForm";
 
 const SEASON_COLORS = {
   fall:   { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20" },
@@ -24,6 +26,7 @@ export default function ParentSportsRegister() {
   const [loading, setLoading] = useState(true);
   const [sportsData, setSportsData] = useState([]);
   const [openRegs, setOpenRegs] = useState([]);
+  const [showLeadershipForm, setShowLeadershipForm] = useState(false);
 
   useEffect(() => {
     const currentSeason = getCurrentSeason();
@@ -82,12 +85,26 @@ export default function ParentSportsRegister() {
   return (
     <div className="px-4 py-6 max-w-2xl mx-auto space-y-6 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Sports</h1>
-        <p className="text-sm text-muted-foreground mt-1 capitalize">
-          {currentSeason} {new Date().getFullYear()} Season
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Sports</h1>
+          <p className="text-sm text-muted-foreground mt-1 capitalize">
+            {currentSeason} {new Date().getFullYear()} Season
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setShowLeadershipForm(true)} className="border-border text-sm">
+          Apply for Leadership Role
+        </Button>
       </div>
+
+      <Dialog open={showLeadershipForm} onOpenChange={setShowLeadershipForm}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Apply for a Leadership Role</DialogTitle>
+          </DialogHeader>
+          <LeadershipApplicationForm onClose={() => setShowLeadershipForm(false)} />
+        </DialogContent>
+      </Dialog>
 
       {/* Open Registrations Banner */}
       {hasOpenRegs && (
