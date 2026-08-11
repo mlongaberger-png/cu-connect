@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
-import { formatTime12h } from "@/utils/dateTime";
+// Aug 11, 2026 (Phase 13 QA, same bug class as PracticePlans.jsx et al.): event
+// dates are plain YYYY-MM-DD strings; new Date(str) parses as UTC midnight, which
+// displays one day early and, for "today" comparisons, sits before local today in
+// timezones behind UTC.
+import { formatTime12h, formatDate, parseLocalDate } from "@/utils/dateTime";
 import { useToast } from "@/components/ui/use-toast";
 
 const SLOT_TYPES = ["Drinks", "Snacks", "Post-game Food", "Other"];
@@ -48,10 +52,10 @@ export default function SnackManagerPanel({ teams, events, currentUser }) {
   });
 
   // Upcoming events that belong to our teams
-  const today = new Date(new Date().toDateString());
+  const today = parseLocalDate(format(new Date(), "yyyy-MM-dd"));
   const myTeamIds = filterTeam === "all" ? allTeamIds : [filterTeam];
   const relevantEvents = events
-    .filter(e => myTeamIds.includes(e.team_id) && new Date(e.date) >= today && !e.is_cancelled)
+    .filter(e => myTeamIds.includes(e.team_id) && parseLocalDate(e.date) >= today && !e.is_cancelled)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const getSlotsForEvent = (eventId) => allSlots.filter(s => s.event_id === eventId);
@@ -186,10 +190,10 @@ export default function SnackManagerPanel({ teams, events, currentUser }) {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex flex-col items-center min-w-[36px] bg-primary/10 rounded-xl px-2 py-1.5 flex-shrink-0">
                     <span className="text-[9px] text-primary uppercase font-bold leading-none">
-                      {format(new Date(event.date), "MMM")}
+                      {formatDate(event.date, "MMM")}
                     </span>
                     <span className="text-base font-black text-foreground leading-none">
-                      {format(new Date(event.date), "d")}
+                      {formatDate(event.date, "d")}
                     </span>
                   </div>
                   <div className="min-w-0">
