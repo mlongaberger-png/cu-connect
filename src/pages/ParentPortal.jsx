@@ -243,7 +243,7 @@ export default function ParentPortal() {
   // midnight, which sits BEFORE local "today" in any timezone behind UTC -- was
   // silently dropping today's events from "upcoming" late in the day. Use
   // parseLocalDate so the comparison is local-midnight vs local-midnight.
-  const myUpcomingEvents = myEvents.filter(e => parseLocalDate(e.date) >= parseLocalDate(new Date().toISOString().slice(0, 10)));
+  const myUpcomingEvents = myEvents.filter(e => parseLocalDate(e.date) >= parseLocalDate(format(new Date(), "yyyy-MM-dd")));
   const myAnnouncements = announcements.filter(a =>
     a.target === "org" || myTeamIds.includes(a.target_id) || myTeams.some(t => t.sport_id === a.target_id)
   );
