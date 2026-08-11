@@ -58,7 +58,10 @@ export default function Teams() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Team.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["teams"] }); setShowForm(false); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["teams"] }); setShowForm(false); },
+    onError: (err) => {
+      toast({ title: "Couldn't create team", description: err?.message || "Please try again.", variant: "destructive" });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -142,7 +145,7 @@ export default function Teams() {
               <ShieldCheck className="w-4 h-4" /> Coaches Training
             </Button>
           </Link>
-          {isAdmin && (
+          {canManage && (
             <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" /> Add Team
             </Button>
@@ -158,10 +161,12 @@ export default function Teams() {
       <div className="text-center py-20 bg-card rounded-2xl border border-border">
           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground">No teams yet</h3>
-          <p className="text-muted-foreground mb-4">Create your first team</p>
-          <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
-            <Plus className="w-4 h-4 mr-2" /> Add Team
-          </Button>
+          <p className="text-muted-foreground mb-4">{canManage ? "Create your first team" : "Check back once teams are added."}</p>
+          {canManage && (
+            <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" /> Add Team
+            </Button>
+          )}
         </div> :
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -193,7 +198,7 @@ export default function Teams() {
                   </div>
                 </div>
               </Link>
-              {isAdmin && (
+              {canManage && (
                 <button
                   onClick={(e) => { e.preventDefault(); if (confirm(`Delete "${team.name}"?`)) deleteMutation.mutate(team.id); }}
                   className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive"
