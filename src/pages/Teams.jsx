@@ -22,7 +22,14 @@ export default function Teams() {
   // Scoped below to the coach's own team(s) via CoachProfile, same pattern already
   // used for the Carpool page's coach branch — unlike admin/AD, who legitimately see
   // every team org-wide.
-  const { isAdmin, isCoach, user } = useScheduleGuard();
+  const { isAdmin, isAD, isCoach, user } = useScheduleGuard();
+  // Bug found live-testing Phase 11 (Aug 11, 2026): this only ever destructured isAdmin,
+  // so every isAdmin-gated action below (Add Team, delete) was invisible to Athletic
+  // Directors even though Team.jsonc's own create/delete RLS allows admin AND
+  // athletic_director, and TeamDetail.jsx already uses the correct canManage = isAdmin
+  // || isAD pattern. Fixed by adding canManage here too and using it for every
+  // admin-or-AD-gated control on this page.
+  const canManage = isAdmin || isAD;
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [filterSport, setFilterSport] = useState("all");
