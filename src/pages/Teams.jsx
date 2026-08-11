@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Users, ChevronRight, Filter, Trash2, ShieldCheck } from "lucide-react";
 import TeamAvatarPicker, { getTeamAvatarEmoji } from "@/components/teams/TeamAvatarPicker";
 import { useScheduleGuard } from "@/hooks/useRoleGuard";
+import { useToast } from "@/components/ui/use-toast";
 
 const ageGroups = ["6U", "8U", "10U", "12U", "14U", "16U", "18U", "Adult"];
 const seasonOptions = ["fall", "winter", "spring", "summer"];
@@ -22,8 +23,11 @@ export default function Teams() {
   // used for the Carpool page's coach branch — unlike admin/AD, who legitimately see
   // every team org-wide.
   const { isAdmin, isCoach, user } = useScheduleGuard();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [filterSport, setFilterSport] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active"); // "active" | "archived"
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState(null);
   const [form, setForm] = useState({ name: "", sport_id: "", sport_name: "", age_group: "12U", head_coach: "", coach_email: "", season: "fall", year: "2026", avatar_url: null, avatar_type: null });
   const queryClient = useQueryClient();
 
@@ -51,8 +55,26 @@ export default function Teams() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Team.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teams"] })
+    mutationFn: (id) => base44.functions.invoke("deleteTeamSafely", { team_id: id }).then(res => {
+      if (res.data?.blocked) {
+        const err = new Error(res.data.message);
+        err.blocked = true;
+        throw err;
+      }
+      if (!res.data?.success) throw new Error(res.data?.error || "Couldn't delete team.");
+      return res.data;
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      toast({ title: "Team deleted" });
+    },
+    onError: (err) => {
+      if (err.blocked) {
+        setDeleteBlockedMessage(err.message);
+      } else {
+        toast({ title: "Couldn't delete team", description: err?.message, variant: "destructive" });
+      }
+    },
   });
 
   const handleSubmit = (e) => {
