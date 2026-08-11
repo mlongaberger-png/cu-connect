@@ -287,6 +287,9 @@ export default function TeamDetail() {
               {team.sport_name && <span className="text-sm text-primary font-medium">{team.sport_name}</span>}
               {team.age_group && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{team.age_group}</span>}
               {team.season && <span className="text-xs text-muted-foreground">{team.season.charAt(0).toUpperCase() + team.season.slice(1)}{team.year ? ` ${team.year}` : ""}</span>}
+              {team.is_active === false && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">Archived</span>
+              )}
             </div>
           </div>
           {canManage && (
@@ -317,6 +320,30 @@ export default function TeamDetail() {
           <Button variant="outline" size="sm" onClick={handleEditTeam} className="flex-shrink-0 border-border text-xs gap-1.5">
             <Settings className="w-3.5 h-3.5" /> Edit Team
           </Button>
+          {team.is_active === false ? (
+            <Button
+              variant="outline" size="sm"
+              onClick={() => reactivateTeamMutation.mutate()}
+              disabled={reactivateTeamMutation.isPending}
+              className="flex-shrink-0 border-border text-xs gap-1.5"
+            >
+              <ArchiveRestore className="w-3.5 h-3.5" /> Reactivate
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={openRolloverDialog} className="flex-shrink-0 border-border text-xs gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5" /> Roll Over to New Season
+              </Button>
+              <Button
+                variant="outline" size="sm"
+                onClick={() => { if (confirm(`End the season for "${team.name}"? It will be archived (hidden from the active Teams list) but its roster and history stay intact. You can reactivate it later.`)) endSeasonMutation.mutate(); }}
+                disabled={endSeasonMutation.isPending}
+                className="flex-shrink-0 border-border text-xs gap-1.5 text-muted-foreground"
+              >
+                <Archive className="w-3.5 h-3.5" /> End Season
+              </Button>
+            </>
+          )}
         </div>
       )}
 
