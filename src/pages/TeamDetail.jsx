@@ -52,6 +52,8 @@ export default function TeamDetail() {
   const [inviting, setInviting] = useState(null);
   const [statsPlayer, setStatsPlayer] = useState(null);
   const [viewStatsPlayer, setViewStatsPlayer] = useState(null);
+  const [showRolloverDialog, setShowRolloverDialog] = useState(false);
+  const [rolloverForm, setRolloverForm] = useState(null);
 
   const handleInviteParent = async (player) => {
     if (!player.parent_email) return;
@@ -134,6 +136,57 @@ export default function TeamDetail() {
   const updateTeamMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Team.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["teams"] }); setShowTeamForm(false); },
+  });
+
+  const openRolloverDialog = () => {
+    const { season: nextSeason, year: nextYear } = suggestNextSeasonYear(team.season, team.year);
+    const nextBracket = getNextAgeBracket(team.age_group) || team.age_group || "";
+    setRolloverForm({
+      new_name: suggestRolledOverName(team.name, team.age_group, nextBracket),
+      new_age_group: nextBracket,
+      new_season: nextSeason,
+      new_year: nextYear,
+      carry_roster: true,
+    });
+    setShowRolloverDialog(true);
+  };
+
+  const rolloverMutation = useMutation({
+    mutationFn: (data) => base44.functions.invoke("rollOverTeam", { source_team_id: teamId, ...data }).then(res => {
+      if (!res.data?.success) throw new Error(res.data?.error || res.data?.message || "Roll over failed.");
+      return res.data;
+    }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      setShowRolloverDialog(false);
+      toast({
+        title: "Team rolled over",
+        description: `"${team.name}" archived; ${data.players_moved} player${data.players_moved === 1 ? "" : "s"} moved to "${data.new_team.name}".`,
+      });
+      navigate(`/TeamDetail?id=${data.new_team.id}`);
+    },
+    onError: (err) => {
+      toast({ title: "Couldn't roll over team", description: err?.message, variant: "destructive" });
+    },
+  });
+
+  const endSeasonMutation = useMutation({
+    mutationFn: () => base44.entities.Team.update(teamId, { is_active: false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      toast({ title: "Season ended", description: `"${team.name}" is now archived. Its roster and history are preserved.` });
+    },
+    onError: (err) => toast({ title: "Couldn't end season", description: err?.message, variant: "destructive" }),
+  });
+
+  const reactivateTeamMutation = useMutation({
+    mutationFn: () => base44.entities.Team.update(teamId, { is_active: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      toast({ title: "Team reactivated" });
+    },
+    onError: (err) => toast({ title: "Couldn't reactivate team", description: err?.message, variant: "destructive" }),
   });
 
   const handleEditTeam = () => {
