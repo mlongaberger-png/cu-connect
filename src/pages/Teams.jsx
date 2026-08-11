@@ -86,8 +86,12 @@ export default function Teams() {
   const sortedSports = [...sports].sort((a, b) => a.name.localeCompare(b.name));
   const coachTeamIds = new Set(coachProfiles.map((cp) => cp.team_id));
   const scopedTeams = isCoach ? teams.filter((t) => coachTeamIds.has(t.id)) : teams;
-  const filteredTeams = (filterSport === "all" ? scopedTeams : scopedTeams.filter((t) => t.sport_id === filterSport))
+  const statusScopedTeams = statusFilter === "archived"
+    ? scopedTeams.filter((t) => t.is_active === false)
+    : scopedTeams.filter((t) => t.is_active !== false);
+  const filteredTeams = (filterSport === "all" ? statusScopedTeams : statusScopedTeams.filter((t) => t.sport_id === filterSport))
     .slice().sort((a, b) => a.name.localeCompare(b.name));
+  const archivedCount = scopedTeams.filter((t) => t.is_active === false).length;
   const playerCount = (teamId) => players.filter((p) => p.team_id === teamId).length;
 
   return (
