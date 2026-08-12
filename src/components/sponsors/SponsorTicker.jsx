@@ -57,10 +57,27 @@ export default function SponsorTicker() {
     return () => clearInterval(intervalRef.current);
   }, [sponsors.length]);
 
+  // Clamp activeIdx whenever the sponsor list changes size (e.g. an admin
+  // adds/edits/deletes a sponsor elsewhere, which invalidates the shared
+  // "layout-sponsors" query this ticker reads). Without this, activeIdx can
+  // point past the end of a just-shrunk array -- sponsors[activeIdx] below
+  // then reads undefined, .tier throws, and with no error boundary above
+  // this component the ENTIRE app goes blank for every signed-in user
+  // currently viewing any page (the ticker renders app-wide). Reproduced
+  // live during Phase 13 QA: deleting a test sponsor from Admin Console >
+  // Sponsors crashed the whole tab to a blank black screen, recoverable
+  // only by a full reload.
+  useEffect(() => {
+    if (activeIdx >= sponsors.length) setActiveIdx(0);
+  }, [sponsors.length, activeIdx]);
+
   if (!visible) return null;
   if (!sponsors.length) return null;
 
-  const sponsor = sponsors[activeIdx];
+  // Defensive fallback even before the effect above has a chance to run
+  // (e.g. the very first render after a list-shrinking refetch).
+  const sponsor = sponsors[activeIdx] || sponsors[0];
+  if (!sponsor) return null;
   const tier = TIER_COLORS[sponsor.tier] || TIER_COLORS.Bronze;
   const iconIsUrl = sponsor.logo_url && (sponsor.logo_url.startsWith("http://") || sponsor.logo_url.startsWith("https://"));
 
