@@ -171,6 +171,42 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Could not send invitation: ${inviteErr.message}` }, { status: 500 });
     }
 
+    // Seed ChannelMember rows for the newly-promoted athlete's team channel(s),
+    // same pattern already used by linkPlayerGuardian's join_channels step.
+    // Without this, a promoted athlete who is the first to ever send a
+    // message in their team channel (before ever being a message *recipient*,
+    // which is the only case onMessageCreated auto-adds ChannelMember for)
+    // gets an empty response back from getMessagesFiltered for their own
+    // just-sent message, since that function gates non-staff reads on
+    // ChannelMember membership -- the message silently appears to vanish,
+    // even to the sender. Found live during Phase 13 QA (2026-08-12): a
+    // freshly-promoted athlete's own first message never rendered, despite
+    // the create call itself succeeding. Non-fatal: a failure here must not
+    // block promotion, since the invite has already been sent.
+    if (player.team_id) {
+      try {
+        const teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: player.team_id });
+        const joinable = teamChannels.filter(c => c.type === 'team' || c.type === 'announcement');
+        const athleteName = [player.first_name, player.last_name].filter(Boolean).join(' ') || normalizedEmail;
+        for (const channel of joinable) {
+          const existingMembership = await base44.asServiceRole.entities.ChannelMember.filter({
+            channel_id: channel.id,
+            user_email: normalizedEmail,
+          });
+          if (existingMembership.length === 0) {
+            await base44.asServiceRole.entities.ChannelMember.create({
+              channel_id: channel.id,
+              user_email: normalizedEmail,
+              user_name: athleteName,
+              unread_count: 0,
+            });
+          }
+        }
+      } catch (channelErr) {
+        console.error('promoteAthlete: channel membership seed failed:', channelErr.message);
+      }
+    }
+
     await logAudit(
       authUser.id,
       authUser.email,
