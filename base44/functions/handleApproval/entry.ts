@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
       sport_name: application.sport_name || '',
       parent_name: application.parent_name || '',
       parent_email: application.parent_email || '',
+      parent_phone: application.parent_phone || '',
       is_active: true,
     });
 
