@@ -26,6 +26,7 @@ const athleteSchema = z.object({
 const requestSchema = z.object({
   parent_name: z.string().min(1),
   parent_email: z.string().email(),
+  parent_phone: z.string().optional(),
   athletes: z.array(athleteSchema).min(1).max(10),
   referral_source: z.string().optional(),
   referral_note: z.string().optional(),
@@ -98,7 +99,7 @@ Deno.serve(async (req) => {
     if (!parsed.success) {
       return Response.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
     }
-    const { parent_name, parent_email, athletes, referral_source, referral_note } = parsed.data;
+    const { parent_name, parent_email, parent_phone, athletes, referral_source, referral_note } = parsed.data;
 
     const clientIP = getClientIP(req);
     const normalizedEmail = parent_email.trim().toLowerCase();
@@ -134,6 +135,7 @@ Deno.serve(async (req) => {
         parent_user_id: user.id,
         parent_name,
         parent_email,
+        parent_phone: parent_phone?.trim() || undefined,
         athlete_first_name: a.athlete_first_name,
         athlete_last_name: a.athlete_last_name,
         athlete_dob: a.athlete_dob,
