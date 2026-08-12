@@ -11,10 +11,12 @@ import { Search, UserCircle, Mail, Edit2, Users, AlertCircle, Trash2, Link2, Sen
 import { useToast } from "@/components/ui/use-toast";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
 import AccessRequestsPanel from "@/components/admin/AccessRequestsPanel";
+import { useAuditLog } from "@/hooks/useAuditLog";
 
 export default function ParentAccountsTab() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { logAction } = useAuditLog();
   const [search, setSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -74,6 +76,39 @@ export default function ParentAccountsTab() {
       queryClient.setQueryData(["users"], (old = []) =>
         old.map(u => u.id === variables.id ? { ...u, ...patch } : u)
       );
+
+      // Audit-log role changes (and name overrides) made through this admin-side
+      // editor. Phase 13 QA (#78, Audit Log) found this update path — unlike
+      // adminDeleteAccount / the invoice modal's logAction call — wrote no
+      // AuditLog entry at all, so a role change like "promote to Admin" was
+      // invisible in Admin Console > Settings > Audit Log even though that
+      // page's own test case says role changes should be logged. Mirrors the
+      // same useAuditLog() pattern already used by the invoice create/edit flow.
+      const before = editingUser || {};
+      const targetLabel = displayName(before) || before.email || variables.id;
+      if (variables.data.role !== undefined && variables.data.role !== before.role) {
+        logAction({
+          action: "user_role_changed",
+          category: "user",
+          description: `Admin changed ${before.email || targetLabel}'s role from "${before.role || "(none)"}" to "${variables.data.role}"`,
+          target_entity: "User",
+          target_id: variables.id,
+          target_name: targetLabel,
+          metadata: { previous_role: before.role || null, new_role: variables.data.role, target_email: before.email },
+        });
+      }
+      if (variables.data.full_name !== undefined && variables.data.full_name !== displayName(before)) {
+        logAction({
+          action: "user_name_updated",
+          category: "user",
+          description: `Admin updated display name for ${before.email || targetLabel} to "${variables.data.full_name}"`,
+          target_entity: "User",
+          target_id: variables.id,
+          target_name: targetLabel,
+          metadata: { previous_name: displayName(before) || null, new_name: variables.data.full_name, target_email: before.email },
+        });
+      }
+
       toast({ title: "Parent updated successfully" });
       setEditingUser(null);
     },
