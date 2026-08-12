@@ -5,6 +5,22 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // Mirrors the established parseRosterFile pattern (AI extraction via
 // InvokeLLM + file_urls + response_json_schema) since coach lists arrive in
 // unpredictable column layouts, same as roster files.
+//
+// Bug fix Aug 12, 2026: for CSV uploads, InvokeLLM's file_urls (vision/doc)
+// path was returning confidently-formatted but entirely fabricated rows
+// ("John Doe" / john.doe@example.com, "Jane Smith" / jsmith@test.com) instead
+// of the real uploaded content -- reproduced live with a verified-correct
+// single-row test CSV, ruling out an upload/transport bug (confirmed via
+// direct inspection of the browser's File object that the real 244-byte CSV
+// was genuinely what got uploaded). Root cause: file_urls is meant for
+// documents that need to be *seen* (scanned lists, PDFs) -- handing it a
+// plain-text CSV apparently doesn't reliably make the raw text available to
+// the model, so it pattern-completes a plausible-looking spreadsheet instead
+// of reading the real one. extractTeamStats/entry.ts and
+// extractBaseballStats/entry.ts already carry the fix for this exact class of
+// bug (detect CSV, fetch its real text, and inline it directly into the
+// prompt instead of passing it through file_urls) -- ported that same
+// pattern here rather than inventing a new one.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -17,8 +33,18 @@ Deno.serve(async (req) => {
     const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are extracting a coach compliance list (background checks and NAYS/coaching-certification training) from a document.
+    // Detect CSV the same way extractTeamStats/extractBaseballStats do, and
+    // fetch its real text instead of relying on file_urls to "see" it.
+    const isCSV = /\.csv|text%2Fcsv|csv/i.test(file_url);
+    let csvText = null;
+    if (isCSV) {
+      console.log('parseCoachComplianceFile: detected CSV -- fetching as text');
+      const fileRes = await fetch(file_url);
+      csvText = await fileRes.text();
+      console.log(`parseCoachComplianceFile: CSV preview: ${csvText.slice(0, 500)}`);
+    }
+
+    const basePrompt = `You are extracting a coach compliance list (background checks and NAYS/coaching-certification training) from a document.
 
 Extract ALL coaches listed in this document.
 
@@ -33,8 +59,14 @@ For each coach, extract:
 
 Dates may appear in many formats (MM/DD/YYYY, "Jan 2027", etc.) -- normalize to YYYY-MM-DD. If only a year or month/year is given, use the 1st of that month/year.
 
-Return ONLY coaches you can confidently identify by name. If a field is unknown, use an empty string (or false for booleans) — never null.`,
-      file_urls: [file_url],
+Return ONLY coaches you can confidently identify by name. If a field is unknown, use an empty string (or false for booleans) — never null.`;
+
+    const prompt = csvText
+      ? `${basePrompt}\n\nHere is the raw CSV/spreadsheet data:\n\`\`\`\n${csvText}\n\`\`\``
+      : `${basePrompt}\n\nAnalyze the attached document.`;
+
+    const llmParams = {
+      prompt,
       response_json_schema: {
         type: "object",
         properties: {
@@ -55,7 +87,12 @@ Return ONLY coaches you can confidently identify by name. If a field is unknown,
           }
         }
       }
-    });
+    };
+    if (!csvText) {
+      llmParams.file_urls = [file_url];
+    }
+
+    const result = await base44.integrations.Core.InvokeLLM(llmParams);
 
     const rawCoaches = result?.coaches;
     if (!Array.isArray(rawCoaches)) {
