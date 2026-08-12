@@ -37,9 +37,17 @@ export default function TeamCoachesTab({ team }) {
     queryFn: () => base44.entities.CoachProfile.filter({ team_id: team.id }),
   });
 
+  // Fixed Aug 12, 2026: raw base44.entities.User.list() 403s for every non-admin
+  // caller (platform-default User RLS) -- confirmed live for an athletic_director
+  // account, the exact role this feature is built for. searchStaffUsers re-implements
+  // the read server-side under asServiceRole, same pattern as getDmContacts.
   const { data: allUsers = [] } = useQuery({
     queryKey: ["all-users-for-coach-assign"],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: async () => {
+      const res = await base44.functions.invoke("searchStaffUsers");
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data?.users || [];
+    },
     enabled: showAssign,
   });
 
