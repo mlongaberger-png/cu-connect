@@ -1,6 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 // Parses a roster PDF/spreadsheet using AI and returns extracted players
+//
+// Bug fix Aug 12, 2026: ported the same CSV fix applied to
+// parseCoachComplianceFile/entry.ts (see that file's header comment for the
+// full root-cause writeup). InvokeLLM's file_urls (vision/doc) path can
+// return fabricated rows instead of real content for plain-text CSV uploads,
+// because file_urls is meant for documents that need to be *seen* (scanned
+// lists, PDFs), not raw text. This was confirmed live for coach-compliance
+// CSVs; rosters use the identical InvokeLLM + file_urls pattern so the same
+// failure mode applies here too. Fix: detect CSV (same heuristic as
+// extractTeamStats/extractBaseballStats), fetch its real text, and inline it
+// directly into the prompt instead of passing it through file_urls.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -20,8 +31,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are extracting a sports team roster from a document for team "${team_name || 'Unknown'}" (${sport_name || 'sport'}).
+    // Detect CSV and fetch its real text instead of relying on file_urls to "see" it.
+    const isCSV = /\.csv|text%2Fcsv|csv/i.test(file_url);
+    let csvText = null;
+    if (isCSV) {
+      console.log('parseRosterFile: detected CSV -- fetching as text');
+      const fileRes = await fetch(file_url);
+      csvText = await fileRes.text();
+      console.log(`parseRosterFile: CSV preview: ${csvText.slice(0, 500)}`);
+    }
+
+    const basePrompt = `You are extracting a sports team roster from a document for team "${team_name || 'Unknown'}" (${sport_name || 'sport'}).
 
 Extract ALL players/athletes listed in this document.
 
@@ -38,8 +58,14 @@ For each player, extract:
 - emergency_phone: emergency contact phone if listed, else empty string
 - medical_notes: any medical or allergy notes if listed, else empty string
 
-Return ONLY players you can confidently identify. If a field is unknown, use an empty string — never null.`,
-      file_urls: [file_url],
+Return ONLY players you can confidently identify. If a field is unknown, use an empty string — never null.`;
+
+    const prompt = csvText
+      ? `${basePrompt}\n\nHere is the raw CSV/spreadsheet data:\n\`\`\`\n${csvText}\n\`\`\``
+      : `${basePrompt}\n\nAnalyze the attached document.`;
+
+    const llmParams = {
+      prompt,
       response_json_schema: {
         type: "object",
         properties: {
@@ -64,7 +90,12 @@ Return ONLY players you can confidently identify. If a field is unknown, use an 
           }
         }
       }
-    });
+    };
+    if (!csvText) {
+      llmParams.file_urls = [file_url];
+    }
+
+    const result = await base44.integrations.Core.InvokeLLM(llmParams);
 
     const rawPlayers = result?.players;
     if (!Array.isArray(rawPlayers)) {
