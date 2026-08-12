@@ -116,11 +116,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // A brand-new self-signed-up 'user' role account, with no application submitted
-  // yet and no athlete already linked to them, should land on /Register instead
-  // of the portal. Fails open (false) on error so we never trap someone in a loop.
+  // A brand-new self-signed-up account, with no application submitted yet and
+  // no athlete already linked to them, should land on /Register instead of the
+  // portal -- or, worse, instead of the misleading "an admin needs to link you"
+  // PendingAccess page. Covers both 'user' and 'pending': onUserCreated sets a
+  // fresh signup's role to 'pending' as soon as its automation runs (see that
+  // function), which can beat this same client's first auth check depending on
+  // timing -- the exact same race-condition class already seen elsewhere in this
+  // app (onUserCreated/inviteUser). Before this fix, losing that race meant a
+  // brand-new parent who hadn't submitted an application yet saw "Waiting for
+  // Access -- an admin needs to connect your account" instead of being sent to
+  // fill out their team application, even though no admin action was actually
+  // needed. Fails open (false) on error so we never trap someone in a loop.
   const checkNeedsApplication = async (currentUser) => {
-    if (!currentUser || currentUser.role !== 'user') return false;
+    if (!currentUser || (currentUser.role !== 'user' && currentUser.role !== 'pending')) return false;
     try {
       const [apps, guardianLinks] = await Promise.all([
         base44.entities.RegistrationApplication.filter({ parent_email: currentUser.email }),
