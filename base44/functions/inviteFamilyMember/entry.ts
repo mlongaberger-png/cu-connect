@@ -44,11 +44,14 @@ Deno.serve(async (req) => {
     const callerRole = callerUsers[0]?.role;
     const isStaff = ['admin', 'athletic_director', 'coach'].includes(callerRole);
 
-    if (!isStaff) {
-      const players = await base44.asServiceRole.entities.Player.filter({ id: player_id });
-      const player = players[0];
-      if (!player) return Response.json({ error: 'Player not found.' }, { status: 404 });
+    // Fetched unconditionally (not just in the !isStaff branch below) because
+    // the channel-seeding step further down needs player.team_id regardless
+    // of who the caller is.
+    const players = await base44.asServiceRole.entities.Player.filter({ id: player_id });
+    const player = players[0];
+    if (!player) return Response.json({ error: 'Player not found.' }, { status: 404 });
 
+    if (!isStaff) {
       const isDirectParent = player.parent_email?.toLowerCase() === caller.email.toLowerCase();
       let isLinkedGuardian = false;
       if (!isDirectParent) {
@@ -76,6 +79,40 @@ Deno.serve(async (req) => {
       console.log(`inviteFamilyMember: ${caller.email} linked ${normalizedEmail} to player ${player_id}`);
     } else {
       console.log(`inviteFamilyMember: ${normalizedEmail} already linked to player ${player_id}, skipping duplicate create`);
+    }
+
+    // Seed ChannelMember rows for the newly-invited guardian's team
+    // channel(s), same pattern already used by linkPlayerGuardian's
+    // join_channels step and by promoteAthlete's post-invite seeding. Without
+    // this, a co-guardian invited here can never read team messages --
+    // getMessagesFiltered gates all non-staff reads on ChannelMember
+    // membership, and nothing else ever creates that row for an invited
+    // guardian. Found live during QA (2026-08-13) testing a second real
+    // secondary-guardian account: the newly-linked guardian saw the athlete
+    // on their Portal (PlayerGuardian existed) but the team channel never
+    // appeared under Messages at all. Non-fatal: a failure here must not
+    // block the invite, since the guardian link has already been created.
+    if (player.team_id) {
+      try {
+        const teamChannels = await base44.asServiceRole.entities.Channel.filter({ team_id: player.team_id });
+        const joinable = teamChannels.filter(c => c.type === 'team' || c.type === 'announcement');
+        for (const channel of joinable) {
+          const existingMembership = await base44.asServiceRole.entities.ChannelMember.filter({
+            channel_id: channel.id,
+            user_email: normalizedEmail,
+          });
+          if (existingMembership.length === 0) {
+            await base44.asServiceRole.entities.ChannelMember.create({
+              channel_id: channel.id,
+              user_email: normalizedEmail,
+              user_name: player_name || normalizedEmail,
+              unread_count: 0,
+            });
+          }
+        }
+      } catch (channelErr) {
+        console.error('inviteFamilyMember: channel membership seed failed:', channelErr.message);
+      }
     }
 
     // Send the invite — magic link lands them at /AcceptInvite, same as
