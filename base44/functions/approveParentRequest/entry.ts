@@ -79,11 +79,18 @@ Deno.serve(async (req) => {
         reviewed_at: new Date().toISOString(),
       });
 
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: accessReq.parent_email,
-        subject: 'Update on Your Cornerstone United Access Request',
-        body: `Hi ${accessReq.parent_name},\n\nUnfortunately, your access request was not approved at this time. Please contact your organization admin for more information.\n\nCornerstone United Athletics`,
-      });
+      // The reject itself already succeeded above -- don't let a flaky/failed
+      // notification email turn an already-completed rejection into a
+      // reported 500 (the admin would see "failed" while the DB says rejected).
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: accessReq.parent_email,
+          subject: 'Update on Your Cornerstone United Access Request',
+          body: `Hi ${accessReq.parent_name},\n\nUnfortunately, your access request was not approved at this time. Please contact your organization admin for more information.\n\nCornerstone United Athletics`,
+        });
+      } catch (emailErr) {
+        console.error(`Reject notification email to ${accessReq.parent_email} failed:`, emailErr.message);
+      }
 
       return Response.json({ success: true, invited: false });
     }
@@ -242,10 +249,14 @@ Deno.serve(async (req) => {
         ? `\nNOTE: If you use "Sign in with Apple" and hide your email, your portal account will use your Apple private relay address (${alternate_email}). That has been linked to your account, so you can sign in either way.\n`
         : '\nIMPORTANT: If you plan to use "Sign in with Apple," please contact your administrator so they can link your Apple private relay email to your account.\n';
 
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: accessReq.parent_email,
-        subject: '🎉 Welcome to Cornerstone United – Your Portal Access Is Ready!',
-        body: `Hi ${accessReq.parent_name},
+      // Same reasoning as the reject branch: approval (and all the guardian/
+      // channel linking above) already succeeded -- a failed welcome email
+      // shouldn't make the admin think the whole approval blew up.
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: accessReq.parent_email,
+          subject: '🎉 Welcome to Cornerstone United – Your Portal Access Is Ready!',
+          body: `Hi ${accessReq.parent_name},
 
 Great news! Your Cornerstone United parent portal access has been approved.
 
@@ -265,7 +276,10 @@ ${appleNote}
 ${userAlreadyExists ? '' : "If you don't receive the account setup email within a few minutes, check your spam folder.\n"}
 Welcome aboard!
 — Cornerstone United Athletics`,
-      });
+        });
+      } catch (emailErr) {
+        console.error(`Approval welcome email to ${accessReq.parent_email} failed:`, emailErr.message);
+      }
 
       return Response.json({ success: true, invited: !userAlreadyExists });
     }
