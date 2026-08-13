@@ -66,13 +66,34 @@ export default function TeamDetail() {
   const handleInviteParent = async (player) => {
     if (!player.parent_email) return;
     setInviting(player.id);
-    await base44.functions.invoke("inviteParent", {
-      email: player.parent_email,
-      player_id: player.id,
-      player_name: `${player.first_name} ${player.last_name}`,
-    });
-    setInvitedEmails(prev => ({ ...prev, [player.id]: true }));
-    setInviting(null);
+    try {
+      // inviteParent's zod schema is .strict() and expects player info nested
+      // under `players: [{ player_id, player_name }]`, not flat top-level
+      // fields -- sending them flat (as this call used to) fails schema
+      // validation and the function returns 400 before ever calling
+      // inviteUser(), so the invite silently never goes out. Found live
+      // during QA (2026-08-13): clicking Invite got stuck on "Sending..."
+      // forever with no invite email ever arriving, for every player, since
+      // this payload shape was always wrong for the schema.
+      await base44.functions.invoke("inviteParent", {
+        email: player.parent_email,
+        players: [{ player_id: player.id, player_name: `${player.first_name} ${player.last_name}` }],
+      });
+      setInvitedEmails(prev => ({ ...prev, [player.id]: true }));
+      toast({ title: "Invite sent", description: `${player.parent_email} has been invited.` });
+    } catch (err) {
+      // Previously missing entirely: a failed call left `inviting` set forever,
+      // so the button stayed stuck on "Sending..." with no error shown until
+      // a full page reload silently reset it.
+      console.error("handleInviteParent failed:", err?.response?.data || err.message);
+      toast({
+        title: "Couldn't send invite",
+        description: err?.response?.data?.error || err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setInviting(null);
+    }
   };
   const [form, setForm] = useState({ first_name: "", last_name: "", jersey_number: "", position: "", photo_url: "", parent_name: "", parent_email: "", parent_phone: "" });
   const [jerseyConflict, setJerseyConflict] = useState(false);
