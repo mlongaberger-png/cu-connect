@@ -121,13 +121,17 @@ export default function AccessRequestsPanel() {
           toast({ title: "Request rejected." });
         }
       } else {
-        toast({ title: "Approval failed", description: res.data?.error || "Something went wrong. Please try again.", variant: "destructive" });
+        toast({ title: action === "approve" ? "Approval failed" : "Rejection failed", description: res.data?.error || "Something went wrong. Please try again.", variant: "destructive" });
         queryClient.invalidateQueries({ queryKey: ["access-requests"] });
       }
       queryClient.invalidateQueries({ queryKey: ["access-requests"] });
       queryClient.invalidateQueries({ queryKey: ["users"] });
     }).catch(() => {
-      toast({ title: "Approval failed", description: "Something went wrong. Please try again.", variant: "destructive" });
+      // Note: the backend now avoids throwing after the core action (reject/approve)
+      // has already succeeded, so this branch should mainly catch genuine failures --
+      // but it's still possible the underlying action didn't go through, so refresh
+      // the list either way and let the admin see the real current state.
+      toast({ title: action === "approve" ? "Approval failed" : "Rejection failed", description: "Something went wrong. Please try again -- but double check the list below, since this action may have partially completed.", variant: "destructive" });
       queryClient.invalidateQueries({ queryKey: ["access-requests"] });
     });
   };
