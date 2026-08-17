@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.base69bae2515552e76ca1fbd6a0.app</string>
+	<string>com.cornerstoneunited.cuconnect</string>
 	<key>PROJECT_ID</key>
 	<string>cu-connect-888f1</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:736046857555:ios:4df4625913da47df6175a6</string>
+	<string>1:736046857555:ios:1a9e2a7c1754d0646175a6</string>
 </dict>
 </plist>
