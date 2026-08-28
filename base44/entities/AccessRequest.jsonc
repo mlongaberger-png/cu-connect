@@ -54,9 +54,14 @@
     "child_names"
   ],
   "rls": {
-    "create": true,
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
     "read": {
       "$or": [
+        {
+          "data.parent_email": "{{user.email}}"
+        },
         {
           "user_condition": {
             "role": "admin"
@@ -84,18 +89,9 @@
       ]
     },
     "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "athletic_director"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }
