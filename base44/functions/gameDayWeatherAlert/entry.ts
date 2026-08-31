@@ -22,7 +22,7 @@ const TEMPLATES = {
   extreme_cold: {
     emoji: '❄️',
     headline: (event) => `❄️ Extreme Cold Warning: ${event}`,
-    body: (c) => `Tomorrow's ${c.event} at ${c.location} is forecast to reach a dangerously low ${c.temp}°F. Please ensure warm layers, gloves, and a hat, and limit exposed skin. This event may be delayed or moved indoors.`,
+    body: (c) => `Tomorrow's ${c.event} at ${c.location} is forecast to reach a dangerously low ${c.temp}°F. Please ensure warm layers, gloves, and a hat, and limit exposed skin. This event may be delayed, moved, or cancelled — please check the app before heading out.`,
   },
   tornado: {
     emoji: '🌪️',
