@@ -111,8 +111,23 @@ export function usePushNotifications() {
           return;
         }
         // On iOS this also registers for remote notifications and bridges
-        // the APNs token to FCM internally before firing 'tokenReceived' above.
-        await FirebaseMessaging.getToken();
+        // the APNs token to FCM internally. getToken() resolves with the
+        // token directly (GetTokenResult) — save it here rather than relying
+        // solely on the 'tokenReceived' listener firing, which in practice
+        // was not reliably happening on first subscribe (toggle would flash
+        // loading and then silently revert with no PushSubscription record
+        // ever created). The 'tokenReceived' listener stays registered as a
+        // backup for token-refresh events that happen later while the app
+        // is running.
+        const { token } = await FirebaseMessaging.getToken();
+        if (!token) throw new Error('No FCM token returned from getToken()');
+        await base44.functions.invoke('saveSubscription', {
+          endpoint: `fcm:${token}`,
+          platform: Capacitor.getPlatform(), // 'ios' | 'android'
+          fcm_token: token,
+        });
+        setIsSubscribed(true);
+        setPermission('granted');
         return;
       }
 
