@@ -1,32 +1,46 @@
 {
   "name": "PushSubscription",
-  "type": "object",
   "properties": {
-    "user_email": {
-      "type": "string",
-      "description": "Email of the subscribed user"
+    "auth_key": {
+      "description": "Auth secret (web push only)",
+      "type": "string"
     },
     "endpoint": {
-      "type": "string",
-      "description": "Push endpoint URL"
+      "description": "Push endpoint URL (web) or synthetic fcm:<token> identifier (native)",
+      "type": "string"
     },
-    "p256dh_key": {
-      "type": "string",
-      "description": "Public encryption key"
-    },
-    "auth_key": {
-      "type": "string",
-      "description": "Auth secret"
+    "fcm_token": {
+      "description": "Native FCM device token (iOS/Android only; bridged from APNs on iOS by @capacitor-firebase/messaging)",
+      "type": "string"
     },
     "is_active": {
-      "type": "boolean",
-      "default": true
+      "default": true,
+      "type": "boolean"
+    },
+    "p256dh_key": {
+      "description": "Public encryption key (web push only)",
+      "type": "string"
+    },
+    "platform": {
+      "default": "web",
+      "description": "Which push delivery path this subscription uses",
+      "enum": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "type": "string"
+    },
+    "user_email": {
+      "description": "Email of the subscribed user",
+      "type": "string"
     }
   },
   "required": [
     "user_email",
     "endpoint"
   ],
+  "type": "object",
   "rls": {
     "create": {
       "user_email": "{{user.email}}"
