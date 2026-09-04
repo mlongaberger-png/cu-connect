@@ -45,14 +45,51 @@ export function usePushNotifications() {
     }
   }, []);
 
+  // Fetches the current FCM token and upserts it via saveSubscription.
+  // Shared by subscribe() (after a fresh permission grant) and
+  // checkNativePermission() (when permission was already granted from an
+  // earlier build/session). This does NOT prompt the user -- it assumes
+  // permission is already granted -- and it's safe to call repeatedly since
+  // saveSubscription upserts on fcm_token.
+  const registerNativeToken = async () => {
+    const { token } = await FirebaseMessaging.getToken();
+    if (!token) throw new Error('No FCM token returned from getToken()');
+    await base44.functions.invoke('saveSubscription', {
+      endpoint: `fcm:${token}`,
+      platform: Capacitor.getPlatform(), // 'ios' | 'android'
+      fcm_token: token,
+    });
+  };
+
   const checkNativePermission = async () => {
     try {
       const status = await FirebaseMessaging.checkPermissions();
       const granted = status.receive === 'granted';
       setPermission(granted ? 'granted' : 'default');
-      setIsSubscribed(granted);
+      if (!granted) {
+        setIsSubscribed(false);
+        return;
+      }
+      // IMPORTANT: OS-level notification permission being "granted" is NOT
+      // the same thing as "a valid PushSubscription record with a current
+      // token exists on the backend". Permission persists across app
+      // updates/reinstalls of the same bundle ID, so a user who granted it
+      // once on an earlier TestFlight build will show granted here on every
+      // later launch even if getToken()/saveSubscription never actually
+      // succeeded that build (or ever). Previously this function set
+      // isSubscribed straight from the permission bit, so the toggle could
+      // show "Active" while zero PushSubscription record for the user had
+      // ever been created -- masking every subsequent registration failure
+      // as a false "already working" state (see CU Connect TODO doc,
+      // section 83). Instead, actually (re)run the token fetch + save every
+      // time permission is already granted, so a missing/stale registration
+      // self-heals on launch and the toggle only shows Active once a save
+      // has genuinely succeeded this session.
+      await registerNativeToken();
+      setIsSubscribed(true);
     } catch (e) {
-      console.error('Native permission check error:', e);
+      console.error('Native permission/token check error:', e);
+      setIsSubscribed(false);
     }
   };
 
@@ -119,13 +156,7 @@ export function usePushNotifications() {
         // ever created). The 'tokenReceived' listener stays registered as a
         // backup for token-refresh events that happen later while the app
         // is running.
-        const { token } = await FirebaseMessaging.getToken();
-        if (!token) throw new Error('No FCM token returned from getToken()');
-        await base44.functions.invoke('saveSubscription', {
-          endpoint: `fcm:${token}`,
-          platform: Capacitor.getPlatform(), // 'ios' | 'android'
-          fcm_token: token,
-        });
+        await registerNativeToken();
         setIsSubscribed(true);
         setPermission('granted');
         return;
