@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -111,6 +111,31 @@ export default function ChatSidebar({ activeChannelId }) {
     enabled: !!user?.email,
     refetchInterval: () => document.visibilityState === 'hidden' ? false : 30000,
   });
+
+  // Direct (DM) channels store a single shared `name` field that was set ONCE, at creation
+  // time, to whoever the CREATOR was messaging (see startDirectMessage/entry.ts:
+  // `name: target.full_name || target.email`). For a 2-person DM that's only correct from the
+  // creator's own point of view -- the other participant sees their OWN name reflected back at
+  // them in both the sidebar row and the chat header, since Channel.name isn't per-viewer.
+  // Found live 2026-09-08: a DM started by jcummins showed "matthew longaberger" (Matthew's own
+  // name) as the conversation title on Matthew's device. Fix: for direct channels, resolve the
+  // display name client-side from the OTHER member's email instead of trusting the stored
+  // `name`. Reuses the same ["dm-contacts", email] query/key NewDmDialog.jsx already uses
+  // (getDmContacts), so it's a no-op extra request once that cache is warm, and needs no
+  // backend/data changes -- it self-heals every existing mislabeled DM immediately.
+  const { data: dmContacts = [] } = useQuery({
+    queryKey: ["dm-contacts", currentUser?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getDmContacts");
+      return res.data?.contacts || [];
+    },
+    enabled: !!currentUser,
+  });
+  const contactNameByEmail = useMemo(() => {
+    const map = {};
+    dmContacts.forEach(c => { if (c.email) map[c.email.toLowerCase()] = c.full_name || c.email; });
+    return map;
+  }, [dmContacts]);
 
   // Parent role check — parents/grandparents/relatives only see channels for their athletes' teams
   const isParentRole = !!currentUser && ['parent', 'grandparent', 'relative'].includes(currentUser.role);
@@ -312,6 +337,17 @@ export default function ChatSidebar({ activeChannelId }) {
     const lastTime = formatLastMessageTime(ch.last_message_at);
     const preview = ch.last_message_preview || "";
 
+    // See contactNameByEmail comment above -- direct channels show the OTHER
+    // participant, resolved per-viewer, instead of the shared/creator-scoped ch.name.
+    let displayName = ch.name || "Unnamed";
+    if (ch.type === "direct") {
+      try {
+        const members = JSON.parse(ch.member_emails || "[]");
+        const otherEmail = members.find(e => e && e.toLowerCase() !== userEmail?.toLowerCase());
+        if (otherEmail) displayName = contactNameByEmail[otherEmail.toLowerCase()] || otherEmail;
+      } catch { /* fall back to ch.name below */ }
+    }
+
     return (
       <button
         onClick={() => select(ch.id)}
@@ -338,7 +374,7 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <span className={`truncate text-sm ${unread > 0 ? "font-bold text-foreground" : isActive ? "font-semibold text-primary" : "font-medium text-foreground"}`}>
-              {ch.name || "Unnamed"}
+              {displayName}
             </span>
             <span className="text-[11px] text-muted-foreground shrink-0">{lastTime}</span>
           </div>
