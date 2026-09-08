@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SendHorizonal, Image, Car } from "lucide-react";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 
-export default function Composer({ channelId, channel }) {
+export default function Composer({ channelId, channel, channelDisplayName }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -61,7 +61,13 @@ export default function Composer({ channelId, channel }) {
   const isStaffRole = ["admin", "athletic_director", "coach"].includes(user?.role);
   const isBroadcastOnly = channel?.is_broadcast_only && !isStaffRole;
 
-  const shortName = channel?.name?.slice(0, 30) ?? "";
+  // Same per-viewer name bug as ChatSidebar.jsx/ChatCanvas.jsx's header: a direct channel's
+  // stored `channel.name` is only correct from whoever created the DM, so this placeholder
+  // used to read "Message matthew longaberger…" for the recipient of a DM they didn't start.
+  // ChatCanvas.jsx already resolves the correct per-viewer name (channelDisplayName) once and
+  // passes it down -- fall back to channel.name for non-direct channels, which are shared/
+  // symmetric and don't have this problem.
+  const shortName = (channelDisplayName ?? channel?.name)?.slice(0, 30) ?? "";
   const placeholder =
     channel?.type === "direct"
       ? `Message ${shortName}…`
