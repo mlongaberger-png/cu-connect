@@ -78,9 +78,17 @@ export default function MessageNotifier() {
   const showBanner = (msg) => {
     const channel = channelsRef.current.find((c) => c.id === msg.channel_id);
     const preview = (msg.content_text || "").replace(/^!\[photo\]\(.+\)$/, "📷 Photo");
+    // A direct channel's stored `name` is set once, at creation, to whoever the CREATOR was
+    // messaging (see startDirectMessage/entry.ts) -- it isn't per-recipient, so showing it here
+    // could banner the viewer's OWN name as the context label on a DM someone else started
+    // (same root cause as the sidebar/header bug fixed in ChatSidebar.jsx/ChatCanvas.jsx). This
+    // component has no per-user contact list loaded to resolve the true other-participant name,
+    // and doesn't need one: msg.sender_name (shown on the line below) already identifies who
+    // it's from, so the context label just needs to say what KIND of conversation this is.
+    const channelLabel = channel?.type === "direct" ? "Direct Message" : (channel?.name || "New message");
     setBanner({
       ...msg,
-      channel_name: channel?.name || "New message",
+      channel_name: channelLabel,
       content_text: preview,
     });
     queryClient.invalidateQueries({ queryKey: ["channel-members"] });
@@ -98,6 +106,21 @@ export default function MessageNotifier() {
       if (shownIds.current.has(msg.id)) return;
       shownIds.current.add(msg.id);
       if (shownIds.current.size > 200) shownIds.current = new Set([...shownIds.current].slice(-200));
+
+      // The sidebar's channel list (ChatSidebar.jsx, query key ["channels"]) has no
+      // refetchInterval and was never invalidated on new messages -- only ["channel-members"]
+      // was, below. Channel.last_message_at/last_message_preview DO update correctly
+      // server-side on every send (see onMessageCreated/entry.ts), but nothing ever told this
+      // client's ["channels"] cache to refetch and pick that up, so the sidebar's preview text
+      // and timestamp went stale the moment you loaded the app and stayed stale until something
+      // unrelated (e.g. a full reload) happened to refetch it. Found live 2026-09-08: a DM list
+      // row still read "No messages yet" after a message had actually arrived and been opened.
+      // This component is mounted app-wide (AppLayout.jsx) and already subscribes to every
+      // Message create, so it's the natural single place to keep ["channels"] fresh for every
+      // page, not just whichever channel happens to be open in ChatCanvas right now. Runs for
+      // BOTH own and others' messages -- sending a message should update your own sidebar
+      // preview too, same as receiving one.
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
 
       // Never banner your own messages or the channel you're currently viewing
       const isOwn = msg.sender_user_id === myId || msg.sender_user_id === user?.email;
