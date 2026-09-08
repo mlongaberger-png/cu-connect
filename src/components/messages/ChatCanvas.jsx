@@ -308,6 +308,32 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     onSuccess: (ch) => setIsMuted(ch?.is_muted || false),
   });
 
+  // See ChatSidebar.jsx's matching comment: a direct channel's stored `name` was set once,
+  // at creation, to whoever the CREATOR was messaging -- so the header showed the CURRENT
+  // viewer's own name back at them whenever they weren't the one who started the DM. Resolve
+  // the header title the same per-viewer way: the other member_emails entry, looked up in the
+  // same getDmContacts contact list NewDmDialog/ChatSidebar already fetch (shared query cache,
+  // so this is a no-op request once warm).
+  const { data: dmContacts = [] } = useQuery({
+    queryKey: ["dm-contacts", user?.email],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getDmContacts");
+      return res.data?.contacts || [];
+    },
+    enabled: channel?.type === "direct" && !!user?.email,
+  });
+  let channelDisplayName = channel?.name;
+  if (channel?.type === "direct") {
+    try {
+      const members = JSON.parse(channel.member_emails || "[]");
+      const otherEmail = members.find(e => e && e.toLowerCase() !== user?.email?.toLowerCase());
+      if (otherEmail) {
+        const contact = dmContacts.find(c => c.email?.toLowerCase() === otherEmail.toLowerCase());
+        channelDisplayName = contact?.full_name || otherEmail;
+      }
+    } catch { /* fall back to channel.name below */ }
+  }
+
   const toggleMuteMutation = useMutation({
     mutationFn: (muted) => base44.entities.Channel.update(channelId, { is_muted: muted }),
     onSuccess: () => {
@@ -471,7 +497,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
         reporter_email: user.email,
         reporter_name: user?.full_name || user?.email,
         channel_id: channelId,
-        channel_name: channel?.name,
+        channel_name: channelDisplayName,
         reason,
       });
     },
@@ -548,9 +574,9 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
           )}
           <span
             className="font-semibold text-sm truncate max-w-[180px] md:max-w-[300px] lg:max-w-[500px]"
-            title={channel?.name}
+            title={channelDisplayName}
           >
-            {channel?.name || "Loading…"}
+            {channelDisplayName || "Loading…"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -666,7 +692,7 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
       </div>
 
       {/* Composer */}
-      <Composer channelId={channelId} channel={channel} />
+      <Composer channelId={channelId} channel={channel} channelDisplayName={channelDisplayName} />
 
       {/* Report message dialog */}
       <Dialog open={!!reportTarget} onOpenChange={(open) => { if (!open) { setReportTarget(null); setReportReason("abusive"); } }}>
