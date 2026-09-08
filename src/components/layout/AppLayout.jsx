@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
@@ -50,6 +50,37 @@ export default function AppLayout() {
 
   const title = pageTitles[location.pathname] || "Cornerstone United Athletics";
   const isFullscreen = FULLSCREEN_PAGES.some(p => location.pathname.startsWith(p));
+
+  // Defensive mitigation for a real, reproduced-live bug (2026-09-08): after using the
+  // Messages Thread reply Textarea (ThreadSidebar.jsx) and backing out, the whole app shell
+  // was left shifted horizontally -- header text clipped, BottomTabBar pushed off-screen --
+  // and it never self-corrected, even across further navigation. Root cause is almost
+  // certainly the iOS WKWebView keyboard-resize path: this app had no @capacitor/keyboard
+  // config at all, so WKWebView's default 'native' resize (which shifts the WebView's own
+  // content area via contentInset) was fighting with this app's own 100dvh/safe-area layout
+  // every time the keyboard showed or hid. The real fix is capacitor.config.ts's new
+  // `plugins.Keyboard.resize: 'none'`, but that needs a native rebuild to take effect. This
+  // is a same-day safety net that works immediately, before that rebuild ships: whenever the
+  // visual viewport resizes (keyboard show/hide is the dominant cause on a phone, but a safe
+  // no-op otherwise) or an input blurs, force the window/root scroll position back to (0,0)
+  // on the next frame -- undoing exactly the kind of stuck offset that was observed, without
+  // touching anything about the normal vertical scroll containers elsewhere in the app.
+  useEffect(() => {
+    const resetScroll = () => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollLeft = 0;
+        document.body.scrollLeft = 0;
+      });
+    };
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", resetScroll);
+    window.addEventListener("focusout", resetScroll);
+    return () => {
+      vv?.removeEventListener("resize", resetScroll);
+      window.removeEventListener("focusout", resetScroll);
+    };
+  }, []);
 
   return (
     <div
