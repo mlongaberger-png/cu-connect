@@ -29,18 +29,20 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
   const [isSwiping, setIsSwiping] = useState(false);
   const longPressTimer = useRef(null);
   const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  // Locked once early movement clears a small threshold: 'horizontal' commits to the
+  // swipe-to-reply gesture, 'vertical' means the user is scrolling the message list and this
+  // gesture backs off entirely. See the touchmove effect below for why this exists.
+  const swipeDirectionRef = useRef(null);
+  const bubbleWrapRef = useRef(null);
   const { timeZone } = useOrgTimezone();
 
   const handleBubbleTouchStart = (e) => {
     longPressTimer.current = setTimeout(() => setShowPicker(true), 500);
     startXRef.current = e.touches[0].clientX;
+    startYRef.current = e.touches[0].clientY;
+    swipeDirectionRef.current = null;
     setIsSwiping(true);
-  };
-
-  const handleBubbleTouchMove = (e) => {
-    clearTimeout(longPressTimer.current);
-    const deltaX = e.touches[0].clientX - startXRef.current;
-    if (deltaX > 0) setSwipeX(Math.min(deltaX, 60));
   };
 
   const handleBubbleTouchEnd = () => {
@@ -51,6 +53,44 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
     }
     setSwipeX(0);
   };
+
+  // Attached natively via useEffect/addEventListener instead of a React onTouchMove prop, so
+  // e.preventDefault() actually has an effect. React 17+ registers onTouchMove at its
+  // delegated root as a PASSIVE listener for scroll performance -- calling preventDefault()
+  // from a plain JSX handler is silently ignored (with a console warning), so the swipe-to-
+  // reply gesture below could never stop the browser/WKWebView from ALSO treating the same
+  // touch sequence as a page scroll/pan, since this gesture starts on a bubble inside a
+  // vertically-scrolling list (ChatCanvas's scrollContainerRef, overflow-y-auto) with nothing
+  // arbitrating between "the user is swiping to reply" and "the OS is panning the page".
+  // Best-supported explanation so far for the persistent horizontal layout shift reported
+  // live 2026-09-08 (only reproducible on a real iPhone -- a desktop/mobile-width browser
+  // test of open/close Thread found nothing wrong -- and confirmed to still happen on a
+  // build that already shipped the earlier Capacitor Keyboard resize:'none' fix, which rules
+  // out the keyboard-resize theory): WKWebView's own scroll machinery gets engaged alongside
+  // this custom drag and is left in a stuck, offset state once the gesture ends. This is the
+  // leading hypothesis, not a confirmed root cause -- worth watching for whether it recurs
+  // once this ships. Fix: once the gesture is clearly horizontal (not a vertical scroll),
+  // preventDefault() so the browser never also pans the page for it; normal vertical
+  // scrolling through the message list is untouched, since preventDefault only fires after
+  // the gesture locks to 'horizontal'.
+  useEffect(() => {
+    const el = bubbleWrapRef.current;
+    if (!el) return;
+    const onTouchMove = (e) => {
+      if (!e.touches?.[0]) return;
+      clearTimeout(longPressTimer.current);
+      const deltaX = e.touches[0].clientX - startXRef.current;
+      const deltaY = e.touches[0].clientY - startYRef.current;
+      if (swipeDirectionRef.current === null && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+        swipeDirectionRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+      }
+      if (swipeDirectionRef.current !== "horizontal") return; // let the page scroll normally
+      e.preventDefault();
+      if (deltaX > 0) setSwipeX(Math.min(deltaX, 60));
+    };
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onTouchMove);
+  }, []);
 
   if (msg.message_type === "event") {
     return (
@@ -107,7 +147,10 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
 
       {/* Bubble + hover action */}
       <div
+        ref={bubbleWrapRef}
         className="relative"
+        onTouchStart={handleBubbleTouchStart}
+        onTouchEnd={handleBubbleTouchEnd}
         style={{
           transform: `translateX(${swipeX}px)`,
           transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
@@ -116,9 +159,6 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
         {isPhoto ? (
           <div
             className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}
-            onTouchStart={handleBubbleTouchStart}
-            onTouchMove={handleBubbleTouchMove}
-            onTouchEnd={handleBubbleTouchEnd}
           >
             <img
               src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
@@ -128,9 +168,6 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
           </div>
         ) : (
           <div
-            onTouchStart={handleBubbleTouchStart}
-            onTouchMove={handleBubbleTouchMove}
-            onTouchEnd={handleBubbleTouchEnd}
             className={`px-4 py-2 text-sm leading-relaxed break-words select-none
               ${isOwn
                 ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
