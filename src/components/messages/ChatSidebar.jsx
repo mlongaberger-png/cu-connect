@@ -256,6 +256,18 @@ export default function ChatSidebar({ activeChannelId }) {
     return true;
   });
 
+  // Per-tab unread dot -- reuses the same unreadMap (ChannelMember.unread_count, keyed by
+  // channel_id) that already drives each row's unread badge and the header's total count.
+  // "Has unread" just means at least one channel of that type appears in unreadMap with a
+  // count > 0; it stays lit until the user opens that channel (which clears its unread_count
+  // via resetUnreadMutation/clearUnreadMutation, same as today) and clears itself the moment
+  // this recomputes on the next render -- no separate state to track or reset.
+  const hasUnread = (channels) => channels.some(ch => (unreadMap[ch.id] || 0) > 0);
+  const teamsHaveUnread = hasUnread(teamChannels);
+  const directHaveUnread = hasUnread(directChannels);
+  const carpoolHaveUnread = hasUnread(carpoolChannels);
+  const announceHaveUnread = hasUnread(announceChannels);
+
   const { toast } = useToast();
 
   const createChannelMutation = useMutation({
@@ -442,10 +454,22 @@ export default function ChatSidebar({ activeChannelId }) {
         </div>
         <div className="px-4 pb-3">
           <TabsList className="grid w-full grid-cols-4 bg-muted h-auto p-1 gap-0.5">
-            <TabsTrigger value="teams" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">🛡️ Teams</TabsTrigger>
-            <TabsTrigger value="direct" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">💬 DMs</TabsTrigger>
-            <TabsTrigger value="carpool" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">🚗 Carpool</TabsTrigger>
-            <TabsTrigger value="announce" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">📢 News</TabsTrigger>
+            <TabsTrigger value="teams" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
+              🛡️ Teams
+              {teamsHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+            </TabsTrigger>
+            <TabsTrigger value="direct" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
+              💬 DMs
+              {directHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+            </TabsTrigger>
+            <TabsTrigger value="carpool" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
+              🚗 Carpool
+              {carpoolHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+            </TabsTrigger>
+            <TabsTrigger value="announce" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
+              📢 News
+              {announceHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+            </TabsTrigger>
           </TabsList>
         </div>
       </div>
