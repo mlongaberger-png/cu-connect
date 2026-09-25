@@ -7,12 +7,12 @@ let cachedFcmAuth = null; // { projectId, accessToken, expiresAt }
 
 async function getFcmAccessToken(base44) {
   const now = Date.now();
-  if (cachedFcmAuth && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
-
   const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'fcm_service_account' });
   if (!configs.length) return null;
 
   const serviceAccount = JSON.parse(configs[0].value);
+  // Keyed to the service-account key id so a rotated credential takes effect immediately.
+  if (cachedFcmAuth && cachedFcmAuth.keyId === serviceAccount.private_key_id && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
   const auth = new GoogleAuth({
     credentials: serviceAccount,
     scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
@@ -21,6 +21,7 @@ async function getFcmAccessToken(base44) {
   const tokenResp = await client.getAccessToken();
 
   cachedFcmAuth = {
+    keyId: serviceAccount.private_key_id,
     projectId: serviceAccount.project_id,
     accessToken: tokenResp.token,
     expiresAt: now + 50 * 60 * 1000, // refresh a bit before the usual 1hr expiry
@@ -28,12 +29,22 @@ async function getFcmAccessToken(base44) {
   return cachedFcmAuth;
 }
 
-async function sendFcm({ base44, fcmToken, title, body, url }) {
-  const auth = await getFcmAccessToken(base44);
+async function sendFcm({ base44, fcmToken, title, body, url, badge }) {
+  let auth;
+  try {
+    auth = await getFcmAccessToken(base44);
+  } catch (e) {
+    return { ok: false, status: 0, errText: `FCM auth failed: ${e.message}` };
+  }
   if (!auth) {
     console.log('No fcm_service_account configured in AppConfig, skipping native push');
     return { ok: false, skipped: true };
   }
+  if (!fcmToken) return { ok: false, status: 0, errText: 'Subscription has no fcm_token' };
+  // App-icon badge: iOS only shows a red number if the payload carries
+  // aps.badge (it is never inferred). Android shows a launcher dot for any
+  // posted notification; notification_count feeds launchers that show a number.
+  const badgeCount = Number.isFinite(badge) && badge > 0 ? Math.floor(badge) : undefined;
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${auth.projectId}/messages:send`, {
     method: 'POST',
     headers: {
@@ -44,7 +55,22 @@ async function sendFcm({ base44, fcmToken, title, body, url }) {
       message: {
         token: fcmToken,
         notification: { title, body },
-        data: { url: url || '' },
+        data: { url: url || '', type: 'message' },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              ...(badgeCount !== undefined ? { badge: badgeCount } : {}),
+            },
+          },
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+            ...(badgeCount !== undefined ? { notification_count: badgeCount } : {}),
+          },
+        },
       },
     }),
   });
@@ -220,9 +246,23 @@ Deno.serve(async (req) => {
       subsMap[key].push(s);
     });
 
+    // Total unread across all of each recipient's channels (post-increment),
+    // used as the app-icon badge number on iOS/Android.
+    const badgeMap = {};
+    try {
+      const pushEmails = finalRecipients.filter(e => (subsMap[e.toLowerCase()] || []).some(s => s.platform === 'ios' || s.platform === 'android'));
+      await Promise.all(pushEmails.map(async (email) => {
+        const memberships = await base44.asServiceRole.entities.ChannelMember.filter({ user_email: email });
+        badgeMap[email.toLowerCase()] = memberships.reduce((n, m) => n + (m.unread_count || 0), 0);
+      }));
+    } catch (e) {
+      console.error('Badge count lookup failed:', e.message);
+    }
+
     let pushSent = 0;
     let emailSent = 0;
     let skipped = 0;
+    let deactivated = 0;
 
     const pushPromises = [];
     const emailPromises = [];
@@ -245,10 +285,15 @@ Deno.serve(async (req) => {
           if (sub.platform === 'ios' || sub.platform === 'android') {
             // Native delivery via FCM
             pushPromises.push(
-              sendFcm({ base44, fcmToken: sub.fcm_token, title: notifTitle, body: notifBody, url: notifUrl })
-                .then((result) => {
-                  if (result.ok) { pushSent++; }
-                  else console.error(`FCM push failed for ${email}:`, result.status, result.errText);
+              sendFcm({ base44, fcmToken: sub.fcm_token, title: notifTitle, body: notifBody, url: notifUrl, badge: badgeMap[key] })
+                .then(async (result) => {
+                  if (result.ok) { pushSent++; return; }
+                  console.error(`FCM push failed for ${email}:`, result.status, result.errText);
+                  // Retire tokens FCM reports as gone (app reinstalled / token rotated).
+                  if (result.status === 404 || /UNREGISTERED/.test(result.errText || '')) {
+                    await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false }).catch(() => {});
+                    deactivated++;
+                  }
                 })
             );
           } else {
@@ -290,8 +335,8 @@ Deno.serve(async (req) => {
 
     await Promise.all([...pushPromises, ...emailPromises]);
 
-    console.log(`Done. Push sent: ${pushSent}, email sent: ${emailSent}, skipped (disabled): ${skipped}, unread updated: ${finalRecipients.length}`);
-    return Response.json({ success: true, push_sent: pushSent, email_sent: emailSent, skipped, unread_updated: finalRecipients.length });
+    console.log(`Done. Push sent: ${pushSent}, email sent: ${emailSent}, skipped (disabled): ${skipped}, dead tokens retired: ${deactivated}, unread updated: ${finalRecipients.length}`);
+    return Response.json({ success: true, push_sent: pushSent, email_sent: emailSent, skipped, deactivated, unread_updated: finalRecipients.length });
   } catch (error) {
     console.error('onMessageCreated error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
