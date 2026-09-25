@@ -1,32 +1,37 @@
 {
   "name": "ChannelMember",
-  "type": "object",
   "properties": {
     "channel_id": {
-      "type": "string",
-      "description": "Foreign key to Channel"
+      "description": "Foreign key to Channel",
+      "type": "string"
+    },
+    "muted": {
+      "default": false,
+      "description": "Per-person mute for this chat: onMessageCreated sends no push/email to this member, but unread_count still increments",
+      "type": "boolean"
+    },
+    "unread_count": {
+      "default": 0,
+      "description": "Number of unread messages for this user in this channel",
+      "type": "number"
     },
     "user_email": {
-      "type": "string",
-      "description": "Member's email"
+      "description": "Member's email",
+      "type": "string"
     },
     "user_id": {
-      "type": "string",
-      "description": "Member's user ID"
+      "description": "Member's user ID",
+      "type": "string"
     },
     "user_name": {
       "type": "string"
-    },
-    "unread_count": {
-      "type": "number",
-      "default": 0,
-      "description": "Number of unread messages for this user in this channel"
     }
   },
   "required": [
     "channel_id",
     "user_email"
   ],
+  "type": "object",
   "rls": {
     "create": {
       "$or": [
