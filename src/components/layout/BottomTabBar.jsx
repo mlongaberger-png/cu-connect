@@ -7,6 +7,30 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
+import { Capacitor, registerPlugin } from "@capacitor/core";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
+
+// App-icon badge (the red number on the iPhone home-screen icon / Android
+// launcher). Push notifications SET it server-side (onMessageCreated sends
+// aps.badge = total unread), but on iOS only the app itself can lower or clear
+// it -- so keep it in sync with the real unread total whenever the app is open.
+// Native side comes from @capawesome/capacitor-badge (installed at native-build
+// time: `npm i @capawesome/capacitor-badge && npx cap sync`). Until that plugin
+// is in a build, isPluginAvailable('Badge') is false and this is a no-op, so
+// the web app and older native builds are unaffected.
+const Badge = registerPlugin("Badge");
+async function syncAppIconBadge(count) {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    if (Capacitor.isPluginAvailable("Badge")) {
+      if (count > 0) await Badge.set({ count });
+      else await Badge.clear();
+    }
+    // All caught up: also clear already-delivered message banners from
+    // Notification Center so they don't linger after being read in-app.
+    if (count === 0) await FirebaseMessaging.removeAllDeliveredNotifications().catch(() => {});
+  } catch {}
+}
 
 function useUnreadMessageCount(user) {
   const [unread, setUnread] = useState(0);
@@ -17,6 +41,7 @@ function useUnreadMessageCount(user) {
         const memberships = await base44.entities.ChannelMember.filter({ user_email: user.email });
         const total = memberships.reduce((sum, m) => sum + (m.unread_count || 0), 0);
         setUnread(total);
+        syncAppIconBadge(total);
       } catch {}
     };
     check();
