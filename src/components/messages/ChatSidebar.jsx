@@ -98,7 +98,7 @@ export default function ChatSidebar({ activeChannelId }) {
     enabled: !!user,
   });
 
-  const { data: allChannels = [] } = useQuery({
+  const { data: allChannels = [], isLoading: channelsLoading } = useQuery({
     queryKey: ["channels"],
     queryFn: () => base44.entities.Channel.list("-last_message_at"),
     enabled: !!currentUser,
@@ -473,6 +473,15 @@ export default function ChatSidebar({ activeChannelId }) {
 
       <div className="flex-1 overflow-y-auto p-2 flex flex-col">
         <div className="flex-1">
+          {/* While chats load (several seconds on a phone), show a spinner rather than the
+              "No team channels yet" empty state, which read like an empty inbox. */}
+          {(channelsLoading || !currentUser) && (
+            <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+              <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
+              <span className="text-sm">Loading your chats…</span>
+            </div>
+          )}
+          <div className={channelsLoading || !currentUser ? "hidden" : ""}>
           <TabsContent value="teams" className="m-0 space-y-1">
             {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (
               <EmptyChannelState icon={Users} message={isScopedRole ? "No team channels found for your athletes" : "No team channels yet"} />
@@ -520,6 +529,7 @@ export default function ChatSidebar({ activeChannelId }) {
               announceChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).map(ch => <ChannelBtn key={ch.id} ch={ch} />)
             )}
           </TabsContent>
+          </div>
         </div>
 
         {/* Manage hidden channels */}

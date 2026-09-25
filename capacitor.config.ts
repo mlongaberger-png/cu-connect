@@ -40,9 +40,17 @@ const config: CapacitorConfig = {
   // documented fix for apps built this way. Requires a native rebuild (`npx cap sync
   // ios` + an Xcode archive) to take effect -- this config change alone does nothing
   // until that's run.
+  // 2026-09-25: switched back from 'none' to 'native'. With 'none' the keyboard simply
+  // covers the bottom of every page, which broke pages we don't control -- Base44's hosted
+  // sign-in page (cu-connect.app/login) had its Email field hidden under the keyboard. With
+  // 'native' iOS shrinks the WebView above the keyboard (standard iPhone behavior), so any
+  // page fits. Our own layout follows automatically (100dvh), and useKeyboard.js reports
+  // height 0 on native so nothing double-counts the keyboard. The Sept 8 horizontal-shift
+  // bug that motivated 'none' has since had its own fixes (ChatCanvas swipe preventDefault,
+  // AppLayout scroll reset); watch for a recurrence after Build 12.
   plugins: {
     Keyboard: {
-      resize: 'none',
+      resize: 'native',
     },
   },
 };
