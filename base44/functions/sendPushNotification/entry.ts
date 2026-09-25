@@ -29,8 +29,15 @@ async function getFcmAccessToken(base44) {
 }
 
 async function sendFcm({ base44, fcmToken, title, body, url }) {
-  const auth = await getFcmAccessToken(base44);
-  if (!auth) return { ok: false, skipped: true };
+  let auth;
+  try {
+    auth = await getFcmAccessToken(base44);
+  } catch (e) {
+    // OAuth/service-account failure — surface it instead of throwing away the reason.
+    return { ok: false, status: 0, errText: `FCM auth failed: ${e.message}` };
+  }
+  if (!auth) return { ok: false, skipped: true, errText: 'No fcm_service_account in AppConfig' };
+  if (!fcmToken) return { ok: false, status: 0, errText: 'Subscription has no fcm_token' };
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${auth.projectId}/messages:send`, {
     method: 'POST',
     headers: {
@@ -164,6 +171,17 @@ Deno.serve(async (req) => {
     // team/room audience already resolved into allowedEmails above.
     const recipients = user_emails?.length ? user_emails : Array.from(allowedEmails || []);
 
+    // Per-subscription delivery results, returned to the caller so FCM/APNs
+    // rejections are visible (previously only a bare `sent` count came back and
+    // the actual FCM error only went to console logs — see iOS Push Audit
+    // 2026-09-25). Tokens are truncated; no full token is returned.
+    const results = [];
+    let deactivated = 0;
+    const isDeadTokenError = (status, errText) =>
+      status === 404 ||
+      /UNREGISTERED/.test(errText || '') ||
+      (status === 400 && /registration token|INVALID_ARGUMENT/i.test(errText || '') && /token/i.test(errText || ''));
+
     const pushPromises = [];
     for (const email of recipients) {
       if (allowedEmails && !allowedEmails.has(email)) {
@@ -176,9 +194,34 @@ Deno.serve(async (req) => {
           // Native delivery via FCM
           pushPromises.push(
             sendFcm({ base44, fcmToken: sub.fcm_token, title, body: body || '', url: url || '' })
-              .then((result) => {
-                if (result.ok) { sent++; }
-                else console.error(`FCM push failed for ${email}:`, result.status, result.errText);
+              .then(async (result) => {
+                let errDetail = null;
+                if (!result.ok) {
+                  console.error(`FCM push failed for ${email}:`, result.status, result.errText);
+                  try {
+                    const j = JSON.parse(result.errText || '');
+                    const codes = (j?.error?.details || []).map(d => d.errorCode).filter(Boolean);
+                    errDetail = `${j?.error?.status || ''} ${codes.join(',')} ${j?.error?.message || ''}`.trim();
+                  } catch {
+                    errDetail = (result.errText || '').slice(0, 300);
+                  }
+                }
+                const dead = !result.ok && isDeadTokenError(result.status, result.errText);
+                if (dead) {
+                  await base44.asServiceRole.entities.PushSubscription.update(sub.id, { is_active: false }).catch(() => {});
+                  deactivated++;
+                }
+                if (result.ok) sent++;
+                results.push({
+                  email,
+                  subscription_id: sub.id,
+                  platform: sub.platform,
+                  token_prefix: (sub.fcm_token || '').slice(0, 10),
+                  ok: !!result.ok,
+                  status: result.status ?? null,
+                  error: errDetail,
+                  deactivated: dead,
+                });
               })
           );
         } else {
@@ -200,8 +243,8 @@ Deno.serve(async (req) => {
     }
     await Promise.all(pushPromises);
 
-    console.log(`Push sent to ${sent} subscription(s), skipped ${skipped} (not on team)`);
-    return Response.json({ success: true, sent, skipped });
+    console.log(`Push sent to ${sent} subscription(s), skipped ${skipped} (not on team), deactivated ${deactivated} dead token(s)`);
+    return Response.json({ success: true, sent, skipped, deactivated, results });
   } catch (error) {
     console.error('sendPushNotification error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
