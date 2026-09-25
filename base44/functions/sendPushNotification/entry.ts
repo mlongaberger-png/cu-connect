@@ -169,6 +169,17 @@ Deno.serve(async (req) => {
       if (!subsMap[k]) subsMap[k] = [];
       subsMap[k].push(s);
     });
+    // One native token per user per platform: the most recently saved one
+    // (stale tokens caused duplicate deliveries -- see onMessageCreated).
+    for (const k of Object.keys(subsMap)) {
+      const web = subsMap[k].filter(s => s.platform !== 'ios' && s.platform !== 'android');
+      const nativeNewest = {};
+      subsMap[k].filter(s => s.platform === 'ios' || s.platform === 'android').forEach(s => {
+        const cur = nativeNewest[s.platform];
+        if (!cur || (s.updated_date || '') > (cur.updated_date || '')) nativeNewest[s.platform] = s;
+      });
+      subsMap[k] = [...web, ...Object.values(nativeNewest)];
+    }
 
     // Explicit recipient list wins if given; otherwise fall back to the
     // team/room audience already resolved into allowedEmails above.
