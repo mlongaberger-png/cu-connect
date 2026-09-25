@@ -3,8 +3,9 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { SendHorizonal, Image, Car } from "lucide-react";
+import { ArrowUp, Image, Car, Plus, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useKeyboard, dismissKeyboard } from "@/hooks/useKeyboard";
 import CarpoolRequestModal from "@/components/carpool/CarpoolRequestModal";
 
 export default function Composer({ channelId, channel, channelDisplayName }) {
@@ -15,6 +16,7 @@ export default function Composer({ channelId, channel, channelDisplayName }) {
   const [uploading, setUploading] = useState(false);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const keyboard = useKeyboard();
 
   // Fetch current user full profile to pass into the Carpool Modal
   const { data: currentUser } = useQuery({
@@ -70,9 +72,9 @@ export default function Composer({ channelId, channel, channelDisplayName }) {
   const shortName = (channelDisplayName ?? channel?.name)?.slice(0, 30) ?? "";
   const placeholder =
     channel?.type === "direct"
-      ? `Message ${shortName}…`
+      ? `Message ${shortName}`
       : shortName
-        ? `Message #${shortName}…`
+        ? `Message ${shortName}`
         : "Message…";
 
   const sendMutation = useMutation({
@@ -84,17 +86,22 @@ export default function Composer({ channelId, channel, channelDisplayName }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    sendMutation.mutate({
-      channel_id: channelId,
-      sender_user_id: user?.id || user?.email,
-      sender_name: user?.full_name || user?.email,
-      sender_avatar: user?.profile_photo_url || "",
-      content_text: `![photo](${file_url})`,
-      message_type: "text",
-    });
-    setUploading(false);
-    e.target.value = "";
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      sendMutation.mutate({
+        channel_id: channelId,
+        sender_user_id: user?.id || user?.email,
+        sender_name: user?.full_name || user?.email,
+        sender_avatar: user?.profile_photo_url || "",
+        content_text: `![photo](${file_url})`,
+        message_type: "text",
+      });
+    } catch (err) {
+      console.error("Photo upload failed:", err);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const handleSend = async (e) => {
@@ -102,6 +109,7 @@ export default function Composer({ channelId, channel, channelDisplayName }) {
     if (!text.trim()) return;
     const capturedText = text;
     setText("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     sendMutation.mutate({
       channel_id: channelId,
       sender_user_id: user?.id || user?.email,
@@ -112,43 +120,88 @@ export default function Composer({ channelId, channel, channelDisplayName }) {
     });
   };
 
-  if (isBroadcastOnly) return <div className="p-4 text-center text-sm text-muted-foreground bg-muted border-t border-border">📢 Read-only channel</div>;
+  if (isBroadcastOnly) return <div className="p-4 text-center text-sm text-muted-foreground bg-card border-t border-border">Only coaches and admins can post in this channel.</div>;
+
+  const canSend = !!text.trim() && !sendMutation.isPending;
 
   return (
-    <form onSubmit={handleSend} className="border-t border-border bg-card p-3 flex gap-2 items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Photo Upload */}
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors shrink-0 disabled:opacity-50">
-        <Image className="w-4 h-4" />
-      </button>
+    <div className="shrink-0 bg-background">
+      {/* While typing on a phone: a bar right above the keyboard with an obvious way out
+          (Done), plus the hint that tapping or swiping down on the chat also closes it. */}
+      {keyboard.open && (
+        <div className="lg:hidden flex items-center justify-between h-11 pl-4 pr-2 bg-card border-t border-border">
+          <span className="text-[13px] text-muted-foreground">Tap the chat or swipe down to close</span>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={dismissKeyboard}
+            className="h-9 px-3 rounded-lg flex items-center gap-1.5 text-primary font-bold text-base"
+          >
+            <ChevronDown className="w-4 h-4" /> Done
+          </button>
+        </div>
+      )}
+      <form onSubmit={handleSend} className="border-t border-border px-3 py-2 flex gap-2 items-end">
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={uploading}
+              aria-label="Add photo or ride request"
+              className="w-11 h-11 rounded-full bg-surface text-primary flex items-center justify-center shrink-0 disabled:opacity-50"
+            >
+              {uploading
+                ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                : <Plus className="w-5 h-5" strokeWidth={2.5} />}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" className="bg-popover border-border">
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="gap-2 cursor-pointer py-2.5">
+              <Image className="w-4 h-4" /> Photo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowCarpool(true)} className="gap-2 cursor-pointer py-2.5">
+              <Car className="w-4 h-4" /> Request a ride
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      {/* Carpool Button */}
-      <button type="button" onClick={() => setShowCarpool(true)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors shrink-0">
-        <Car className="w-4 h-4" />
-      </button>
+        <Textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            // grow with the text, up to max-h
+            e.target.style.height = "auto";
+            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+          }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          placeholder={placeholder}
+          enterKeyHint="send"
+          className="flex-1 min-h-[44px] max-h-[120px] resize-none overflow-y-auto rounded-[22px] px-4 py-[10px] bg-surface border-border text-base md:text-sm leading-snug focus-visible:ring-1 focus-visible:ring-primary"
+          rows={1}
+        />
 
-      <Textarea
-        ref={textareaRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-        placeholder={placeholder}
-        className="flex-1 min-h-[40px] max-h-[120px] resize-none overflow-y-auto py-2 bg-background text-sm"
-        rows={1}
-      />
+        <button
+          type="submit"
+          aria-label="Send"
+          disabled={!canSend}
+          onMouseDown={(e) => e.preventDefault()}
+          className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+            canSend ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground"
+          }`}
+        >
+          <ArrowUp className="w-5 h-5" strokeWidth={2.6} />
+        </button>
 
-      <Button type="submit" size="icon" disabled={!text.trim() || sendMutation.isPending} className="shrink-0 h-9 w-9">
-        <SendHorizonal className="w-4 h-4" />
-      </Button>
-
-      {/* FIXED: Now passing necessary props so the modal knows who the user is */}
-      <CarpoolRequestModal 
-        open={showCarpool} 
-        onOpenChange={setShowCarpool} 
-        currentUser={currentUser}
-        myTeams={myTeams}
-        myTeamIds={myTeams.map(t => t.id)}
-      />
-    </form>
+        <CarpoolRequestModal
+          open={showCarpool}
+          onOpenChange={setShowCarpool}
+          currentUser={currentUser}
+          myTeams={myTeams}
+          myTeamIds={myTeams.map(t => t.id)}
+        />
+      </form>
+    </div>
   );
 }

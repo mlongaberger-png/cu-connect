@@ -363,12 +363,12 @@ export default function ChatSidebar({ activeChannelId }) {
     return (
       <button
         onClick={() => select(ch.id)}
-        className={`group w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors
+        className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors
           ${isActive ? "bg-primary/15" : "hover:bg-surface"}
           ${isHidden ? "opacity-50" : ""}`}
       >
         {/* Avatar */}
-        <div className="w-11 h-11 rounded-full overflow-hidden bg-surface flex items-center justify-center shrink-0 border border-border/50">
+        <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shrink-0 border ${unread > 0 ? "border-primary/60 bg-primary/10" : "border-border/50 bg-surface"}`}>
           {teamAvatarUrl ? (
             <img src={teamAvatarUrl} alt="" className="w-full h-full object-cover" />
           ) : linkedTeam ? (
@@ -377,6 +377,10 @@ export default function ChatSidebar({ activeChannelId }) {
             <Crown className="w-5 h-5 text-yellow-400" />
           ) : ch.type === "carpool" ? (
             <Car className="w-5 h-5 text-primary" />
+          ) : ch.type === "direct" ? (
+            <span className="text-[15px] font-bold text-foreground">
+              {(displayName.replace(/@.*$/, "").split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join("") || "?").toUpperCase()}
+            </span>
           ) : (
             <Hash className="w-5 h-5 text-primary" />
           )}
@@ -385,13 +389,13 @@ export default function ChatSidebar({ activeChannelId }) {
         {/* Text content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className={`truncate text-sm ${unread > 0 ? "font-bold text-foreground" : isActive ? "font-semibold text-primary" : "font-medium text-foreground"}`}>
+            <span className={`truncate text-[16px] ${unread > 0 ? "font-extrabold text-foreground" : isActive ? "font-bold text-primary" : "font-semibold text-foreground"}`}>
               {displayName}
             </span>
-            <span className="text-[11px] text-muted-foreground shrink-0">{lastTime}</span>
+            <span className={`text-[12px] shrink-0 ${unread > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>{lastTime}</span>
           </div>
           <div className="flex items-center justify-between gap-2 mt-0.5">
-            <span className={`text-xs truncate ${unread > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
+            <span className={`text-[14px] truncate ${unread > 0 ? "text-foreground" : "text-muted-foreground"}`}>
               {preview || <span>No messages yet</span>}
             </span>
             {unread > 0 && (
@@ -405,7 +409,7 @@ export default function ChatSidebar({ activeChannelId }) {
         {/* Hide/unhide on hover */}
         <span
           onClick={(e) => toggleHideChannel(ch.id, e)}
-          className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-background shrink-0"
+          className="hidden lg:block lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-background shrink-0"
           title={isHidden ? "Unhide" : "Hide"}
         >
           {isHidden
@@ -423,7 +427,7 @@ export default function ChatSidebar({ activeChannelId }) {
                 deleteChannelMutation.mutate(ch.id);
               }
             }}
-            className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-red-500/10 shrink-0"
+            className="hidden lg:block lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150 p-1 rounded hover:bg-red-500/10 shrink-0"
             title="Delete channel"
           >
             <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -438,14 +442,7 @@ export default function ChatSidebar({ activeChannelId }) {
 
       <div className="flex-shrink-0 border-b border-border bg-card relative z-[60] shadow-sm">
         <div className="flex items-center justify-between p-4">
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-primary" /> Messages
-            {Object.values(unreadMap).reduce((a, b) => a + b, 0) > 0 && (
-              <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[24px] text-center">
-                {Object.values(unreadMap).reduce((a, b) => a + b, 0) > 99 ? "99+" : Object.values(unreadMap).reduce((a, b) => a + b, 0)}
-              </span>
-            )}
-          </h2>
+          <h2 className="text-2xl font-extrabold tracking-tight text-foreground">Messages</h2>
           {canCreate && (
             <Button variant="ghost" size="icon" onClick={() => setShowCreate(true)}>
               <Plus className="w-5 h-5" />
@@ -455,26 +452,26 @@ export default function ChatSidebar({ activeChannelId }) {
         <div className="px-4 pb-3">
           <TabsList className="grid w-full grid-cols-4 bg-muted h-auto p-1 gap-0.5">
             <TabsTrigger value="teams" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
-              🛡️ Teams
-              {teamsHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+              Teams
+              {teamsHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
             </TabsTrigger>
             <TabsTrigger value="direct" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
-              💬 DMs
-              {directHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+              Direct
+              {directHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
             </TabsTrigger>
             <TabsTrigger value="carpool" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
-              🚗 Carpool
-              {carpoolHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+              Carpool
+              {carpoolHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
             </TabsTrigger>
             <TabsTrigger value="announce" className="text-xs sm:text-sm px-1 sm:px-3 py-1.5 gap-1">
-              📢 News
-              {announceHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
+              News
+              {announceHaveUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
             </TabsTrigger>
           </TabsList>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 flex flex-col" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 8px)' }}>
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col">
         <div className="flex-1">
           <TabsContent value="teams" className="m-0 space-y-1">
             {teamChannels.filter(ch => showHiddenRecords || !hiddenChannels.includes(ch.id)).length === 0 ? (

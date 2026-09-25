@@ -21,6 +21,11 @@
       "type": "number",
       "default": 0,
       "description": "Number of unread messages for this user in this channel"
+    },
+    "muted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Per-person mute for this chat: onMessageCreated sends no push/email to this member, but unread_count still increments"
     }
   },
   "required": [

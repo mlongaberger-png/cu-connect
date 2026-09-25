@@ -10,6 +10,7 @@ import IOSInstallBanner from "@/components/notifications/IOSInstallBanner";
 import MessageNotifier from "@/components/notifications/MessageNotifier";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useKeyboard } from "@/hooks/useKeyboard";
 
 // Pages that manage their own full-height layout (no scroll wrapper)
 const FULLSCREEN_PAGES = ["/Messages"];
@@ -49,7 +50,16 @@ export default function AppLayout() {
   };
 
   const title = pageTitles[location.pathname] || "Cornerstone United Athletics";
-  const isFullscreen = FULLSCREEN_PAGES.some(p => location.pathname.startsWith(p));
+  // Case-insensitive: push notifications deep-link to lowercase "/messages?channelId=...",
+  // which previously missed this check -- the chat then rendered inside the normal scrolling
+  // page (sponsor banner on top, double bottom padding) and the reply box was pushed off
+  // screen (reported live on iPhone 2026-09-25).
+  const pathLower = location.pathname.toLowerCase();
+  const isFullscreen = FULLSCREEN_PAGES.some(p => pathLower.startsWith(p.toLowerCase()));
+  // An open conversation on a phone gets the whole screen: its own slim header (with a back
+  // button) replaces the app TopBar, like GroupMe/iMessage. The chat list keeps the TopBar.
+  const inOpenChat = isFullscreen && new URLSearchParams(location.search).has("channelId");
+  const keyboard = useKeyboard();
 
   // Defensive mitigation for a real, reproduced-live bug (2026-09-08): after using the
   // Messages Thread reply Textarea (ThreadSidebar.jsx) and backing out, the whole app shell
@@ -91,7 +101,9 @@ export default function AppLayout() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
+        <div className={inOpenChat ? "hidden lg:block" : ""}>
+          <TopBar onMenuToggle={() => setSidebarOpen(true)} title={title} />
+        </div>
         {/* Main content area — fills remaining height between TopBar and BottomTabBar */}
         <main
           className="flex-1 min-h-0 overflow-hidden flex flex-col"
@@ -101,9 +113,16 @@ export default function AppLayout() {
             {isFullscreen ? (
               /* Full-height pages (e.g. Messages) manage their own internal scroll and safe-area insets */
               /* On mobile, reserve space for the fixed BottomTabBar (56px) + safe area */
+              /* While the on-screen keyboard is open the tab bar hides and this padding becomes the
+                 keyboard's height instead, so the page's bottom edge (the reply box) sits right on
+                 top of the keyboard. lg+ has no tab bar at all. */
               <div
-                className="h-full overflow-hidden flex flex-col"
-                style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+                className="h-full overflow-hidden flex flex-col pb-[var(--fs-pb)] lg:pb-0"
+                style={{
+                  "--fs-pb": keyboard.open
+                    ? `${keyboard.height}px`
+                    : "calc(56px + env(safe-area-inset-bottom, 0px))",
+                }}
               >
                 <Outlet />
               </div>

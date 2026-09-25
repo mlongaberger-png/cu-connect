@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
+import { useKeyboard } from "@/hooks/useKeyboard";
 
 // App-icon badge (the red number on the iPhone home-screen icon / Android
 // launcher). Push notifications SET it server-side (onMessageCreated sends
@@ -125,6 +126,9 @@ export default function BottomTabBar({ onOpenSidebar }) {
     if (activeTab?.root) setTabMemory(activeTab.root, location.pathname + location.search);
   }, [activeTab?.root, location.pathname, location.search]);
 
+  // Hide while typing so the keyboard + reply box get the space (GroupMe/iMessage behavior).
+  const keyboard = useKeyboard();
+
   const handleTabPress = useCallback((tab) => {
     const mem = getTabMemory();
     const dest = mem[tab.root] || tab.root;
@@ -135,6 +139,8 @@ export default function BottomTabBar({ onOpenSidebar }) {
       navigate(dest);
     }
   }, [location.pathname, navigate]);
+
+  if (keyboard.open) return null;
 
   return (
     <nav
@@ -202,7 +208,7 @@ export default function BottomTabBar({ onOpenSidebar }) {
               <motion.div animate={{ scale: isActive ? 1.1 : 1 }} transition={{ duration: 0.15 }} className="relative">
                 <Icon className="w-5 h-5" />
                 {tab.root === "/Messages" && unreadMessages > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
                     {unreadMessages > 99 ? "99+" : unreadMessages}
                   </span>
                 )}

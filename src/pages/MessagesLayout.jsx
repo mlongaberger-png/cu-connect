@@ -32,7 +32,10 @@ export default function MessagesLayout() {
 
   return (
     <MessagingTermsGate>
-      <div className="flex h-[calc(100dvh-4rem-56px)] min-h-0 w-full overflow-hidden bg-background text-foreground">
+      {/* Fills the full-screen wrapper AppLayout gives this page (which already accounts for the
+          TopBar, tab bar and keyboard). A hard-coded calc(100dvh - 4rem - 56px) here double-counted
+          those and pushed the reply box off-screen on phones. */}
+      <div className="flex h-full flex-1 min-h-0 w-full overflow-hidden bg-background text-foreground">
         {/* Left Pane — Sidebar */}
         <div className={`flex-shrink-0 min-h-0 border-r border-border bg-card w-full md:w-80 flex-col ${channelId ? "hidden md:flex" : "flex"}`}>
           <ChatSidebar activeChannelId={channelId} />
