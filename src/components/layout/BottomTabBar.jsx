@@ -50,7 +50,7 @@ function useUnreadMessageCount(user) {
     const stop = () => { if (interval) { clearInterval(interval); interval = null; } };
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') stop();
-      else start();
+      else { check(); start(); } // refresh immediately on return to the app so the icon badge is current
     };
     if (document.visibilityState !== 'hidden') start();
     document.addEventListener('visibilitychange', onVisibilityChange);
