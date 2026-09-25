@@ -7,12 +7,14 @@ let cachedFcmAuth = null;
 
 async function getFcmAccessToken(base44) {
   const now = Date.now();
-  if (cachedFcmAuth && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
-
   const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'fcm_service_account' });
   if (!configs.length) return null;
 
   const serviceAccount = JSON.parse(configs[0].value);
+  // Cache is keyed to the service-account key id, so rotating the credential
+  // in AppConfig takes effect immediately instead of after the cached
+  // access token (up to 50 min) expires in a warm function instance.
+  if (cachedFcmAuth && cachedFcmAuth.keyId === serviceAccount.private_key_id && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
   const auth = new GoogleAuth({
     credentials: serviceAccount,
     scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
@@ -21,6 +23,7 @@ async function getFcmAccessToken(base44) {
   const tokenResp = await client.getAccessToken();
 
   cachedFcmAuth = {
+    keyId: serviceAccount.private_key_id,
     projectId: serviceAccount.project_id,
     accessToken: tokenResp.token,
     expiresAt: now + 50 * 60 * 1000,
