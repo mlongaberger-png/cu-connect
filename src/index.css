@@ -117,6 +117,22 @@
   }
 }
 
+/* iOS auto-zoom guard. iOS (Safari and the native app's WKWebView) zooms the
+   whole page in whenever a text field with font-size < 16px gets focus, and
+   doesn't zoom back out after sending -- which reads as the screen "shrinking /
+   changing size" when replying (reported live on iPhone 2026-09-25: Messages
+   Composer uses text-sm = 14px). Force 16px on every text-entry control on
+   touch devices so focus never triggers the zoom, regardless of per-component
+   text-sm/text-xs classes. Desktop (fine pointer) keeps the smaller sizes. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+  }
+}
+
 /* Safe area inset utilities for iOS notch/home indicator */
 .safe-area-top { padding-top: env(safe-area-inset-top, 0px); }
 .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
