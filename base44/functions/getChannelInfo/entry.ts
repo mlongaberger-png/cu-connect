@@ -25,10 +25,36 @@ const ROLE_LABEL: Record<string, string> = {
   parent: 'Parent', grandparent: 'Grandparent', relative: 'Family', athlete: 'Athlete',
 };
 
-function displayName(u: any, email: string) {
-  const n = (u?.full_name || '').trim();
-  if (n && !n.includes('@')) return n;
+// ── Display-name resolution (shared logic, kept in sync with src/lib/displayName.js) ──
+// Many accounts were created with an auto-generated full_name (the email's local part, e.g.
+// "kmattes08") or none at all (Sign in with Apple private-relay addresses). full_name is a
+// built-in auth field that can't be edited, so real names live in User.display_name (set by
+// admins, by the backfillDisplayNames job, or by the user via the "What's your name?" prompt).
+function nameLooksGenerated(name: string | null | undefined, email?: string | null): boolean {
+  const n = (name || '').trim();
+  if (!n) return true;
+  if (n.includes('@') || n.includes('+')) return true;
+  const local = (email || '').split('@')[0].toLowerCase();
+  if (local && n.toLowerCase() === local) return true;
+  if (!/\s/.test(n) && /[0-9._]/.test(n)) return true; // single token like "jsmith7554"
+  return false;
+}
+function tidyName(n: string): string {
+  const t = n.trim().replace(/\s+/g, ' ');
+  return t === t.toLowerCase() ? t.replace(/\b\p{L}/gu, (c) => c.toUpperCase()) : t;
+}
+function effectiveName(u: any): string {
+  if (!u) return 'Member';
+  for (const cand of [u.display_name, u.full_name]) {
+    if (!nameLooksGenerated(cand, u.email)) return tidyName(cand);
+  }
+  const email = (u.email || '').toLowerCase();
+  if (!email || email.endsWith('privaterelay.appleid.com')) return 'Member';
   return email.split('@')[0];
+}
+
+function displayName(u: any, email: string) {
+  return u ? effectiveName(u) : effectiveName({ email });
 }
 function initials(name: string) {
   const p = name.split(/\s+/).filter(Boolean);

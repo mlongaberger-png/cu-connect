@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { effectiveName, needsRealName } from "@/lib/displayName";
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -95,13 +96,21 @@ export const AuthProvider = ({ children }) => {
       const entityUsers = await base44.entities.User.filter({ email: authUser.email });
       const entityRecord = entityUsers?.[0];
       if (entityRecord?.display_name) {
-        return { ...authUser, display_name: entityRecord.display_name };
+        return withRealName({ ...authUser, display_name: entityRecord.display_name });
       }
     } catch (e) {
       // Non-critical — fall back to auth profile name
     }
-    return authUser;
+    return withRealName(authUser);
   };
+
+  // Everything in the app reads user.full_name. Make that the person's REAL name
+  // (display_name when set, never an auto-generated username like "kmattes08"), keep
+  // the raw auth value as auth_full_name, and flag accounts that still need a name.
+  function withRealName(u) {
+    if (!u) return u;
+    return { ...u, auth_full_name: u.full_name, full_name: effectiveName(u), needsName: needsRealName(u) };
+  }
 
   const refreshUser = async () => {
     try {

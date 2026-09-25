@@ -8,6 +8,7 @@ import PageTransition from "./PageTransition";
 import SponsorTicker from "@/components/sponsors/SponsorTicker";
 import IOSInstallBanner from "@/components/notifications/IOSInstallBanner";
 import MessageNotifier from "@/components/notifications/MessageNotifier";
+import NamePrompt from "./NamePrompt";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useKeyboard } from "@/hooks/useKeyboard";
@@ -155,6 +156,7 @@ export default function AppLayout() {
       <OfflineIndicator />
       <IOSInstallBanner />
       <MessageNotifier />
+      <NamePrompt />
     </div>
   );
 }
