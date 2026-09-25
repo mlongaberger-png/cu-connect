@@ -245,6 +245,20 @@ Deno.serve(async (req) => {
       if (!subsMap[key]) subsMap[key] = [];
       subsMap[key].push(s);
     });
+    // One native token per user per platform: the most recently saved one.
+    // Each app launch re-saves the current token (self-heal), and reinstalls /
+    // token rotation leave older tokens behind that FCM may still accept for a
+    // while -- without this every message arrived once per stale token
+    // (6 copies on Matthew's iPhone in the 2026-09-25 test).
+    for (const k of Object.keys(subsMap)) {
+      const web = subsMap[k].filter(s => s.platform !== 'ios' && s.platform !== 'android');
+      const nativeNewest = {};
+      subsMap[k].filter(s => s.platform === 'ios' || s.platform === 'android').forEach(s => {
+        const cur = nativeNewest[s.platform];
+        if (!cur || (s.updated_date || '') > (cur.updated_date || '')) nativeNewest[s.platform] = s;
+      });
+      subsMap[k] = [...web, ...Object.values(nativeNewest)];
+    }
 
     // Total unread across all of each recipient's channels (post-increment),
     // used as the app-icon badge number on iOS/Android.
