@@ -34,6 +34,9 @@ echo "==> ci_post_clone: npm install at repo root"
 npm install
 
 echo "==> ci_post_clone: build the web app (vite build -> dist/)"
+# Without VITE_BASE44_APP_ID the bundle ships with a null app id and every API
+# call in the native app fails (see CU Connect TODO doc section 82).
+export VITE_BASE44_APP_ID=69bae2515552e76ca1fbd6a0
 npm run build
 
 echo "==> ci_post_clone: npx cap sync ios (copies dist/ into ios/App/App/public,"
