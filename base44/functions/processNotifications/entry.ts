@@ -7,12 +7,12 @@ let cachedFcmAuth = null;
 
 async function getFcmAccessToken(base44) {
   const now = Date.now();
-  if (cachedFcmAuth && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
-
   const configs = await base44.asServiceRole.entities.AppConfig.filter({ key: 'fcm_service_account' });
   if (!configs.length) return null;
 
   const serviceAccount = JSON.parse(configs[0].value);
+  // Keyed to the service-account key id so a rotated credential takes effect immediately.
+  if (cachedFcmAuth && cachedFcmAuth.keyId === serviceAccount.private_key_id && cachedFcmAuth.expiresAt > now) return cachedFcmAuth;
   const auth = new GoogleAuth({
     credentials: serviceAccount,
     scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
@@ -21,6 +21,7 @@ async function getFcmAccessToken(base44) {
   const tokenResp = await client.getAccessToken();
 
   cachedFcmAuth = {
+    keyId: serviceAccount.private_key_id,
     projectId: serviceAccount.project_id,
     accessToken: tokenResp.token,
     expiresAt: now + 50 * 60 * 1000,
@@ -106,6 +107,17 @@ Deno.serve(async (req) => {
       if (!subsMap[k]) subsMap[k] = [];
       subsMap[k].push(s);
     });
+    // One native token per user per platform: the most recently saved one
+    // (stale tokens caused duplicate deliveries -- see onMessageCreated).
+    for (const k of Object.keys(subsMap)) {
+      const web = subsMap[k].filter(s => s.platform !== 'ios' && s.platform !== 'android');
+      const nativeNewest = {};
+      subsMap[k].filter(s => s.platform === 'ios' || s.platform === 'android').forEach(s => {
+        const cur = nativeNewest[s.platform];
+        if (!cur || (s.updated_date || '') > (cur.updated_date || '')) nativeNewest[s.platform] = s;
+      });
+      subsMap[k] = [...web, ...Object.values(nativeNewest)];
+    }
 
     const now = new Date().toISOString();
     let totalSent = 0;
