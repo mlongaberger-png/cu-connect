@@ -20,8 +20,21 @@ const config: CapacitorConfig = {
   // Connect TODO doc section 84) after the push-notification retest on
   // Build 5 revealed the user was testing inside this stranded browser
   // session the whole time, not the native app.
+  // 2026-09-28: also keep Microsoft and Apple sign-in inside the app. Both providers allow
+  // their web sign-in inside an app WebView, so whitelisting them means the whole round trip
+  // (provider -> Base44 callback -> cu-connect.app) stays in-app with its cookies, instead of
+  // being kicked out to Chrome/Safari where the user got stranded on the website (seen on the
+  // first Android test). Base44's own domains are listed in case its OAuth callback runs there.
+  // Google is deliberately NOT listed: Google refuses sign-in inside WebViews
+  // ("disallowed_useragent"), so it must use the system browser plus an App Link back to the
+  // app -- see the Android launch plan doc.
   server: {
-    allowNavigation: ['cu-connect.app', '*.cu-connect.app']
+    allowNavigation: [
+      'cu-connect.app', '*.cu-connect.app',
+      'base44.com', '*.base44.com', 'base44.app', '*.base44.app',
+      'login.microsoftonline.com', 'login.live.com', 'account.live.com',
+      'appleid.apple.com',
+    ]
   },
   // Without @capacitor/keyboard configured, iOS WKWebView falls back to its default
   // 'native' keyboard-resize behavior, which resizes the WebView's own content area
