@@ -122,7 +122,7 @@ export default function AppLayout() {
                 style={{
                   "--fs-pb": keyboard.open
                     ? `${keyboard.height}px`
-                    : "calc(56px + env(safe-area-inset-bottom, 0px))",
+                    : "calc(56px + var(--sa-bottom, 0px))",
                 }}
               >
                 <Outlet />
@@ -134,7 +134,7 @@ export default function AppLayout() {
                 style={{
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "calc(56px + env(safe-area-inset-bottom, 16px))",
+                  paddingBottom: "calc(56px + var(--sa-bottom, 16px))",
                 }}
                 id="main-scroll-container"
               >

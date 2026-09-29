@@ -30,14 +30,18 @@ function start() {
     // must NOT pad or the space is counted twice). Detect which one this install has by
     // measuring whether the window actually shrank once the keyboard finished opening.
     let baseline = window.innerHeight;
-    let webviewResizes = null; // unknown until the first keyboard open
+    // Android always shrinks the WebView above the keyboard (Capacitor's SystemBars pads the
+    // WebView by the keyboard inset), but the resize can land after keyboardDidShow, so the
+    // measurement below misfired and the space was counted twice -- a huge empty gap between
+    // the reply box and the keyboard on the first Pixel test (2026-09-28). Never pad there.
+    let webviewResizes = Capacitor.getPlatform() === "android" ? true : null; // iOS: unknown until the first keyboard open
     Keyboard.addListener("keyboardWillShow", (info) => {
       const kb = info?.keyboardHeight || 0;
       set({ open: true, height: webviewResizes === true ? 0 : kb });
     });
     Keyboard.addListener("keyboardDidShow", (info) => {
       const kb = info?.keyboardHeight || 0;
-      webviewResizes = baseline - window.innerHeight > kb / 2;
+      if (Capacitor.getPlatform() !== "android") webviewResizes = baseline - window.innerHeight > kb / 2;
       set({ open: true, height: webviewResizes ? 0 : kb });
     });
     Keyboard.addListener("keyboardWillHide", () => set({ open: false, height: 0 }));

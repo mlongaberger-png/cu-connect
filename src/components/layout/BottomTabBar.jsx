@@ -146,7 +146,7 @@ export default function BottomTabBar({ onOpenSidebar }) {
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-sidebar border-t border-sidebar-border"
       style={{
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingBottom: "var(--sa-bottom, 0px)",
         WebkitUserSelect: "none",
         userSelect: "none",
         transform: "translateZ(0)",
