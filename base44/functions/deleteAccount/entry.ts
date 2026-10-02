@@ -42,8 +42,16 @@ Deno.serve(async (req) => {
       actor_email: user.email,
       actor_name: user.full_name || user.email,
       actor_role: user.role || 'user',
-      description: `User ${user.email} requested account deletion. All orphaned child records removed. Financial records retained per compliance policy.`,
+      description: `User ${user.email} deleted their account. User record and orphaned child records removed. Financial records retained per compliance policy.`,
     });
+
+    // Delete the User record itself last, so the account (name, email, phone) is actually
+    // removed -- required for Google Play / App Store self-service account deletion.
+    try {
+      await base44.asServiceRole.entities.User.delete(user.id);
+    } catch (e) {
+      console.warn('User.delete failed (may already be removed):', e.message);
+    }
 
     return Response.json({ success: true, cleanup: cleanupData });
   } catch (error) {
