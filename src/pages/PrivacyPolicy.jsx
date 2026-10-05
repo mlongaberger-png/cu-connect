@@ -9,7 +9,7 @@ const CU_LOGO = "https://media.base44.com/images/public/69bae2515552e76ca1fbd6a0
 const FALLBACK_POLICY = `
 ## 1. Introduction
 
-Welcome to CU Connect ("App"), operated by Cornerstone United Athletics ("we," "us," or "our"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and website. Please read this policy carefully. If you disagree with its terms, please discontinue use of the App.
+Welcome to CU Connect ("App"), developed and published by Affinity Applications LLC ("we," "us," or "our") on behalf of Cornerstone United Athletics. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and website. Please read this policy carefully. If you disagree with its terms, please discontinue use of the App.
 
 ---
 
@@ -124,7 +124,7 @@ To exercise any of these rights, please contact us using the information in Sect
 If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:
 
 **Cornerstone United Athletics**
-Email: privacy@cornerstoneunited.org
+Email: privacy@affinityapplications.com
 
 We will respond to your request within 30 days.
 
@@ -242,7 +242,7 @@ export default function PrivacyPolicy() {
             Have questions about your privacy or data?
           </p>
           <a
-            href="mailto:privacy@cornerstoneunited.org"
+            href="mailto:privacy@affinityapplications.com"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
           >
             Contact Us
