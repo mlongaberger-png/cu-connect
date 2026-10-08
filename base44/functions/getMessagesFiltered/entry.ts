@@ -18,6 +18,34 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * GET /api/getMessagesFiltered?channel_id=xxx&limit=50
  * Returns: { messages: [...], filtered_count: N }
  */
+// ── Display-name resolution (shared logic, kept in sync with src/lib/displayName.js) ──
+// Many accounts were created with an auto-generated full_name (the email's local part, e.g.
+// "kmattes08") or none at all (Sign in with Apple private-relay addresses). full_name is a
+// built-in auth field that can't be edited, so real names live in User.display_name (set by
+// admins, by the backfillDisplayNames job, or by the user via the "What's your name?" prompt).
+function nameLooksGenerated(name: string | null | undefined, email?: string | null): boolean {
+  const n = (name || '').trim();
+  if (!n) return true;
+  if (n.includes('@') || n.includes('+')) return true;
+  const local = (email || '').split('@')[0].toLowerCase();
+  if (local && n.toLowerCase() === local) return true;
+  if (!/\s/.test(n) && /[0-9._]/.test(n)) return true; // single token like "jsmith7554"
+  return false;
+}
+function tidyName(n: string): string {
+  const t = n.trim().replace(/\s+/g, ' ');
+  return t === t.toLowerCase() ? t.replace(/\b\p{L}/gu, (c) => c.toUpperCase()) : t;
+}
+function effectiveName(u: any): string {
+  if (!u) return 'Member';
+  for (const cand of [u.display_name, u.full_name]) {
+    if (!nameLooksGenerated(cand, u.email)) return tidyName(cand);
+  }
+  const email = (u.email || '').toLowerCase();
+  if (!email || email.endsWith('privaterelay.appleid.com')) return 'Member';
+  return email.split('@')[0];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -112,6 +140,24 @@ Deno.serve(async (req) => {
     console.log(
       `[getMessagesFiltered] channel=${channelId} total=${allMessages.length} filtered=${removed} returned=${paged.length} skip=${skip} limit=${limit}`
     );
+
+    // Show each sender's CURRENT real name, not the name stored on the message at send time
+    // (which was often an auto-generated username like "mlongaberger"). Bots/system senders
+    // with no matching User keep their stored name.
+    const senderIds = new Set(paged.map((m: any) => m.sender_user_id).filter(Boolean));
+    if (senderIds.size) {
+      try {
+        const users = await base44.asServiceRole.entities.User.list(null, 2000);
+        const byId = new Map(users.map((u: any) => [u.id, u]));
+        const byEmail = new Map(users.map((u: any) => [(u.email || '').toLowerCase(), u]));
+        for (const m of paged) {
+          const u = byId.get(m.sender_user_id) || byEmail.get(String(m.sender_user_id || '').toLowerCase());
+          if (u) m.sender_name = effectiveName(u);
+        }
+      } catch (e) {
+        console.error('[getMessagesFiltered] name resolution failed', (e as Error).message);
+      }
+    }
 
     return Response.json({
       messages: paged,

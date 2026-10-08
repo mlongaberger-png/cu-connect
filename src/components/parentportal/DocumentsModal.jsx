@@ -9,11 +9,11 @@ export default function DocumentsModal({ players = [], teams = [], onClose }) {
 
   if (!selectedPlayer) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-[calc(3.5rem+var(--sa-bottom,0px))]" onClick={onClose}>
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
         <div
           className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-          style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 8rem)" }}
+          style={{ maxHeight: "calc(100dvh - var(--sa-top, 0px) - var(--sa-bottom, 0px) - 8rem)" }}
           onClick={e => e.stopPropagation()}
         >
           <div className="h-1.5 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
@@ -35,11 +35,11 @@ export default function DocumentsModal({ players = [], teams = [], onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-[calc(3.5rem+var(--sa-bottom,0px))]" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
         className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 8rem)" }}
+        style={{ maxHeight: "calc(100dvh - var(--sa-top, 0px) - var(--sa-bottom, 0px) - 8rem)" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Gold top bar */}
@@ -85,7 +85,7 @@ export default function DocumentsModal({ players = [], teams = [], onClose }) {
         </div>
 
         {/* Safe area bottom spacer */}
-        <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
+        <div style={{ height: "var(--sa-bottom, 0px)" }} />
       </div>
     </div>
   );

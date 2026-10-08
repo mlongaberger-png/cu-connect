@@ -20,8 +20,21 @@ const config: CapacitorConfig = {
   // Connect TODO doc section 84) after the push-notification retest on
   // Build 5 revealed the user was testing inside this stranded browser
   // session the whole time, not the native app.
+  // 2026-09-28: also keep Microsoft and Apple sign-in inside the app. Both providers allow
+  // their web sign-in inside an app WebView, so whitelisting them means the whole round trip
+  // (provider -> Base44 callback -> cu-connect.app) stays in-app with its cookies, instead of
+  // being kicked out to Chrome/Safari where the user got stranded on the website (seen on the
+  // first Android test). Base44's own domains are listed in case its OAuth callback runs there.
+  // Google is deliberately NOT listed: Google refuses sign-in inside WebViews
+  // ("disallowed_useragent"), so it must use the system browser plus an App Link back to the
+  // app -- see the Android launch plan doc.
   server: {
-    allowNavigation: ['cu-connect.app', '*.cu-connect.app']
+    allowNavigation: [
+      'cu-connect.app', '*.cu-connect.app',
+      'base44.com', '*.base44.com', 'base44.app', '*.base44.app',
+      'login.microsoftonline.com', 'login.live.com', 'account.live.com',
+      'appleid.apple.com',
+    ]
   },
   // Without @capacitor/keyboard configured, iOS WKWebView falls back to its default
   // 'native' keyboard-resize behavior, which resizes the WebView's own content area
@@ -40,9 +53,17 @@ const config: CapacitorConfig = {
   // documented fix for apps built this way. Requires a native rebuild (`npx cap sync
   // ios` + an Xcode archive) to take effect -- this config change alone does nothing
   // until that's run.
+  // 2026-09-25: switched back from 'none' to 'native'. With 'none' the keyboard simply
+  // covers the bottom of every page, which broke pages we don't control -- Base44's hosted
+  // sign-in page (cu-connect.app/login) had its Email field hidden under the keyboard. With
+  // 'native' iOS shrinks the WebView above the keyboard (standard iPhone behavior), so any
+  // page fits. Our own layout follows automatically (100dvh), and useKeyboard.js reports
+  // height 0 on native so nothing double-counts the keyboard. The Sept 8 horizontal-shift
+  // bug that motivated 'none' has since had its own fixes (ChatCanvas swipe preventDefault,
+  // AppLayout scroll reset); watch for a recurrence after Build 12.
   plugins: {
     Keyboard: {
-      resize: 'none',
+      resize: 'native',
     },
   },
 };

@@ -1,11 +1,12 @@
-import React, { useRef, useEffect, useCallback, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { BellOff, Bell, ArrowLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft, SmilePlus, MoreVertical, Flag, UserX } from "lucide-react";
+import { ChevronLeft, MessageSquareText, MessageSquare, RefreshCw, CornerUpLeft, SmilePlus, MoreVertical, Flag, UserX, Heart, Info } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { format } from "date-fns";
 import Composer from "./Composer";
+import ChatSettingsSheet from "./ChatSettingsSheet";
+import { useKeyboard, dismissKeyboard } from "@/hooks/useKeyboard";
 import EventCard from "./cards/EventCard";
 import ScoreCard from "./cards/ScoreCard";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -21,7 +22,39 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
-function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact, onReportMessage, onBlockUser }) {
+const HEART = "\u2764\uFE0F";
+
+function initialsOf(name) {
+  const clean = displayNameOf(name);
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+// sender_name is whatever the sender's profile name was when they posted; some older
+// accounts only have their email there. Never show a raw email address in the chat.
+function displayNameOf(name) {
+  if (!name) return "Someone";
+  return name.includes("@") ? name.split("@")[0] : name;
+}
+
+function parseMsgDate(raw) {
+  if (!raw) return null;
+  return new Date(raw.endsWith("Z") ? raw : raw + "Z");
+}
+
+function dayLabel(d, timeZone) {
+  const tz = timeZone ?? undefined;
+  const key = (x) => x.toLocaleDateString("en-US", { timeZone: tz });
+  const today = new Date();
+  const yesterday = new Date(Date.now() - 86400000);
+  if (key(d) === key(today)) return "Today";
+  if (key(d) === key(yesterday)) return "Yesterday";
+  const sameYear = d.toLocaleDateString("en-US", { year: "numeric", timeZone: tz }) === today.toLocaleDateString("en-US", { year: "numeric", timeZone: tz });
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: tz });
+}
+
+function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReact, onReportMessage, onBlockUser, myUserId, isGroupStart = true, isGroupEnd = true }) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -100,192 +133,217 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
     );
   }
 
-  const rawDate = msg.created_date;
-  const timestamp = rawDate
-    ? new Date(rawDate.endsWith("Z") ? rawDate : rawDate + "Z")
-        .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: timeZone ?? undefined })
+  const sentAt = parseMsgDate(msg.created_date);
+  const timestamp = sentAt
+    ? sentAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: timeZone ?? undefined })
     : null;
   const isPhoto = /^!\[photo\]\((.+)\)$/.test(msg.content_text?.trim());
 
-  // Group reactions by emoji
+  // GroupMe-style one-tap heart, kept separate from the other emoji reactions.
+  const hearts = reactions.filter(r => r.reaction_type === HEART);
+  const likedByMe = hearts.some(r => r.user_id === myUserId);
   const reactionGroups = reactions.reduce((acc, r) => {
+    if (r.reaction_type === HEART) return acc;
     acc[r.reaction_type] = (acc[r.reaction_type] || 0) + 1;
     return acc;
   }, {});
 
   const swipeProgress = Math.min(swipeX / 40, 1); // 0–1 as user approaches threshold
+  const senderName = displayNameOf(msg.sender_name);
 
-  return (
-    <div
-      className={`relative flex flex-col ${isOwn ? "items-end" : "items-start"} max-w-[80%] ${isOwn ? "self-end" : "self-start"}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+  const heartButton = (
+    <button
+      type="button"
+      onClick={() => onReact(msg.id, HEART)}
+      aria-label={likedByMe ? `Unlike (${hearts.length})` : hearts.length ? `Like (${hearts.length})` : "Like"}
+      className={`shrink-0 min-w-[32px] min-h-[32px] flex flex-col items-center justify-start pt-0.5 ${likedByMe || hearts.length ? "text-primary" : "text-muted-foreground/50 hover:text-muted-foreground"}`}
     >
-      {/* Sender info — shown for others only */}
-      {!isOwn && (
-        <div className="flex items-center gap-1.5 mb-0.5 pl-1">
-          <div className="w-5 h-5 rounded-full overflow-hidden bg-surface border border-border flex-shrink-0 flex items-center justify-center">
-            {msg.sender_avatar
-              ? <img src={msg.sender_avatar} alt="" className="w-full h-full object-cover" />
-              : <span className="text-[9px] font-bold text-primary">{(msg.sender_name || "?")[0].toUpperCase()}</span>
-            }
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">{msg.sender_name}</span>
-          {timestamp && <span className="text-[10px] text-muted-foreground">{timestamp}</span>}
-        </div>
-      )}
+      <Heart className="w-[18px] h-[18px]" fill={likedByMe ? "currentColor" : "none"} strokeWidth={2} />
+      {hearts.length > 0 && <span className="text-[11px] font-bold leading-tight">{hearts.length}</span>}
+    </button>
+  );
 
-      {/* Swipe reveal indicator (behind bubble) */}
-      {swipeX > 0 && !msg.parent_message_id && (
-        <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 flex items-center justify-center"
-          style={{ opacity: swipeProgress, transform: `translateY(-50%) scale(${0.7 + 0.3 * swipeProgress})` }}
+  const body = isPhoto ? (
+    <div className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
+      <img
+        src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
+        alt={`Photo from ${senderName}`}
+        className="max-w-[240px] max-h-[320px] object-cover rounded-2xl"
+      />
+    </div>
+  ) : isOwn ? (
+    <div className={`px-3.5 py-2 text-base leading-snug break-words select-none bg-primary text-primary-foreground font-medium rounded-[18px] ${isGroupEnd ? "rounded-br-[4px]" : ""} ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
+      {msg.content_text}
+    </div>
+  ) : (
+    <p className={`m-0 text-base leading-snug break-words whitespace-pre-wrap select-none text-foreground ${msg.isPending ? "opacity-60" : "opacity-100"}`}>
+      {msg.content_text}
+    </p>
+  );
+
+  const hoverActions = (
+    <>
+      {hovered && !msg.parent_message_id && (
+        <button
+          onClick={() => onOpenThread(msg)}
+          className={`absolute -top-3 ${isOwn ? "-left-8" : "right-0"} hidden md:block
+            bg-card border border-border shadow-md rounded-full p-1.5
+            text-muted-foreground hover:text-primary hover:border-primary/40
+            transition-colors z-10`}
+          title="Reply in thread"
         >
-          <CornerUpLeft className="w-4 h-4 text-primary" />
-        </div>
+          <MessageSquareText className="w-3.5 h-3.5" />
+        </button>
       )}
+      {hovered && (
+        <button
+          onClick={() => setShowPicker(true)}
+          className={`absolute -top-3 ${isOwn ? "-left-16" : "right-8"} hidden md:block
+            bg-card border border-border shadow-md rounded-full p-1.5
+            text-muted-foreground hover:text-primary hover:border-primary/40
+            transition-colors z-10`}
+          title="React"
+        >
+          <SmilePlus className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {/* Report/Block stays mounted (opacity-toggled) -- see the original comment in git
+          history: unmounting the Radix trigger on mouseleave closes the menu mid-open. */}
+      {!isOwn && (onReportMessage || onBlockUser) && (
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={`absolute -top-3 right-16 hidden md:block
+                bg-card border border-border shadow-md rounded-full p-1.5
+                text-muted-foreground hover:text-primary hover:border-primary/40
+                transition-opacity z-10 ${(hovered || menuOpen) ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              title="More options"
+            >
+              <MoreVertical className="w-3.5 h-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover border-border">
+            <DropdownMenuItem onClick={() => onReportMessage?.(msg)} className="gap-2 cursor-pointer">
+              <Flag className="w-3.5 h-3.5" /> Report message
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onBlockUser?.(msg)} className="gap-2 cursor-pointer text-red-400 focus:text-red-400">
+              <UserX className="w-3.5 h-3.5" /> Block {senderName}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {showPicker && (
+        <EmojiReactionPicker
+          isOwn={isOwn}
+          onSelect={(emoji) => onReact(msg.id, emoji)}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+    </>
+  );
 
-      {/* Bubble + hover action */}
-      <div
-        ref={bubbleWrapRef}
-        className="relative"
-        onTouchStart={handleBubbleTouchStart}
-        onTouchEnd={handleBubbleTouchEnd}
-        style={{
-          transform: `translateX(${swipeX}px)`,
-          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
-        }}
-      >
-        {isPhoto ? (
-          <div
-            className={`rounded-2xl overflow-hidden ${msg.isPending ? "opacity-60" : "opacity-100"}`}
-          >
-            <img
-              src={msg.content_text.match(/^!\[photo\]\((.+)\)$/)[1]}
-              alt="photo"
-              className="max-w-[220px] max-h-[300px] object-cover rounded-2xl"
-            />
-          </div>
-        ) : (
-          <div
-            className={`px-4 py-2 text-sm leading-relaxed break-words select-none
-              ${isOwn
-                ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
-                : "bg-muted text-foreground rounded-2xl rounded-tl-sm"
-              }
-              ${msg.isPending ? "opacity-60" : "opacity-100"}`}
-          >
-            {msg.content_text}
-          </div>
-        )}
-
-        {/* Hover: Reply in Thread button (desktop) */}
-        {hovered && !msg.parent_message_id && (
-          <button
-            onClick={() => onOpenThread(msg)}
-            className={`absolute -top-3 ${isOwn ? "-left-8" : "-right-8"} 
-              bg-card border border-border shadow-md rounded-full p-1.5 
-              text-muted-foreground hover:text-primary hover:border-primary/40 
-              transition-colors z-10`}
-            title="Reply in thread"
-          >
-            <MessageSquareText className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Hover: React button (desktop). The emoji picker was previously reachable ONLY via
-            a 500ms touch-and-hold gesture (handleBubbleTouchStart) -- there was no mouse
-            equivalent at all, so reactions were completely unreachable on a desktop/mouse
-            browser regardless of the RLS fix above. This gives desktop the same picker via
-            a normal click, positioned next to the existing reply-in-thread hover button. */}
-        {hovered && (
-          <button
-            onClick={() => setShowPicker(true)}
-            className={`absolute -top-3 ${isOwn ? "-left-16" : "-right-16"} 
-              bg-card border border-border shadow-md rounded-full p-1.5 
-              text-muted-foreground hover:text-primary hover:border-primary/40 
-              transition-colors z-10`}
-            title="React"
-          >
-            <SmilePlus className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Hover: Report/Block menu (desktop). Only makes sense on someone ELSE's
-            message -- you can't report or block yourself. Backend (MessageReport entity,
-            blockUser/getBlockedIds functions, getMessagesFiltered's two-way block filter,
-            and the admin MessageModerationPanel) was already fully built; there was simply
-            no UI entry point anywhere in the app to actually file a report or block someone.
-            IMPORTANT: unlike the Reply/React buttons, this one must stay MOUNTED at all times
-            (visibility controlled by opacity, not by conditionally rendering the DropdownMenu) --
-            Radix's DropdownMenu adjusts pointer-events on the rest of the page while open, which
-            triggers a real mouseleave on this bubble's hover wrapper; if the whole DropdownMenu
-            were gated on `hovered` the way Reply/React are, that mouseleave would flip hovered to
-            false and unmount the trigger mid-open, instantly closing the menu right after it opens. */}
-        {!isOwn && (onReportMessage || onBlockUser) && (
-          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={`absolute -top-3 -right-24
-                  bg-card border border-border shadow-md rounded-full p-1.5
-                  text-muted-foreground hover:text-primary hover:border-primary/40
-                  transition-opacity z-10 ${(hovered || menuOpen) ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-                title="More options"
-              >
-                <MoreVertical className="w-3.5 h-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border-border">
-              <DropdownMenuItem onClick={() => onReportMessage?.(msg)} className="gap-2 cursor-pointer">
-                <Flag className="w-3.5 h-3.5" /> Report message
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onBlockUser?.(msg)} className="gap-2 cursor-pointer text-red-400 focus:text-red-400">
-                <UserX className="w-3.5 h-3.5" /> Block {msg.sender_name || "user"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
-        {/* Emoji picker (long-press) */}
-        {showPicker && (
-          <EmojiReactionPicker
-            isOwn={isOwn}
-            onSelect={(emoji) => onReact(msg.id, emoji)}
-            onClose={() => setShowPicker(false)}
-          />
-        )}
-      </div>
-
-      {/* Reaction badges */}
+  const extras = (
+    <>
       {Object.keys(reactionGroups).length > 0 && (
-        <div className="flex flex-wrap gap-0.5 mt-0.5 px-1">
+        <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? "justify-end" : ""}`}>
           {Object.entries(reactionGroups).map(([emoji, count]) => (
             <button
               key={emoji}
               onClick={() => onReact(msg.id, emoji)}
-              className="flex items-center gap-0.5 bg-surface border border-border rounded-full px-1.5 py-0 text-[11px] leading-5 hover:bg-surface-hover transition-colors"
+              className="flex items-center gap-0.5 bg-surface border border-border rounded-full px-2 py-0 text-[12px] leading-6 hover:bg-surface-hover transition-colors"
             >
               <span className="text-[13px]">{emoji}</span>
-              {count > 1 && <span className="text-muted-foreground text-[10px]">{count}</span>}
+              {count > 1 && <span className="text-muted-foreground text-[11px]">{count}</span>}
             </button>
           ))}
         </div>
       )}
-
-      {/* Timestamp for own messages */}
-      {isOwn && timestamp && (
-        <span className="text-[10px] text-muted-foreground mt-0.5 pr-1">{timestamp}</span>
-      )}
-
-      {/* Thread reply count */}
       {replyCount > 0 && !msg.parent_message_id && (
         <button
           onClick={() => onOpenThread(msg)}
-          className="text-xs text-primary font-semibold mt-1 hover:underline cursor-pointer pl-1"
+          className={`text-[13px] text-primary font-semibold mt-1 hover:underline cursor-pointer ${isOwn ? "self-end" : "self-start"}`}
         >
-          💬 {replyCount} {replyCount === 1 ? "reply" : "replies"}
+          {replyCount} {replyCount === 1 ? "reply" : "replies"}
         </button>
       )}
+    </>
+  );
+
+  const swipeIndicator = swipeX > 0 && !msg.parent_message_id && (
+    <div
+      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 flex items-center justify-center"
+      style={{ opacity: swipeProgress, transform: `translateY(-50%) scale(${0.7 + 0.3 * swipeProgress})` }}
+    >
+      <CornerUpLeft className="w-4 h-4 text-primary" />
+    </div>
+  );
+
+  const swipeProps = {
+    ref: bubbleWrapRef,
+    onTouchStart: handleBubbleTouchStart,
+    onTouchEnd: handleBubbleTouchEnd,
+    style: { transform: `translateX(${swipeX}px)`, transition: isSwiping ? "none" : "transform 0.2s ease-out" },
+  };
+
+  if (isOwn) {
+    return (
+      <div
+        className={`relative flex flex-col items-end self-end max-w-[80%] ${isGroupStart ? "" : "-mt-2"}`}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {swipeIndicator}
+        <div className="relative" {...swipeProps}>
+          {body}
+          {hoverActions}
+        </div>
+        {extras}
+        {(isGroupEnd || hearts.length > 0) && (
+          <div className="flex items-center gap-2 mt-1 pr-1">
+            {hearts.length > 0 && (
+              <button type="button" onClick={() => onReact(msg.id, HEART)} className="flex items-center gap-1 text-primary text-[12px] font-bold" aria-label={`${hearts.length} likes`}>
+                <Heart className="w-3.5 h-3.5" fill="currentColor" /> {hearts.length}
+              </button>
+            )}
+            {isGroupEnd && timestamp && <span className="text-[12px] text-muted-foreground">{timestamp}</span>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative flex gap-2.5 self-stretch ${isGroupStart ? "" : "-mt-2"}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="w-8 shrink-0">
+        {isGroupStart && (
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface border border-border flex items-center justify-center">
+            {msg.sender_avatar
+              ? <img src={msg.sender_avatar} alt="" className="w-full h-full object-cover" />
+              : <span className="text-[12px] font-bold text-primary">{initialsOf(msg.sender_name)}</span>}
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0 flex flex-col">
+        {isGroupStart && (
+          <div className="flex items-baseline gap-2 mb-0.5">
+            <span className="text-[14px] font-bold text-foreground truncate">{senderName}</span>
+            {timestamp && <span className="text-[12px] text-muted-foreground shrink-0">{timestamp}</span>}
+          </div>
+        )}
+        <div className="flex items-start gap-2">
+          <div className="relative flex-1 min-w-0" {...swipeProps}>
+            {swipeIndicator}
+            {body}
+            {hoverActions}
+          </div>
+          {heartButton}
+        </div>
+        {extras}
+      </div>
     </div>
   );
 }
@@ -297,7 +355,9 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   const myId = user?.id || user?.email;
   const topSentinelRef = useRef(null);
   const queryClient = useQueryClient();
-  const [isMuted, setIsMuted] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const keyboard = useKeyboard();
+  const { timeZone } = useOrgTimezone();
   const [reportTarget, setReportTarget] = useState(null);
   const [reportReason, setReportReason] = useState("abusive");
   const [blockTarget, setBlockTarget] = useState(null);
@@ -342,7 +402,37 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     queryKey: ["channel", channelId],
     queryFn: () => base44.entities.Channel.filter({ id: channelId }).then(r => r[0]),
     enabled: !!channelId,
-    onSuccess: (ch) => setIsMuted(ch?.is_muted || false),
+  });
+
+  // Member count/list for the header subtitle and the settings sheet. Computed server-side
+  // (getChannelInfo, asServiceRole) because team-chat membership is derived from rosters +
+  // guardians, which a parent's RLS can't read directly.
+  const { data: channelInfo } = useQuery({
+    queryKey: ["channel-info", channelId],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getChannelInfo", { channel_id: channelId });
+      return res.data || null;
+    },
+    enabled: !!channelId,
+    staleTime: 5 * 60_000,
+  });
+
+  // Per-person mute lives on the viewer's own ChannelMember row (onMessageCreated skips
+  // push for muted members but still counts unread). The old header "Mute" wrote
+  // Channel.is_muted -- a shared field that nothing read, so it never silenced anything.
+  const { data: myMembership } = useQuery({
+    queryKey: ["my-channel-membership", channelId, user?.email],
+    queryFn: () => base44.entities.ChannelMember.filter({ channel_id: channelId, user_email: user.email }).then(r => r[0] || null),
+    enabled: !!channelId && !!user?.email,
+  });
+  const isMutedForMe = !!myMembership?.muted;
+  const setMutedMutation = useMutation({
+    mutationFn: async (muted) => {
+      if (myMembership?.id) return base44.entities.ChannelMember.update(myMembership.id, { muted });
+      return base44.entities.ChannelMember.create({ channel_id: channelId, user_email: user.email, unread_count: 0, muted });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-channel-membership", channelId] }),
+    onError: (error) => toast({ title: "Couldn't update notifications", description: error?.message || "Please try again.", variant: "destructive" }),
   });
 
   // See ChatSidebar.jsx's matching comment: a direct channel's stored `name` was set once,
@@ -371,13 +461,21 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     } catch { /* fall back to channel.name below */ }
   }
 
-  const toggleMuteMutation = useMutation({
-    mutationFn: (muted) => base44.entities.Channel.update(channelId, { is_muted: muted }),
-    onSuccess: () => {
-      setIsMuted(!isMuted);
-      queryClient.invalidateQueries({ queryKey: ["channel", channelId] });
-    },
-  });
+  const channelInitials = (() => {
+    const name = (channelDisplayName || "").replace(/@.*$/, "").trim();
+    const m = name.match(/^(\d+\s*u)\b/i); // "12u Lions" -> "12U"
+    if (m) return m[1].replace(/\s/g, "").toUpperCase();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  })();
+  const memberCount = channelInfo?.member_count;
+  const channelSubtitle =
+    channel?.type === "direct" ? "Direct message"
+    : channel?.type === "carpool" ? (memberCount ? `Carpool · ${memberCount} members` : "Carpool")
+    : memberCount ? `${memberCount} members · tap for settings`
+    : channel?.type === "announcement" ? "Announcements"
+    : "Team chat";
 
   const {
     data,
@@ -421,7 +519,11 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   const scrollContainerRef = useRef(null);
   const touchStartY = useRef(null);
 
+  // Closing the keyboard the way people expect from GroupMe/iMessage: a tap anywhere in the
+  // conversation, or a downward swipe on it, dismisses it (plus the Done bar in Composer).
+  const kbSwipeStartY = useRef(null);
   const handleTouchStart = (e) => {
+    kbSwipeStartY.current = keyboard.open ? e.touches[0].clientY : null;
     const container = scrollContainerRef.current;
     // Only trigger pull-to-refresh when scrolled to bottom (flex-col-reverse: bottom = scrollTop near 0)
     if (container && container.scrollTop <= 10) {
@@ -430,6 +532,10 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
   };
 
   const handleTouchMove = (e) => {
+    if (kbSwipeStartY.current !== null && e.touches[0].clientY - kbSwipeStartY.current > 40) {
+      kbSwipeStartY.current = null;
+      dismissKeyboard();
+    }
     if (touchStartY.current === null) return;
     const dist = e.touches[0].clientY - touchStartY.current;
     if (dist > 0) {
@@ -597,84 +703,60 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
 
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur shrink-0 overflow-visible">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSearchParams({})}
-            className="md:hidden p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          {channel?.avatar_url && (
-            <img src={channel.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover mt-0.5" />
+      {/* Header — slim, GroupMe-style: back, avatar, name + one line of context. Tapping the
+          name (or the info button) opens this chat's settings: alerts, mute, members, photos.
+          On phones this replaces the app TopBar (see AppLayout), so it carries the top safe area. */}
+      <div className="flex items-center gap-1 pl-1 pr-2 py-1.5 border-b border-border bg-background shrink-0 safe-area-top">
+        <button
+          onClick={() => setSearchParams({})}
+          aria-label="Back to chats"
+          className="md:hidden w-11 h-11 rounded-full flex items-center justify-center text-primary"
+        >
+          <ChevronLeft className="w-6 h-6" strokeWidth={2.4} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="flex-1 min-w-0 flex items-center gap-2.5 text-left rounded-lg px-1 py-1 md:px-3"
+        >
+          {channel?.avatar_url ? (
+            <img src={channel.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+          ) : (
+            <span className="w-9 h-9 rounded-full bg-primary text-primary-foreground text-[12px] font-extrabold flex items-center justify-center shrink-0">
+              {channelInitials}
+            </span>
           )}
-          <span
-            className="font-semibold text-sm truncate max-w-[180px] md:max-w-[300px] lg:max-w-[500px]"
-            title={channelDisplayName}
-          >
-            {channelDisplayName || "Loading…"}
+          <span className="min-w-0 flex flex-col">
+            <span className="font-bold text-[16px] leading-tight truncate" title={channelDisplayName}>
+              {channelDisplayName || "Loading…"}
+            </span>
+            <span className="text-[12px] text-muted-foreground truncate">
+              {channelSubtitle}
+              {isMutedForMe && " · Muted"}
+            </span>
           </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Alerts On/Off toggle */}
-          {isSupported && permission !== "denied" && (
-            <button
-              onClick={isSubscribed ? unsubscribePush : subscribePush}
-              disabled={pushLoading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 font-medium text-xs ${
-                isSubscribed
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30"
-                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
-              }`}
-            >
-              {pushLoading ? (
-                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : isSubscribed ? (
-                <>
-                  <Bell className="w-3.5 h-3.5" />
-                  Alerts On
-                </>
-              ) : (
-                <>
-                  <BellOff className="w-3.5 h-3.5" />
-                  Alerts Off
-                </>
-              )}
-            </button>
-          )}
-
-          {/* Mute toggle */}
-          <button
-            onClick={() => toggleMuteMutation.mutate(!isMuted)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
-              isMuted
-                ? "bg-amber-500/25 text-amber-400 border border-amber-500/50 hover:bg-amber-500/35"
-                : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
-            }`}
-          >
-            {isMuted ? (
-              <>
-                <BellOff className="w-4 h-4" />
-                <span className="text-xs font-semibold">Muted</span>
-              </>
-            ) : (
-              <>
-                <Bell className="w-4 h-4" />
-                <span className="text-xs">Mute</span>
-              </>
-            )}
-          </button>
-        </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Chat settings"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
+        >
+          <Info className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Messages — flex-col-reverse keeps latest at bottom */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-4 flex flex-col-reverse gap-3"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 md:px-4 py-3 flex flex-col-reverse gap-4"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={(e) => {
+          // Tap on the conversation (not on a button/link/photo) closes the keyboard.
+          if (keyboard.open && !e.target.closest("button, a, input, textarea, img")) dismissKeyboard();
+        }}
         style={{ position: 'relative' }}
       >
         {/* Pull-to-refresh indicator */}
@@ -706,22 +788,53 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
                 <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
               </div>
             )}
-            {topLevelMessages.map((msg) => {
-              if (msg.sender_name === "Score Bot" || msg.message_type === "score_update") {
-                return <ScoreCard key={msg.id} message={msg} />;
-              }
+            {topLevelMessages.map((msg, i) => {
+              // topLevelMessages is newest-first and the list is flex-col-reverse, so the
+              // message visually ABOVE this one is i + 1 (older) and BELOW is i - 1 (newer).
+              const older = topLevelMessages[i + 1];
+              const newer = topLevelMessages[i - 1];
+              const d = parseMsgDate(msg.created_date);
+              const dOlder = older ? parseMsgDate(older.created_date) : null;
+              const dNewer = newer ? parseMsgDate(newer.created_date) : null;
+              const dayKey = (x) => x ? x.toLocaleDateString("en-US", { timeZone: timeZone ?? undefined }) : "";
+              const newDay = !older || dayKey(d) !== dayKey(dOlder);
+              const sameRun = (a, b, da, db) =>
+                a && b && a.sender_user_id === b.sender_user_id &&
+                a.message_type !== "event" && b.message_type !== "event" &&
+                da && db && Math.abs(da - db) < 5 * 60 * 1000;
+              const isGroupStart = newDay || !sameRun(msg, older, d, dOlder);
+              const isGroupEnd = !newer || dayKey(d) !== dayKey(dNewer) || !sameRun(msg, newer, d, dNewer);
+
+              const item = (msg.sender_name === "Score Bot" || msg.message_type === "score_update")
+                ? <ScoreCard key={msg.id} message={msg} />
+                : (
+                  <MessageBubble
+                    key={msg.id}
+                    msg={msg}
+                    isOwn={msg.sender_user_id === myId}
+                    myUserId={user?.id}
+                    isGroupStart={isGroupStart}
+                    isGroupEnd={isGroupEnd}
+                    onOpenThread={onOpenThread || (() => {})}
+                    replyCount={replyCountMap[msg.id] || 0}
+                    reactions={reactionsMap[msg.id] || []}
+                    onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
+                    onReportMessage={(m) => setReportTarget(m)}
+                    onBlockUser={(m) => setBlockTarget(m)}
+                  />
+                );
+              if (!newDay || !d) return item;
+              // Column is reversed: the divider comes AFTER the message in DOM order so it
+              // renders ABOVE it on screen.
               return (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  isOwn={msg.sender_user_id === myId}
-                  onOpenThread={onOpenThread || (() => {})}
-                  replyCount={replyCountMap[msg.id] || 0}
-                  reactions={reactionsMap[msg.id] || []}
-                  onReact={(messageId, emoji) => reactMutation.mutate({ messageId, emoji })}
-                  onReportMessage={(m) => setReportTarget(m)}
-                  onBlockUser={(m) => setBlockTarget(m)}
-                />
+                <React.Fragment key={msg.id}>
+                  {item}
+                  <div className="flex items-center gap-3 text-[12px] font-bold text-muted-foreground select-none" role="separator">
+                    <span className="flex-1 h-px bg-border" />
+                    {dayLabel(d, timeZone)}
+                    <span className="flex-1 h-px bg-border" />
+                  </div>
+                </React.Fragment>
               );
             })}
           </>
@@ -730,6 +843,24 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
 
       {/* Composer */}
       <Composer channelId={channelId} channel={channel} channelDisplayName={channelDisplayName} />
+
+      <ChatSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        channel={channel}
+        displayName={channelDisplayName}
+        initials={channelInitials}
+        subtitle={channelSubtitle.replace(" · tap for settings", "")}
+        info={channelInfo}
+        photos={allMessages
+          .map(m => m.content_text?.trim().match(/^!\[photo\]\((.+)\)$/)?.[1])
+          .filter(Boolean)
+          .slice(0, 8)}
+        push={{ isSupported, isSubscribed, pushLoading, permission, subscribePush, unsubscribePush }}
+        muted={isMutedForMe}
+        onSetMuted={(v) => setMutedMutation.mutate(v)}
+        mutePending={setMutedMutation.isPending}
+      />
 
       {/* Report message dialog */}
       <Dialog open={!!reportTarget} onOpenChange={(open) => { if (!open) { setReportTarget(null); setReportReason("abusive"); } }}>

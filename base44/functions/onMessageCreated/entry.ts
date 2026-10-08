@@ -288,6 +288,8 @@ Deno.serve(async (req) => {
       const method = prefs?.messages_method || 'push';
 
       if (!messagesEnabled) { skipped++; continue; }
+      // Per-person chat mute (Chat settings > Mute this chat): unread still counts, no alert.
+      if (memberMap[key]?.muted === true) { skipped++; continue; }
 
       const userSubs = subsMap[key] || [];
       const hasPush = userSubs.length > 0;

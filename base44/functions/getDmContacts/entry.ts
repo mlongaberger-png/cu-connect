@@ -26,6 +26,34 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  */
 const LEADERSHIP_ROLES = ['coach', 'athletic_director', 'admin'];
 
+// ── Display-name resolution (shared logic, kept in sync with src/lib/displayName.js) ──
+// Many accounts were created with an auto-generated full_name (the email's local part, e.g.
+// "kmattes08") or none at all (Sign in with Apple private-relay addresses). full_name is a
+// built-in auth field that can't be edited, so real names live in User.display_name (set by
+// admins, by the backfillDisplayNames job, or by the user via the "What's your name?" prompt).
+function nameLooksGenerated(name: string | null | undefined, email?: string | null): boolean {
+  const n = (name || '').trim();
+  if (!n) return true;
+  if (n.includes('@') || n.includes('+')) return true;
+  const local = (email || '').split('@')[0].toLowerCase();
+  if (local && n.toLowerCase() === local) return true;
+  if (!/\s/.test(n) && /[0-9._]/.test(n)) return true; // single token like "jsmith7554"
+  return false;
+}
+function tidyName(n: string): string {
+  const t = n.trim().replace(/\s+/g, ' ');
+  return t === t.toLowerCase() ? t.replace(/\b\p{L}/gu, (c) => c.toUpperCase()) : t;
+}
+function effectiveName(u: any): string {
+  if (!u) return 'Member';
+  for (const cand of [u.display_name, u.full_name]) {
+    if (!nameLooksGenerated(cand, u.email)) return tidyName(cand);
+  }
+  const email = (u.email || '').toLowerCase();
+  if (!email || email.endsWith('privaterelay.appleid.com')) return 'Member';
+  return email.split('@')[0];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -38,7 +66,7 @@ Deno.serve(async (req) => {
     const role = dbUsers[0]?.role || authUser.role;
 
     const allUsers = await base44.asServiceRole.entities.User.list(null, 1000);
-    const toSafeContact = (u) => ({ id: u.id, email: u.email, full_name: u.full_name, role: u.role });
+    const toSafeContact = (u) => ({ id: u.id, email: u.email, full_name: effectiveName(u), role: u.role });
 
     if (LEADERSHIP_ROLES.includes(role)) {
       const contacts = allUsers.filter(u => u.email !== myEmail).map(toSafeContact);

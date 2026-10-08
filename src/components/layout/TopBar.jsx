@@ -17,8 +17,8 @@ export default function TopBar({ onMenuToggle, title }) {
       <div
         className="flex items-center justify-between px-4 md:px-6 h-14"
         style={{
-          paddingLeft: 'max(1rem, env(safe-area-inset-left))',
-          paddingRight: 'max(1rem, env(safe-area-inset-right))',
+          paddingLeft: 'max(1rem, var(--sa-left))',
+          paddingRight: 'max(1rem, var(--sa-right))',
         }}
       >
         <div className="flex items-center gap-4">
