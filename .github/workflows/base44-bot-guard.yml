@@ -1,0 +1,54 @@
+# Alerts when the Base44 bot pushes a big change to main.
+#
+# Why: on Oct 6, 2026 the Base44 bot pushed "Keep sandbox version after failover divergence
+# (BUG-1005)" (merge 472f70e), which put back an old copy of the code and undid ~76 files of
+# work (messaging redesign, Android bridge, deleteAccount fix...). Normal Base44 edits are
+# small, single-parent commits, so a bot merge, or a bot push that changes more than 40 files
+# or deletes more than 5, gets flagged here. (The Oct 6 push changed 78 files and deleted 11.)
+#
+# What happens: this check fails, and GitHub emails the repo owner "Run failed". Nothing is
+# blocked or reverted automatically. Before the next Base44 deploy, compare the flagged commit
+# with the commit before it and restore anything that went missing.
+name: Base44 bot guard
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check-bot-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Flag risky bot pushes
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          PUSHER: ${{ github.event.pusher.name }}
+          MAX_FILES: "40"
+          MAX_DELETED: "5"
+        run: |
+          case "$PUSHER" in *base44*) ;; *) echo "Pushed by $PUSHER, not the Base44 bot. Nothing to check."; exit 0 ;; esac
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            BEFORE="$AFTER~1"
+          fi
+          bad=0
+          # 1) The Oct 6 damage came in as a bot MERGE that kept the stale sandbox side.
+          #    Normal Base44 edits never merge, so any bot merge gets flagged.
+          for c in $(git rev-list --merges "$BEFORE..$AFTER"); do
+            echo "::error::Base44 bot pushed a merge commit $c: \"$(git log -1 --format=%s "$c")\". It may have replaced newer code with an old copy."
+            bad=1
+          done
+          # 2) Measure what the whole push did to main, not each commit.
+          files=$(git diff --name-only "$BEFORE" "$AFTER" | wc -l)
+          deleted=$(git diff --diff-filter=D --name-only "$BEFORE" "$AFTER" | wc -l)
+          echo "Push $BEFORE..$AFTER: $files files changed, $deleted deleted"
+          if [ "$files" -gt "$MAX_FILES" ] || [ "$deleted" -gt "$MAX_DELETED" ]; then
+            echo "::error::Base44 bot push changed $files files and deleted $deleted. Check it before deploying."
+            bad=1
+          fi
+          if [ "$bad" = 1 ]; then git diff --stat "$BEFORE" "$AFTER" | tail -60; fi
+          exit $bad

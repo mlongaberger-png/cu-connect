@@ -35,6 +35,7 @@ import PracticePlans from "@/pages/PracticePlans";
 import GameDayPlaylists from "@/pages/GameDayPlaylists";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ParentCalendar from "@/pages/ParentCalendar";
+import AppReturn from "@/pages/AppReturn";
 // Playbooks is temporarily taken down pending a full rebuild (Matthew's
 // decision, Aug 2026) -- the route below redirects everyone to /Portal
 // instead of rendering this page. Import kept commented for the rebuild.
@@ -51,7 +52,7 @@ import UniformInventory from "@/pages/UniformInventory";
 import AppDocumentation from "@/pages/AppDocumentation";
 import Carpool from "@/pages/Carpool";
 
-const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy"];
+const PUBLIC_PATHS = ["/welcome", "/ParentSignup", "/Register", "/AcceptInvite", "/privacy-policy", "/app-return"];
 const STAFF_ONLY_PATHS = [
   "/Teams",
   "/Announcements", "/Documents", "/AthleticDirectors", "/Volunteers", "/TeamDetail"
@@ -64,6 +65,7 @@ const PublicRoutes = () => (
     <Route path="/Register" element={<Register />} />
     <Route path="/AcceptInvite" element={<AcceptInvite />} />
     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+    <Route path="/app-return" element={<AppReturn />} />
     <Route path="*" element={<Navigate to="/welcome" replace />} />
   </Routes>
 );
