@@ -470,10 +470,11 @@ export default function ChatCanvas({ channelId, onOpenThread }) {
     return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
   })();
   const memberCount = channelInfo?.member_count;
+  const membersLabel = `${memberCount} ${memberCount === 1 ? "member" : "members"}`;
   const channelSubtitle =
     channel?.type === "direct" ? "Direct message"
-    : channel?.type === "carpool" ? (memberCount ? `Carpool · ${memberCount} members` : "Carpool")
-    : memberCount ? `${memberCount} members · tap for settings`
+    : channel?.type === "carpool" ? (memberCount ? `Carpool · ${membersLabel}` : "Carpool")
+    : memberCount ? `${membersLabel} · tap for settings`
     : channel?.type === "announcement" ? "Announcements"
     : "Team chat";
 

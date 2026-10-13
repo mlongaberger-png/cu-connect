@@ -131,7 +131,7 @@ export default function Sidebar({ isOpen, onClose }) {
       }
       
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-sidebar/95 backdrop-blur-xl border-r border-sidebar-border z-50
+        fixed top-0 left-0 h-full w-64 bg-sidebar/95 backdrop-blur-xl border-r border-sidebar-border z-50 safe-area-top
         flex flex-col transition-transform duration-300
         lg:translate-x-0 lg:static lg:z-auto
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
