@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 
 /**
- * /app-return -- hand a Google sign-in back to the Android app.
+ * /app-return -- hand a Google sign-in back to the Android or iPhone app.
  *
  * Google refuses to sign in inside an app WebView ("disallowed_useragent"), so on
  * Android MainActivity.java sends the "Continue with Google" step to Chrome and rewrites
@@ -15,6 +15,10 @@ import React, { useEffect, useMemo } from "react";
  *
  * Chrome usually follows the automatic redirect. If it doesn't (Chrome can block an
  * app launch that wasn't started by a tap), the button does the same thing.
+ *
+ * iOS (?app=ios): the iPhone app runs Google sign-in in Apple's sign-in sheet
+ * (ASWebAuthenticationSession, see AppDelegate.swift). Redirecting to cuconnect://auth
+ * here is caught by that sheet, which closes and signs the user in inside the app.
  */
 const ANDROID_PACKAGE = "com.base69bae2515552e76ca1fbd6a0.app";
 const SITE = "https://cu-connect.app";
@@ -34,18 +38,21 @@ export default function AppReturn() {
   const token = (() => {
     try { return window.localStorage.getItem("base44_access_token"); } catch { return null; }
   })();
-  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOSApp = params.get("app") === "ios";
+  const isAndroid = !isIOSApp && /Android/i.test(navigator.userAgent);
+  const toApp = isAndroid || isIOSApp;
 
   const intentUrl = useMemo(() => {
     if (!token) return null;
     const q = `access_token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
+    if (isIOSApp) return `cuconnect://auth?${q}`;
     const fallback = encodeURIComponent(`${SITE}${next}`);
     return `intent://auth?${q}#Intent;scheme=cuconnect;package=${ANDROID_PACKAGE};S.browser_fallback_url=${fallback};end`;
-  }, [token, next]);
+  }, [token, next, isIOSApp]);
 
   useEffect(() => {
-    if (intentUrl && isAndroid) window.location.href = intentUrl;
-  }, [intentUrl, isAndroid]);
+    if (intentUrl && toApp) window.location.href = intentUrl;
+  }, [intentUrl, toApp]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -54,13 +61,13 @@ export default function AppReturn() {
           <>
             <p className="text-foreground font-semibold text-lg mb-2">You're signed in</p>
             <p className="text-sm text-muted-foreground mb-6">
-              {isAndroid ? "Tap below to go back to the CU Connect app." : "Continue to CU Connect."}
+              {toApp ? "Tap below to go back to the CU Connect app." : "Continue to CU Connect."}
             </p>
             <a
-              href={isAndroid ? intentUrl : next}
+              href={toApp ? intentUrl : next}
               className="block w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
             >
-              {isAndroid ? "Open the CU Connect app" : "Continue"}
+              {toApp ? "Open the CU Connect app" : "Continue"}
             </a>
             {isAndroid && (
               <a href={next} className="block mt-4 text-xs text-muted-foreground underline">
