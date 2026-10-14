@@ -1,0 +1,132 @@
+{
+  "description": "A season offering families register for from the public website (e.g. 14U Spring Baseball). Becomes a Team once rostered.",
+  "name": "Program",
+  "properties": {
+    "age_cutoff_date": {
+      "format": "date",
+      "type": "string"
+    },
+    "age_max": {
+      "type": "number"
+    },
+    "age_min": {
+      "type": "number"
+    },
+    "ages_label": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "fee_equipment": {
+      "type": "number"
+    },
+    "fee_fundraising": {
+      "type": "number"
+    },
+    "fee_registration": {
+      "type": "number"
+    },
+    "fee_uniform": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    },
+    "plan_due_2": {
+      "description": "Payment 2 (equipment/facility) due, e.g. first practice",
+      "format": "date",
+      "type": "string"
+    },
+    "plan_due_3": {
+      "description": "Payment 3 (fundraising) due, mid-season",
+      "format": "date",
+      "type": "string"
+    },
+    "plan_enabled": {
+      "default": true,
+      "description": "Offer the 3-payment plan",
+      "type": "boolean"
+    },
+    "registration_closes": {
+      "format": "date",
+      "type": "string"
+    },
+    "registration_opens": {
+      "format": "date",
+      "type": "string"
+    },
+    "season": {
+      "description": "e.g. Spring 2027",
+      "type": "string"
+    },
+    "sort_order": {
+      "default": 100,
+      "type": "number"
+    },
+    "sport_name": {
+      "description": "Baseball, Football, Cheer",
+      "type": "string"
+    },
+    "status": {
+      "default": "coming_soon",
+      "enum": [
+        "open",
+        "coming_soon",
+        "closed"
+      ],
+      "type": "string"
+    },
+    "team_id": {
+      "description": "Team athletes are placed on (optional)",
+      "type": "string"
+    },
+    "test_mode": {
+      "default": true,
+      "description": "Use Stripe test keys; no real charges",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "season",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    }
+  },
+  "type": "object"
+}

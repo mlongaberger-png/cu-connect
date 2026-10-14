@@ -1,0 +1,216 @@
+{
+  "description": "A registration submitted from the public website. Written only by the websiteRegister function.",
+  "name": "ProgramRegistration",
+  "properties": {
+    "address": {
+      "type": "string"
+    },
+    "age_review_needed": {
+      "default": false,
+      "type": "boolean"
+    },
+    "agree_birth_certificate": {
+      "type": "boolean"
+    },
+    "agree_code_of_conduct": {
+      "type": "boolean"
+    },
+    "agree_eligibility": {
+      "type": "boolean"
+    },
+    "agree_payment_terms": {
+      "type": "boolean"
+    },
+    "agree_statement_of_faith": {
+      "type": "boolean"
+    },
+    "amount_due_today": {
+      "type": "number"
+    },
+    "athlete_dob": {
+      "format": "date",
+      "type": "string"
+    },
+    "athlete_first_name": {
+      "type": "string"
+    },
+    "athlete_gender": {
+      "type": "string"
+    },
+    "athlete_last_name": {
+      "type": "string"
+    },
+    "confirmation_code": {
+      "type": "string"
+    },
+    "donation": {
+      "default": 0,
+      "type": "number"
+    },
+    "emergency_contact": {
+      "type": "string"
+    },
+    "experience_years": {
+      "type": "number"
+    },
+    "jersey_number_request": {
+      "type": "string"
+    },
+    "jersey_size": {
+      "type": "string"
+    },
+    "league_age": {
+      "type": "number"
+    },
+    "medical_notes": {
+      "type": "string"
+    },
+    "pants_size": {
+      "type": "string"
+    },
+    "parent_email": {
+      "type": "string"
+    },
+    "parent_first_name": {
+      "type": "string"
+    },
+    "parent_last_name": {
+      "type": "string"
+    },
+    "parent_phone": {
+      "type": "string"
+    },
+    "payment_ids": {
+      "description": "Comma-separated Payment record ids (installments)",
+      "type": "string"
+    },
+    "payment_plan": {
+      "enum": [
+        "full",
+        "three_payments"
+      ],
+      "type": "string"
+    },
+    "payment_status": {
+      "default": "pending_checkout",
+      "enum": [
+        "pending_checkout",
+        "deposit_paid",
+        "paid_in_full",
+        "abandoned",
+        "refunded"
+      ],
+      "type": "string"
+    },
+    "player_id": {
+      "description": "Set when an admin places the athlete on a team",
+      "type": "string"
+    },
+    "positions": {
+      "type": "string"
+    },
+    "program_id": {
+      "type": "string"
+    },
+    "program_name": {
+      "type": "string"
+    },
+    "school_name": {
+      "type": "string"
+    },
+    "school_type": {
+      "type": "string"
+    },
+    "season": {
+      "type": "string"
+    },
+    "second_contact": {
+      "type": "string"
+    },
+    "signature_name": {
+      "type": "string"
+    },
+    "signed_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "source_ip": {
+      "type": "string"
+    },
+    "sport_name": {
+      "type": "string"
+    },
+    "status": {
+      "default": "submitted",
+      "enum": [
+        "submitted",
+        "placed",
+        "waitlist",
+        "withdrawn"
+      ],
+      "type": "string"
+    },
+    "stripe_session_id": {
+      "type": "string"
+    },
+    "suggested_program_name": {
+      "type": "string"
+    },
+    "test_mode": {
+      "type": "boolean"
+    },
+    "total": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "program_id",
+    "athlete_first_name",
+    "athlete_last_name",
+    "parent_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        },
+        {
+          "data.parent_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    }
+  },
+  "type": "object"
+}
