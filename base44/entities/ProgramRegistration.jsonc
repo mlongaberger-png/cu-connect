@@ -10,7 +10,12 @@
       "type": "boolean"
     },
     "agree_birth_certificate": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Will upload birth certificate and annual sports physical in CU Connect"
+    },
+    "agree_volunteer": {
+      "type": "boolean",
+      "description": "Family agreed to volunteer during the season and support fundraisers"
     },
     "agree_code_of_conduct": {
       "type": "boolean"

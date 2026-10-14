@@ -40,6 +40,8 @@ function confirmationEmail(reg, invoices, isNewUser) {
     <p style="margin:0 0 4px;">${APPLE_URL ? btn(APPLE_URL, 'Download on the App Store') : ''}${btn(PLAY_URL, 'Get it on Google Play')}${btn(WEB_URL, 'Open on the web')}</p>
     <h3 style="margin:22px 0 6px;">Before the first practice</h3>
     <p style="margin:0;">Upload ${esc(reg.athlete_first_name)}'s birth certificate and a current annual sports physical in CU Connect (a new physical is needed every year). Coaches confirm teams after registration closes; you'll be notified when the team is final.</p>
+    <h3 style="margin:22px 0 6px;">Plan to help</h3>
+    <p style="margin:0;">We're a volunteer-run club. Your team will post volunteer and fundraiser sign-ups in CU Connect, and every family takes a turn.</p>
     <p style="margin:22px 0 0;color:#5B554C;font-size:13px;">Questions? Email <a href="mailto:info@cornerstoneunitedlions.com" style="color:#6B500B;">info@cornerstoneunitedlions.com</a>.</p>
   </div>
 </div>`;
