@@ -10,6 +10,41 @@ import Stripe from 'npm:stripe@14.21.0';
 //   STRIPE_TEST_WEBHOOK_SECRET  (signing secret of the test-mode endpoint in Stripe)
 // When registration goes live, the same branch moves into stripeWebhook.
 
+// App store links for the confirmation email. Apple's link is filled in once the
+// app is live in the App Store; until then the email points iPhone users to the web app.
+const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.base69bae2515552e76ca1fbd6a0.app';
+const APPLE_URL = '';
+const WEB_URL = 'https://cu-connect.app';
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const usd = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
+const niceDate = (d) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '');
+
+function confirmationEmail(reg, invoices, isNewUser) {
+  const btn = (href, label) => `<a href="${href}" style="display:inline-block;margin:4px 8px 4px 0;padding:11px 18px;border-radius:8px;background:#14110C;color:#F4EEE2;text-decoration:none;font-weight:bold;">${label}</a>`;
+  const rows = invoices
+    .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))
+    .map((p) => `<tr><td style="padding:6px 0;">${esc(p.description.replace(/^.*?: /, ''))}</td><td style="padding:6px 0;">${p.status === 'paid' ? 'Paid' : `Due ${niceDate(p.due_date)}`}</td><td style="padding:6px 0;text-align:right;">${usd(p.amount)}</td></tr>`)
+    .join('');
+  const test = reg.test_mode ? '<p style="background:#FBF1D6;padding:10px 12px;border-radius:6px;"><b>Test registration.</b> No real card was charged.</p>' : '';
+  return `<div style="font-family:Arial,Helvetica,sans-serif;color:#14110C;max-width:560px;margin:0 auto;line-height:1.5;">
+  <div style="background:#14110C;color:#D9B44A;padding:18px 22px;border-radius:10px 10px 0 0;font-weight:bold;font-size:18px;">Cornerstone United Lions</div>
+  <div style="border:1px solid #E5DCC8;border-top:0;padding:22px;border-radius:0 0 10px 10px;">
+    ${test}
+    <h2 style="margin:0 0 6px;">${esc(reg.athlete_first_name)} is registered</h2>
+    <p style="margin:0 0 16px;">${esc(reg.program_name)} &middot; ${esc(reg.season)}<br>Confirmation code: <b>${esc(reg.confirmation_code)}</b></p>
+    <h3 style="margin:18px 0 6px;">Payments</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">${rows}</table>
+    <h3 style="margin:22px 0 6px;">Next: get the CU Connect app</h3>
+    <p style="margin:0 0 8px;">Schedules, team messages, invoices and documents all live in CU Connect. ${isNewUser ? 'You will get a separate invitation email; accept it, then sign in' : 'Sign in'} with <b>${esc(reg.parent_email)}</b>.</p>
+    <p style="margin:0 0 4px;">${APPLE_URL ? btn(APPLE_URL, 'Download on the App Store') : ''}${btn(PLAY_URL, 'Get it on Google Play')}${btn(WEB_URL, 'Open on the web')}</p>
+    <h3 style="margin:22px 0 6px;">Before the first practice</h3>
+    <p style="margin:0;">Upload a copy of ${esc(reg.athlete_first_name)}'s birth certificate in CU Connect. Coaches confirm teams after registration closes; you'll be notified when the team is final.</p>
+    <p style="margin:22px 0 0;color:#5B554C;font-size:13px;">Questions? Reply to info@cornerstoneunitedlions.com.</p>
+  </div>
+</div>`;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -62,15 +97,29 @@ Deno.serve(async (req) => {
       });
 
       // Invite the parent to CU Connect if they don't have an account yet.
+      let isNewUser = false;
       try {
         const users = await base44.asServiceRole.entities.User.filter({ email: reg.parent_email });
         if (!users.length) {
+          isNewUser = true;
           const svc = base44.asServiceRole;
           if (svc.users?.inviteUser) await svc.users.inviteUser(reg.parent_email, 'user', '/AcceptInvite');
           else await base44.users.inviteUser(reg.parent_email, 'user', '/AcceptInvite');
         }
       } catch (e) {
         console.error('[stripeTestWebhook] invite failed (registration still recorded):', e.message);
+      }
+      // Confirmation email with the payment schedule and app links.
+      try {
+        const ids = String(reg.payment_ids || '').split(',').filter(Boolean);
+        const invoices = (await Promise.all(ids.map((id) => base44.asServiceRole.entities.Payment.get(id).catch(() => null)))).filter(Boolean);
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: reg.parent_email,
+          subject: `${reg.test_mode ? '[TEST] ' : ''}You're registered: ${reg.program_name} (${reg.confirmation_code})`,
+          body: confirmationEmail(reg, invoices, isNewUser),
+        });
+      } catch (e) {
+        console.error('[stripeTestWebhook] confirmation email failed:', e.message);
       }
       console.log(`[stripeTestWebhook] ${reg.confirmation_code} paid; invoices ${invoiceIds.join(',')}`);
     }
