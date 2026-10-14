@@ -58,6 +58,7 @@ const schema = z.object({
   agree_statement_of_faith: z.literal(true),
   agree_eligibility: z.literal(true),
   agree_birth_certificate: z.literal(true),
+  agree_volunteer: z.literal(true).optional(),
   agree_payment_terms: z.literal(true),
   signature_name: z.string().min(3).max(120),
   payment_plan: z.enum(['full', 'three_payments']),
