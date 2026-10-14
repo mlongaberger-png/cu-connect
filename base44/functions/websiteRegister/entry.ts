@@ -167,7 +167,15 @@ Deno.serve(async (req) => {
     // Invoices (Payment records, amounts in cents). Plan: today = registration + uniform,
     // then equipment/facility, then fundraising (fundraising credits can reduce #3).
     const athlete = `${d.athlete_first_name} ${d.athlete_last_name}`;
+    // Payment requires sport_id and player_id. The sport comes from the program's
+    // sport name; there is no Player yet, so player_id holds a placeholder that
+    // points at the registration until the athlete is placed on a team.
+    const sports = await base44.asServiceRole.entities.Sport.filter({ name: program.sport_name });
+    const sport = sports[0];
+    if (!sport) throw new Error(`No Sport named ${program.sport_name}`);
     const base = {
+      player_id: `registration:${reg.id}`,
+      sport_id: sport.id,
       player_name: athlete,
       team_name: program.name,
       parent_email: email,
