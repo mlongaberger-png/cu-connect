@@ -242,6 +242,30 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
     </>
   );
 
+  // Phones have no hover, so the desktop "More options" button above never shows there.
+  // This always-visible menu gives touch users Report / Block (App Store guideline 1.2).
+  const mobileMenu = (onReportMessage || onBlockUser) && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={`More options for ${senderName}'s message`}
+          className="md:hidden shrink-0 min-w-[32px] min-h-[32px] flex items-start justify-center pt-0.5 text-muted-foreground/60 hover:text-muted-foreground"
+        >
+          <MoreVertical className="w-[18px] h-[18px]" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-popover border-border">
+        <DropdownMenuItem onClick={() => onReportMessage?.(msg)} className="gap-2 cursor-pointer">
+          <Flag className="w-3.5 h-3.5" /> Report message
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onBlockUser?.(msg)} className="gap-2 cursor-pointer text-red-400 focus:text-red-400">
+          <UserX className="w-3.5 h-3.5" /> Block {senderName}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const extras = (
     <>
       {Object.keys(reactionGroups).length > 0 && (
@@ -341,6 +365,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
             {hoverActions}
           </div>
           {heartButton}
+          {mobileMenu}
         </div>
         {extras}
       </div>
