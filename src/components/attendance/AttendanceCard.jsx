@@ -6,6 +6,10 @@ import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import AttendanceDetailModal from "./AttendanceDetailModal";
 
+// "2026-10-24" parses as UTC midnight, which is the evening before in US time zones
+// (an Oct 24 event showed as Oct 23). Read date-only values as a local calendar day.
+const localDay = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T00:00:00`) : new Date(d));
+
 const EVENT_TYPE_COLORS = {
   practice: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   game: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -129,7 +133,7 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
               {request.is_locked && <Lock className="w-3.5 h-3.5 text-yellow-400" />}
               <span className="text-sm font-semibold text-foreground truncate">{request.label}</span>
             </div>
-            {request.event_date && <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(request.event_date), "MMM d")}</span>}
+            {request.event_date && <span className="text-xs text-muted-foreground whitespace-nowrap">{format(localDay(request.event_date), "MMM d")}</span>}
           </div>
           <div className="px-4 py-3 flex items-center gap-5">
             <div className="flex items-center gap-1.5 text-sm"><CheckCircle2 className="w-4 h-4 text-green-400" /><span className="font-semibold text-green-400">{attending}</span><span className="text-muted-foreground text-xs">Going</span></div>
@@ -163,7 +167,7 @@ export default function AttendanceCard({ request, isStaff, currentUser, myPlayer
         <div className="flex items-center gap-2">
           <CalendarDays className="w-3.5 h-3.5 text-primary flex-shrink-0" />
           <span className="text-sm font-semibold text-foreground truncate flex-1">{request.label}</span>
-          {request.event_date && <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(request.event_date), "MMM d")}</span>}
+          {request.event_date && <span className="text-xs text-muted-foreground whitespace-nowrap">{format(localDay(request.event_date), "MMM d")}</span>}
           {request.is_locked && <Lock className="w-3 h-3 text-yellow-400" />}
         </div>
         {request.is_locked ? (
