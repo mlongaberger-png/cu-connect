@@ -88,6 +88,11 @@
         "default_cheer"
       ],
       "description": "Type of avatar selected"
+    },
+    "hide_from_website": {
+      "type": "boolean",
+      "default": false,
+      "description": "Keep this team's games off the public website schedule (demo/test teams)."
     }
   },
   "required": [

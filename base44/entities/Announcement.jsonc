@@ -41,6 +41,38 @@
     "is_pinned": {
       "type": "boolean",
       "default": false
+    },
+    "show_on_website": {
+      "type": "boolean",
+      "default": false,
+      "description": "Also show this announcement on the public club website (News). Off by default: most announcements are for families only."
+    },
+    "website_featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Feature it in the big card on the website home page (newest featured one wins)."
+    },
+    "website_category": {
+      "type": "string",
+      "enum": [
+        "club",
+        "event",
+        "fundraiser",
+        "football",
+        "baseball",
+        "cheer"
+      ],
+      "default": "club",
+      "description": "Label shown on the website news card"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional: date of the event this announcement is about. Featured cards hide the day after."
+    },
+    "event_details": {
+      "type": "string",
+      "description": "Optional: lines for the featured card, separated by |"
     }
   },
   "required": [
