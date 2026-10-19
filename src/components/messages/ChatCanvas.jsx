@@ -244,7 +244,7 @@ function MessageBubble({ msg, isOwn, onOpenThread, replyCount, reactions, onReac
 
   // Phones have no hover, so the desktop "More options" button above never shows there.
   // This always-visible menu gives touch users Report / Block (App Store guideline 1.2).
-  const mobileMenu = (onReportMessage || onBlockUser) && (
+  const mobileMenu = (onReportMessage || onBlockUser) && msg.sender_user_id !== "system" && (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
