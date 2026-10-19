@@ -23,7 +23,9 @@ const priorityStyles = {
 export default function Announcements() {
   useAdminOrADGuard();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", content: "", priority: "normal", target: "org", target_id: "", is_pinned: false });
+  const EMPTY = { title: "", content: "", priority: "normal", target: "org", target_id: "", is_pinned: false,
+    show_on_website: false, website_featured: false, website_category: "club", event_date: "", event_details: "" };
+  const [form, setForm] = useState(EMPTY);
   const queryClient = useQueryClient();
 
   const refreshing = usePullToRefresh(async () => {
@@ -45,7 +47,13 @@ export default function Announcements() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Announcement.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["announcements"] }); setShowForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["announcements"] }); setShowForm(false); setForm(EMPTY); },
+  });
+
+  // Post an existing announcement to (or pull it from) the public website.
+  const websiteMutation = useMutation({
+    mutationFn: ({ id, on }) => base44.entities.Announcement.update(id, on ? { show_on_website: true } : { show_on_website: false, website_featured: false }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["announcements"] }),
   });
 
   const deleteMutation = useMutation({
@@ -63,7 +71,11 @@ export default function Announcements() {
       const t = teams.find(x => x.id === form.target_id);
       targetName = t?.name || "";
     }
-    createMutation.mutate({ ...form, target_name: targetName, author_name: "Admin" });
+    const data = { ...form, target_name: targetName, author_name: "Admin" };
+    if (!data.show_on_website) { data.website_featured = false; }
+    if (!data.event_date) delete data.event_date;
+    if (!data.event_details) delete data.event_details;
+    createMutation.mutate(data);
   };
 
   const sorted = [...announcements].sort((a, b) => {
@@ -109,6 +121,18 @@ export default function Announcements() {
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ann.content}</p>
                   <div className="flex items-center gap-3 mt-3 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize">{ann.priority}</span>
+                    {ann.show_on_website && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">
+                        On website{ann.website_featured ? " · featured" : ""}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => websiteMutation.mutate({ id: ann.id, on: !ann.show_on_website })}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {ann.show_on_website ? "Remove from website" : "Post to website"}
+                    </button>
                     {ann.target_name && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-muted-foreground">
                         {ann.target_name}
@@ -130,7 +154,7 @@ export default function Announcements() {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="bg-card border-border text-foreground">
+        <DialogContent className="bg-card border-border text-foreground max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Announcement</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div><Label>Title</Label><Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="bg-surface border-border" required /></div>
@@ -184,6 +208,53 @@ export default function Announcements() {
             <div className="flex items-center gap-3">
               <Switch checked={form.is_pinned} onCheckedChange={v => setForm({...form, is_pinned: v})} />
               <Label>Pin this announcement</Label>
+            </div>
+            <div className="rounded-xl border border-border p-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <Switch checked={form.show_on_website} onCheckedChange={v => setForm({...form, show_on_website: v})} />
+                <div>
+                  <Label>Also post on the public website</Label>
+                  <p className="text-xs text-muted-foreground">Anyone can see it on the website's News page. Leave off for family-only news.</p>
+                </div>
+              </div>
+              {form.show_on_website && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Website label</Label>
+                      <Select value={form.website_category} onValueChange={v => setForm({...form, website_category: v})}>
+                        <SelectTrigger className="bg-surface border-border"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          <SelectItem value="club">Club</SelectItem>
+                          <SelectItem value="event">Event</SelectItem>
+                          <SelectItem value="fundraiser">Fundraiser</SelectItem>
+                          <SelectItem value="football">Football</SelectItem>
+                          <SelectItem value="baseball">Baseball</SelectItem>
+                          <SelectItem value="cheer">Cheer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Event date (optional)</Label>
+                      <Input type="date" value={form.event_date} onChange={e => setForm({...form, event_date: e.target.value})} className="bg-surface border-border" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Switch checked={form.website_featured} onCheckedChange={v => setForm({...form, website_featured: v})} />
+                    <div>
+                      <Label>Feature on the website home page</Label>
+                      <p className="text-xs text-muted-foreground">Shows in the big card at the top. Hides itself the day after the event date.</p>
+                    </div>
+                  </div>
+                  {form.website_featured && (
+                    <div>
+                      <Label>Card details (optional)</Label>
+                      <Input value={form.event_details} onChange={e => setForm({...form, event_details: e.target.value})} placeholder="Junior High Football 5:30 PM | JV Football 7:00 PM" className="bg-surface border-border" />
+                      <p className="text-xs text-muted-foreground mt-1">Separate lines with |</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-border">Cancel</Button>
