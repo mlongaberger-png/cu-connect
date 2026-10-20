@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Trophy, Users, Calendar, MessageSquare, Megaphone,
   FolderOpen, UserCircle, X, LogOut, ShieldCheck, Bell,
-  HelpCircle, Settings, Image, ClipboardList, Music2, GraduationCap, Inbox, Shirt, Car, MapPin } from "lucide-react";
+  HelpCircle, Settings, Image, ClipboardList, Music2, GraduationCap, Inbox, Shirt, Car, MapPin, Globe } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 
 const staffNavGroups = [
@@ -27,6 +27,7 @@ const staffNavGroups = [
       { path: "/PracticePlans", label: "Practice Plans", icon: ClipboardList, roles: ["admin", "athletic_director", "coach"] },
       { path: "/UniformInventory", label: "Uniform Inventory", icon: Shirt, roles: ["admin", "athletic_director", "coach"] },
       { path: "/Applications", label: "Applications & Requests", icon: Inbox, roles: ["admin", "athletic_director", "coach"] },
+      { path: "/WebsiteRegistrations", label: "Website Registrations", icon: Globe, roles: ["admin", "athletic_director"] },
       { path: "/GameDayPlaylists", label: "Game Day Music", icon: Music2, roles: ["admin", "athletic_director", "coach"] },
       // Playbooks nav item removed -- feature taken down pending a full rebuild (Aug 2026).
       { path: "/Gallery", label: "Gallery", icon: Image, roles: ["admin", "athletic_director", "coach"] },

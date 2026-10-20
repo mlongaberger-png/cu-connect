@@ -48,6 +48,7 @@ import SecurityReport from "@/pages/SecurityReport";
 import UIUXAuditReport from "@/pages/UIUXAuditReport";
 import IssuesFixedReport from "@/pages/IssuesFixedReport";
 import Applications from "@/pages/Applications";
+import WebsiteRegistrations from "@/pages/WebsiteRegistrations";
 import UniformInventory from "@/pages/UniformInventory";
 import AppDocumentation from "@/pages/AppDocumentation";
 import Carpool from "@/pages/Carpool";
@@ -217,6 +218,7 @@ export default function AppShell() {
           <Route path="/DataExport" element={<DataExport />} />
           <Route path="/PracticePlans" element={<PracticePlans />} />
           <Route path="/Applications" element={<Applications />} />
+          <Route path="/WebsiteRegistrations" element={<WebsiteRegistrations />} />
           <Route path="/UniformInventory" element={<UniformInventory />} />
           <Route path="/Carpool" element={<Carpool />} />
         </Route>
