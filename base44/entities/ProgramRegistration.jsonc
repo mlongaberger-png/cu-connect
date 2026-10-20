@@ -166,6 +166,25 @@
     },
     "total": {
       "type": "number"
+    },
+    "placed_team_id": {
+      "type": "string",
+      "description": "Team the athlete was placed on"
+    },
+    "placed_team_name": {
+      "type": "string"
+    },
+    "placed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "placed_by": {
+      "type": "string",
+      "description": "Admin email who placed the athlete"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Private notes for admins (not shown to families)"
     }
   },
   "required": [
