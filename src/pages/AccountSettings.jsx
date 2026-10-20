@@ -307,14 +307,14 @@ export default function AccountSettings() {
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Shield className="w-4 h-4 text-primary" /> Security</CardTitle>
-          <CardDescription>Manage your sign-in access. We use secure magic links — no passwords needed.</CardDescription>
+          <CardDescription>Sign in with your password, or with Google, Microsoft or Apple. Locked out? Get a one-time sign-in link by email.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3 p-3 rounded-lg bg-muted border border-border">
             <KeyRound className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Magic Link Sign-In</p>
-              <p className="text-xs text-muted-foreground mt-0.5">We send a secure sign-in link to your email — no password required. Request a new link anytime.</p>
+              <p className="text-sm font-medium text-foreground">Email sign-in link</p>
+              <p className="text-xs text-muted-foreground mt-0.5">We email you a secure link that signs you in without your password. Handy on a new phone.</p>
             </div>
           </div>
           {magicLinkSent ? (
