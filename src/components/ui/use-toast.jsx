@@ -1,8 +1,12 @@
 // Inspired by react-hot-toast library
 import { useState, useEffect } from "react";
 
-const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 5000;
+// Pop-up notifications close on their own (they used to stay until tapped, and a
+// dismissed one lingered another 5 seconds). Errors stay a little longer.
+const TOAST_LIMIT = 3;
+const TOAST_REMOVE_DELAY = 300;
+const DEFAULT_DURATION = 3500;
+const ERROR_DURATION = 6000;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -133,6 +137,10 @@ function toast({ ...props }) {
       },
     },
   });
+
+  // Auto-close. Pass duration: Infinity to keep one open until the user closes it.
+  const duration = props.duration ?? (props.variant === "destructive" ? ERROR_DURATION : DEFAULT_DURATION);
+  if (Number.isFinite(duration)) setTimeout(dismiss, duration);
 
   return {
     id,
