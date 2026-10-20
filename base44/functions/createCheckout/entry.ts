@@ -63,6 +63,12 @@ Deno.serve(async (req) => {
 
       resolvedInvoices = fetched.filter(Boolean);
 
+      // Invoices from test-mode website registrations must never go through the live
+      // Stripe account this function uses. (Payments 2 and 3 of a test plan.)
+      if (resolvedInvoices.some(inv => /\(TEST MODE\)/.test(inv.notes || ''))) {
+        return Response.json({ error: 'This is a test invoice from a sample program. No payment is needed.' }, { status: 400 });
+      }
+
       // Enforce ownership: invoice must belong to the authenticated user (direct match),
       // OR the user must be a guardian with financial_contributor permission for that player,
       // OR the user is the promoted athlete linked to that player (and not paused).
