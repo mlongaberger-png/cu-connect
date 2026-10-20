@@ -13,9 +13,10 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {toasts.filter((t) => t.open !== false).map(function ({ id, title, description, action, open, onOpenChange, duration, ...props }) {
         return (
-          <Toast key={id} {...props}>
+          // Tap anywhere on a notification to close it.
+          <Toast key={id} {...props} onClick={() => dismiss(id)} role="status">
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
@@ -23,7 +24,7 @@ export function Toaster() {
               )}
             </div>
             {action}
-            <ToastClose onClick={() => dismiss(id)} />
+            <ToastClose onClick={(e) => { e.stopPropagation(); dismiss(id); }} aria-label="Close notification" />
           </Toast>
         );
       })}
