@@ -186,18 +186,27 @@ async function priceOf(base44, program, { plan, donation, discountCode, email, p
         { description: `${program.name}: payment 3 of 3 (required fundraising)`, fee_type: 'fundraising', due_date: program.plan_due_3 || today_,
           items: [li('Required fundraising', fees.fundraising)] },
       ];
-  // Spread the discount across installments in proportion to their fees.
-  let left = discount;
-  insts.forEach((inst, i) => {
+  // Percent discounts (sibling, % codes) are spread across installments in
+  // proportion to their fees; a dollars-off code comes off the earliest payment(s).
+  const fixedAmt = found.code && found.code.discount_type === 'amount' ? Math.min(codeAmt, gross) : 0;
+  const pctAmt = discount - fixedAmt;
+  insts.forEach((inst) => {
     inst.items = inst.items.filter((x) => x.unit_amount > 0);
     inst.fees = inst.items.reduce((s, x) => s + x.unit_amount, 0);
   });
   const withFees = insts.filter((x) => x.fees > 0);
+  let left = pctAmt;
   withFees.forEach((inst, i) => {
-    const share = i === withFees.length - 1 ? left : Math.min(left, Math.round(discount * inst.fees / (gross || 1)));
+    const share = i === withFees.length - 1 ? left : Math.min(left, Math.round(pctAmt * inst.fees / (gross || 1)));
     inst.discount = Math.min(share, inst.fees);
     left -= inst.discount;
   });
+  let fixedLeft = fixedAmt;
+  for (const inst of withFees) {
+    const take = Math.min(fixedLeft, inst.fees - inst.discount);
+    inst.discount += take;
+    fixedLeft -= take;
+  }
   if (donation > 0 && insts[0]) { insts[0].items.push(li('Donation', donation)); }
   for (const inst of insts) {
     inst.discount = inst.discount || 0;
@@ -233,7 +242,9 @@ function freeEmail(reg, isNewUser) {
     ${test}
     <h2 style="margin:0 0 6px;">${esc(reg.athlete_first_name)} is registered</h2>
     <p style="margin:0 0 16px;">${esc(reg.program_name)} &middot; ${esc(reg.season)}<br>Confirmation code: <b>${esc(reg.confirmation_code)}</b></p>
-    <p style="margin:0 0 16px;"><b>No payment is due.</b> Program fees of ${usd(reg.fees_total * 100)} were covered${reg.discount_code ? ` by code ${esc(reg.discount_code)}` : ''}.</p>
+    ${reg.total > 0
+      ? `<p style="margin:0 0 16px;"><b>Nothing is due today.</b> Discounts of ${usd(reg.discount_total * 100)} were applied${reg.discount_code ? ` (code ${esc(reg.discount_code)})` : ''}. Your remaining balance of ${usd(reg.total * 100)} will show in CU Connect with its due dates.</p>`
+      : `<p style="margin:0 0 16px;"><b>No payment is due.</b> Program fees of ${usd(reg.fees_total * 100)} were covered${reg.discount_code ? ` by code ${esc(reg.discount_code)}` : ''}.</p>`}
     <h3 style="margin:22px 0 6px;">Next: get the CU Connect app</h3>
     <p style="margin:0 0 8px;">Schedules, team messages and documents all live in CU Connect. ${isNewUser ? 'You will get a separate invitation email; accept it, then sign in' : 'Sign in'} with <b>${esc(reg.parent_email)}</b>.</p>
     <p style="margin:0 0 4px;">${APPLE_URL ? btn(APPLE_URL, 'Download on the App Store') : ''}${btn(PLAY_URL, 'Get it on Google Play')}${btn(WEB_URL, 'Open on the web')}</p>
@@ -395,16 +406,18 @@ Deno.serve(async (req) => {
         ...(settled ? { paid_amount: 0 } : {}),
       }));
     }
-    const first = payments.find((p) => p.amount > 0) || null;
+    // Checkout only when something is due today (a big enough discount can cover payment 1).
+    const first = payments[0] && payments[0].amount > 0 ? payments[0] : null;
     const dueToday = first ? first.amount : 0;
     await base44.asServiceRole.entities.ProgramRegistration.update(reg.id, {
       payment_ids: payments.map((p) => p.id).join(','),
       amount_due_today: dueToday / 100,
     });
 
-    // Nothing to pay: finish now (the Stripe webhook does this for paid ones).
+    // Nothing due today: finish now (the Stripe webhook does this for paid ones).
     if (!first) {
-      await base44.asServiceRole.entities.ProgramRegistration.update(reg.id, { payment_status: 'paid_in_full' });
+      const owed = payments.some((p) => p.amount > 0);
+      await base44.asServiceRole.entities.ProgramRegistration.update(reg.id, { payment_status: owed ? 'deposit_paid' : 'paid_in_full' });
       await countCodeUse(base44, price.code?.id);
       let isNewUser = false;
       try {
@@ -424,8 +437,8 @@ Deno.serve(async (req) => {
           body: freeEmail(fresh, isNewUser),
         });
       } catch (e) { console.error('[websiteRegister] email failed:', e.message); }
-      console.log(`[websiteRegister] ${confirmation} ${program.name} no payment due (${price.note})`);
-      return json({ ok: true, free: true, confirmation_code: confirmation, registration_id: reg.id, quote: breakdown(price) });
+      console.log(`[websiteRegister] ${confirmation} ${program.name} nothing due today (${price.note})`);
+      return json({ ok: true, free: !owed, nothing_due_today: true, confirmation_code: confirmation, registration_id: reg.id, quote: breakdown(price) });
     }
 
     // Stripe Checkout for today's payment. Test programs always use test keys.
