@@ -35,6 +35,7 @@ function confirmationEmail(reg, invoices, isNewUser) {
     <p style="margin:0 0 16px;">${esc(reg.program_name)} &middot; ${esc(reg.season)}<br>Confirmation code: <b>${esc(reg.confirmation_code)}</b></p>
     <h3 style="margin:18px 0 6px;">Payments</h3>
     <table style="width:100%;border-collapse:collapse;font-size:14px;">${rows}</table>
+    ${reg.discount_total > 0 ? `<p style="margin:8px 0 0;font-size:14px;color:#1E5B2C;">Discounts applied: $${Number(reg.discount_total).toFixed(2)}${reg.sibling_discount > 0 ? ' (sibling discount' + (reg.discount_code ? ` + code ${esc(reg.discount_code)})` : ')') : reg.discount_code ? ` (code ${esc(reg.discount_code)})` : ''}</p>` : ''}
     <h3 style="margin:22px 0 6px;">Next: get the CU Connect app</h3>
     <p style="margin:0 0 8px;">Schedules, team messages, invoices and documents all live in CU Connect. ${isNewUser ? 'You will get a separate invitation email; accept it, then sign in' : 'Sign in'} with <b>${esc(reg.parent_email)}</b>.</p>
     <p style="margin:0 0 4px;">${APPLE_URL ? btn(APPLE_URL, 'Download on the App Store') : ''}${btn(PLAY_URL, 'Get it on Google Play')}${btn(WEB_URL, 'Open on the web')}</p>
@@ -97,6 +98,15 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.ProgramRegistration.update(regId, {
         payment_status: reg.payment_plan === 'three_payments' ? 'deposit_paid' : 'paid_in_full',
       });
+
+      // Count the discount code use now that the registration is complete.
+      const codeId = session.metadata.discount_code_id || reg.discount_code_id;
+      if (codeId) {
+        try {
+          const c = await base44.asServiceRole.entities.DiscountCode.get(codeId);
+          await base44.asServiceRole.entities.DiscountCode.update(codeId, { uses_count: Number(c.uses_count || 0) + 1 });
+        } catch (e) { console.error('[stripeTestWebhook] code use count failed:', e.message); }
+      }
 
       // Invite the parent to CU Connect if they don't have an account yet.
       let isNewUser = false;
