@@ -81,6 +81,11 @@
       "description": "Team athletes are placed on (optional)",
       "type": "string"
     },
+    "sibling_discount_pct": {
+      "type": "number",
+      "default": 5,
+      "description": "Percent off the fees for each additional athlete from the same family this season"
+    },
     "test_mode": {
       "default": true,
       "description": "Use Stripe test keys; no real charges",
