@@ -1,0 +1,114 @@
+{
+  "description": "Discount codes for website registration (scholarships, no-payment, promos). Checked server-side by websiteRegister; never readable by families.",
+  "name": "DiscountCode",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "What the family types, stored UPPERCASE (e.g. SCHOLAR26)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Internal note: who/why (e.g. 'Coach's family', 'Scholarship - Smith')"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ],
+      "default": "percent",
+      "description": "percent = % off the program fees; amount = dollars off"
+    },
+    "value": {
+      "type": "number",
+      "description": "Percent (1-100; 100 = no payment) or dollars off"
+    },
+    "program_ids": {
+      "type": "string",
+      "description": "Optional comma-separated Program ids this code is limited to"
+    },
+    "sport_name": {
+      "type": "string",
+      "description": "Optional: limit to one sport (Baseball, Football, Cheerleading)"
+    },
+    "max_uses": {
+      "type": "number",
+      "description": "Optional total number of registrations that can use it"
+    },
+    "uses_count": {
+      "type": "number",
+      "default": 0
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "expires_on": {
+      "type": "string",
+      "format": "date",
+      "description": "Last day the code works"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "discount_type",
+    "value"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "athletic_director"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  },
+  "type": "object"
+}
