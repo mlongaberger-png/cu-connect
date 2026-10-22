@@ -182,6 +182,25 @@
       "type": "string",
       "description": "Admin email who placed the athlete"
     },
+    "discount_code": {
+      "type": "string",
+      "description": "Discount code the family used (uppercase)"
+    },
+    "discount_code_id": {
+      "type": "string"
+    },
+    "sibling_discount": {
+      "type": "number",
+      "description": "Sibling discount in dollars"
+    },
+    "discount_total": {
+      "type": "number",
+      "description": "All discounts in dollars (sibling + code)"
+    },
+    "fees_total": {
+      "type": "number",
+      "description": "Program fees before discounts, in dollars"
+    },
     "admin_notes": {
       "type": "string",
       "description": "Private notes for admins (not shown to families)"
